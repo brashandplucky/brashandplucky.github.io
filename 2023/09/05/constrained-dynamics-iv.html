@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="http://localhost:4000/feed.xml" title="Chema Guerra" /><!-- favicon -->
+    <link rel="shortcut icon" type="image/png" href="/favicon.png">
+    <!-- MathJax -->
+    <script type="text/javascript" id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <!-- Open Graph cards -->
+    <meta name="og:url" content="@/2023/09/05/constrained-dynamics-iv.html">
+    <meta name="og:title" content="Constrained Dynamics (IV)">
+    <meta name="og:description" content="Direct continuation to the force-based constraint posts: Systems of constraints.">
+    <meta name="og:image" content="http://localhost:4000/thumbnails/2023/chemaguerra-constrained-dynamics-iv.png">
+    <meta name="og:image:type" content="image/png">
+    <!-- Twitter cards -->
+    <meta name="twitter:site" content="@chemaguerra">
+    <meta name="twitter:creator" content="@">
+    <meta name="twitter:title" content="Constrained Dynamics (IV)">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:description" content="Direct continuation to the force-based constraint posts: Systems of constraints.">
+    <meta name="twitter:image" content="http://localhost:4000/thumbnails/2023/chemaguerra-constrained-dynamics-iv.png">
+    <meta name="twitter:image:src" content="http://localhost:4000/thumbnails/2023/chemaguerra-constrained-dynamics-iv.png">
+</head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">Chema Guerra</a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/archive/">Archive</a><a class="page-link" href="/about/">About</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">Constrained Dynamics (IV)</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2023-09-05T10:00:00+02:00" itemprop="datePublished">Sep 5, 2023
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <p>This post is a direct continuation to the latest entry…</p>
+
+<ul>
+  <li>Part III: <a href="https://brashandplucky.com/2023/08/14/constrained-dynamics-iii.html">Constrained Dynamics (III)</a> - <em>Force-based constraints</em>.</li>
+</ul>
+
+<p>…and the rest of the series:</p>
+
+<ul>
+  <li>Part II: <a href="https://brashandplucky.com/2023/08/04/constrained-dynamics-ii.html">Constrained Dynamics (II)</a> - <em>Don’t use springs to model rigid constraints</em>.</li>
+  <li>Part I: <a href="https://brashandplucky.com/2023/07/30/constrained-dynamics-i.html">Constrained Dynamics (I)</a> - <em>Unconstrained dynamics</em>.</li>
+</ul>
+
+<p>Let’s continue where we left off and find a more compact <strong>vector/matrix form</strong> for force-based constraints.</p>
+
+<p><img src="/uploads/2023/chemaguerra-double-pendulum.gif" alt="Double pendulum" /></p>
+
+<h2 id="generic-constraints-vector-form">Generic constraints (vector form)</h2>
+
+<p>Everything we discussed in the previous post for the (unit circle) distance constraint can be extrapolated to generic motion, as long as we can define the trajectory as a (gradient) function \(C\) of the state of the particle:</p>
+
+<p><img src="/uploads/2023/chemaguerra-trajectory-constraint.png" alt="Trajectory constraint" /></p>
+
+<p>\(C\) is called <strong>position constraint</strong> and is satisfied only when \(C(\mathbf{x}=\mathbf{p})=0\).</p>
+
+<p><em>What comes next is derived from the <a href="https://brashandplucky.com/2023/08/14/constrained-dynamics-iii.html">previous post</a></em>.</p>
+
+<p>In vector form:</p>
+
+\[\mathbf{p}=\begin{bmatrix}x\\y\end{bmatrix},\mathbf{\dot{p}}=\begin{bmatrix}\dot{x}\\\dot{y}\end{bmatrix}\]
+
+<p>Via the chain rule the expression for the <strong>velocity constraint</strong> \(\dot{C}\) is:</p>
+
+\[\dot{C}=\frac{\mathrm{d}\mathbf{C}}{\mathrm{d}t}=\frac{\partial{\mathbf{C}}}{\partial{\mathbf{p}}}\frac{\mathrm{d}\mathbf{p}}{\mathrm{d}t}=\mathbf{J}\mathbf{\dot{p}}+b=0\]
+
+<p>Where \(\mathbf{J}=\frac{\partial{\mathbf{C}}}{\partial{\mathbf{p}}}\) (called the <a href="https://en.wikipedia.org/wiki/Jacobian_matrix_and_determinant">Jacobian</a>) is a row vector perpendicular to \(\mathbf{\dot{p}}\). The <em>bias</em> \(b\) is a residual term which may be used to model velocity-inducing constraints (<em>e.g.,</em> a motor like in the animation below).</p>
+
+<p>If \(\mathbf{J}\) is perpendicular to \(\mathbf{\dot{p}}\) then it is co-linear to the trajectory’s normal, which happens to be the direction of the corrective force:</p>
+
+\[\mathbf{F_c}=\mathbf{J}^T\lambda\]
+
+<p>\(\lambda\) is a scalar that gives orientation/magnitude to \(\mathbf{F_c}\) known as <a href="https://en.wikipedia.org/wiki/Lagrange_multiplier">Lagrange multiplier</a>.</p>
+
+<p>Via the chain rule again the expression for the <strong>acceleration constraint</strong> \(\ddot{C}\) is:</p>
+
+\[\ddot{C}=\mathbf{\dot{J}}\mathbf{\dot{p}}+\mathbf{J}\mathbf{\ddot{p}}=0\]
+
+<p>We expect constraint forces to do <em>no work</em> (<em>principle of virtual work</em>). Since power is force times velocity:</p>
+
+\[P_c=\mathbf{F_c}\cdot\mathbf{\dot{p}}=\mathbf{F_c}^T\mathbf{\dot{p}}=0\implies(\lambda\mathbf{J}^T)^T\mathbf{\dot{p}}=(\mathbf{J}\mathbf{\dot{p}})\lambda=0\]
+
+<p>Which is indeed 0 for \(\dot{C}=0,b=0\) (see above).</p>
+
+<p>Plugging in Newton’s 2nd Law (\(\mathbf{F}=m\mathbf{\ddot{p}}\)):</p>
+
+\[\ddot{C}=\mathbf{\dot{J}}\mathbf{\dot{p}}+\mathbf{J}\frac{\mathbf{F_a}+\mathbf{F_c}}{m}=\mathbf{\dot{J}}\mathbf{\dot{p}}+\frac{\mathbf{J}\mathbf{F_a}}{m}+\frac{\mathbf{J}\mathbf{J}^T}{m}\lambda=0\]
+
+<p>Let’s define \(w=m^{-1}\) to end up with this linear equation, where only \(\lambda\) is unknown:</p>
+
+\[\mathbf{J}w\mathbf{J}^T\lambda=-(\mathbf{\dot{J}}\mathbf{\dot{p}}+\mathbf{J}w\mathbf{F_a})\]
+
+<p>We won’t simplify this beauty any further to later appreciate the parallelism with its matrix form.</p>
+
+<p>Once we solve for \(\lambda\) we must apply \(\mathbf{F}=\mathbf{F_a}+\mathbf{J}^T\lambda\) to the particle to find \(\mathbf{\ddot{p}}\), then update \(\mathbf{\dot{p}}\) and \(\mathbf{p}\), and be done!</p>
+
+<p><img src="/uploads/2023/chemaguerra-velocity-motor.gif" alt="Velocity-inducing motor" /></p>
+
+<h3 id="example-distance-constraint">Example: Distance constraint</h3>
+
+<blockquote>
+  <p>The recipe to find \(\mathbf{J}\) is to derive the position constraint \(C\) expressed in vector form into \(\dot{C}\), and then rearrange the resulting expression until it resembles \(\mathbf{J}\mathbf{\dot{p}}+b\).</p>
+</blockquote>
+
+<p>We shall borrow the expression for \(C\) from the previous post:</p>
+
+\[\begin{flalign}
+&amp; &amp;&amp; C=\frac{1}{2}(\mathbf{p}\cdot\mathbf{p}-1) &amp; \\
+&amp; &amp;&amp; \dot{C}=\mathbf{p}\cdot\mathbf{\dot{p}}=\mathbf{J}\mathbf{\dot{p}}+0 &amp; \\
+&amp; &amp;&amp; \mathbf{J}=\mathbf{p}^T &amp; \\
+&amp; &amp;&amp; \mathbf{\dot{J}}=\mathbf{\dot{p}}^T &amp;
+\end{flalign}\]
+
+<p>Hooray! \(\lambda\) matches what we obtained back then:</p>
+
+\[\lambda=-\frac{m\mathbf{\dot{J}}\mathbf{\dot{p}}+\mathbf{J}\mathbf{F_a}}{\mathbf{J}\mathbf{J}^T}=-\frac{\mathbf{\dot{p}}\cdot\mathbf{F_a}+m\mathbf{\dot{p}}\cdot\mathbf{\dot{p}}}{\mathbf{p}\cdot\mathbf{p}}\]
+
+<h2 id="systems-of-constraints-matrix-form">Systems of constraints (matrix form)</h2>
+
+<p>So far we’ve dealt with just one particle and one constraint. But what happens when there are multiple particles subjected to multiple constraints? Well… things gets a bit more involved; especially if the constraints define relationships between two or more particles at once (<em>e.g.,</em> keep two particles a specified distance apart, etc…).</p>
+
+<p>Like above, the goal is to calculate one \(\lambda_i\) for each constraint and apply the corresponding constraint forces. But intuition (correctly) says that we must solve for <em>all</em> the \(\lambda_i\) <em>simultaneously</em> and <em>not</em> one by one. This makes sense, because otherwise satisfying one constraint at a time, isolated from the rest, would potentially violate all the others, and so on.</p>
+
+<p>This looks like a job for a (large) <a href="https://en.wikipedia.org/wiki/System_of_linear_equations">system of linear equations</a> solver!</p>
+
+<p>Please bear with me in the derivation:</p>
+
+<ul>
+  <li>Concat all the \((x,y)\) particle positions in a long column \(\mathbf{q}\) called <strong>state vector</strong>.</li>
+  <li>Define a diagonal matrix \(\mathbf{M}\) with all the particle masses. Define \(\mathbf{W}=\mathbf{M}^{-1}\).</li>
+  <li>Define two long column vectors \(\mathbf{Q_a}\) and \(\mathbf{Q_c}\) where all the force components (\(\mathbf{F_a}\) and \(\mathbf{F_c}\) respectively) are concatenated.</li>
+  <li>Define the <em>super-constraint</em> \(\mathbf{C}(\mathbf{q})\) as a function of the (concatenated) particle states.</li>
+  <li>By the chain rule:</li>
+</ul>
+
+\[\mathbf{\dot{C}}=\frac{\mathrm{d}\mathbf{C}}{\mathrm{d}t}=\frac{\partial{\mathbf{C}}}{\partial{\mathbf{q}}}\frac{\mathrm{d}\mathbf{q}}{\mathrm{d}t}=\mathbf{J}\mathbf{\dot{q}}\]
+
+<ul>
+  <li>By the chain rule again:</li>
+</ul>
+
+\[\mathbf{\ddot{C}}=\mathbf{\dot{J}}\mathbf{\dot{q}}+\mathbf{J}\mathbf{\ddot{q}}\]
+
+<ul>
+  <li>By Newton’s 2nd Law:</li>
+</ul>
+
+\[(\mathbf{Q_a}+\mathbf{Q_c})=\mathbf{M}\mathbf{\ddot{q}}\implies\mathbf{\ddot{q}}=\mathbf{W}(\mathbf{Q_a}+\mathbf{Q_c})\]
+
+<ul>
+  <li>By substitution:</li>
+</ul>
+
+\[\mathbf{\ddot{C}}=\mathbf{\dot{J}}\mathbf{\dot{q}}+\mathbf{J}\mathbf{W}(\mathbf{Q_a}+\mathbf{Q_c})=0\]
+
+<ul>
+  <li>By the principle of virtual work (perpendicular/co-linear like above):</li>
+</ul>
+
+\[\mathbf{Q_c}=\mathbf{J}^T\mathbf{\lambda}\]
+
+<ul>
+  <li>By substitution:</li>
+</ul>
+
+\[\mathbf{J}\mathbf{W}\mathbf{J}^T\mathbf{\lambda}=-(\mathbf{\dot{J}}\mathbf{\dot{q}}+\mathbf{J}\mathbf{W}\mathbf{Q_a})\]
+
+<p>This last expression is a (potentially large) system of linear equations where the vector \(\mathbf{\lambda}\) is the only unknown.</p>
+
+<p>Once we solve for \(\mathbf{\lambda}\) we must apply \(\mathbf{Q}=\mathbf{Q_a}+\mathbf{J}^T\mathbf{\lambda}\) to find \(\mathbf{\ddot{q}}\), then update \(\mathbf{\dot{q}}\) and \(\mathbf{q}\), and be done!</p>
+
+<p>Wonderful. Isn’t it?</p>
+
+<h3 id="summary-particles">Summary (particles)</h3>
+
+<p>For \(n\) particles and \(m\) constraints:</p>
+
+\[\mathbf{q}=\begin{bmatrix}{p_1}_x\\{p_1}_y\\{p_2}_x\\{p_2}_y\\ \vdots\\{p_n}_x\\{p_n}_y\end{bmatrix},\mathbf{\dot{q}}=\begin{bmatrix}\dot{p_1}_x\\ \dot{p_1}_y\\ \dot{p_2}_x\\ \dot{p_2}_y\\ \vdots\\ \dot{p_n}_x\\ \dot{p_n}_y\end{bmatrix},\mathbf{Q_a}=\begin{bmatrix}{\mathbf{Q_a}_1}_x\\{\mathbf{Q_a}_1}_y\\{\mathbf{Q_a}_2}_x\\{\mathbf{Q_a}_2}_y\\ \vdots\\{\mathbf{Q_a}_n}_x\\{\mathbf{Q_a}_n}_y\end{bmatrix},\mathbf{W}=\begin{bmatrix}m_1&amp; &amp; &amp; &amp; &amp; &amp;\\&amp;m_1&amp; &amp; &amp; &amp; &amp;\\&amp; &amp;m_2&amp; &amp; &amp; &amp;\\&amp; &amp; &amp;m_2&amp; &amp; &amp;\\&amp; &amp; &amp; &amp;\ddots&amp; &amp;\\&amp; &amp; &amp; &amp; &amp;m_n&amp;\\&amp; &amp; &amp; &amp; &amp; &amp;m_n\end{bmatrix}\]
+
+\[\mathbf{J}=\begin{bmatrix}
+\frac{\partial{\mathbf{C_1}_x}}{\partial{\mathbf{q_1}_x}}&amp;
+\frac{\partial{\mathbf{C_1}_x}}{\partial{\mathbf{q_1}_y}}&amp;
+\frac{\partial{\mathbf{C_1}_x}}{\partial{\mathbf{q_2}_x}}&amp;
+\frac{\partial{\mathbf{C_1}_x}}{\partial{\mathbf{q_2}_y}}&amp;\dots&amp;
+\frac{\partial{\mathbf{C_1}_x}}{\partial{\mathbf{q_n}_x}}&amp;
+\frac{\partial{\mathbf{C_1}_x}}{\partial{\mathbf{q_n}_y}}\\
+\frac{\partial{\mathbf{C_1}_y}}{\partial{\mathbf{q_1}_x}}&amp;
+\frac{\partial{\mathbf{C_1}_y}}{\partial{\mathbf{q_1}_y}}&amp;
+\frac{\partial{\mathbf{C_1}_y}}{\partial{\mathbf{q_2}_x}}&amp;
+\frac{\partial{\mathbf{C_1}_y}}{\partial{\mathbf{q_2}_y}}&amp;\dots&amp;
+\frac{\partial{\mathbf{C_1}_y}}{\partial{\mathbf{q_n}_x}}&amp;
+\frac{\partial{\mathbf{C_1}_y}}{\partial{\mathbf{q_n}_y}}\\
+\frac{\partial{\mathbf{C_2}_x}}{\partial{\mathbf{q_1}_x}}&amp;
+\frac{\partial{\mathbf{C_2}_x}}{\partial{\mathbf{q_1}_y}}&amp;
+\frac{\partial{\mathbf{C_2}_x}}{\partial{\mathbf{q_2}_x}}&amp;
+\frac{\partial{\mathbf{C_2}_x}}{\partial{\mathbf{q_2}_y}}&amp;\dots&amp;
+\frac{\partial{\mathbf{C_2}_x}}{\partial{\mathbf{q_n}_x}}&amp;
+\frac{\partial{\mathbf{C_2}_x}}{\partial{\mathbf{q_n}_y}}\\
+\frac{\partial{\mathbf{C_2}_y}}{\partial{\mathbf{q_1}_x}}&amp;
+\frac{\partial{\mathbf{C_2}_y}}{\partial{\mathbf{q_1}_y}}&amp;
+\frac{\partial{\mathbf{C_2}_y}}{\partial{\mathbf{q_2}_x}}&amp;
+\frac{\partial{\mathbf{C_2}_y}}{\partial{\mathbf{q_2}_y}}&amp;\dots&amp;
+\frac{\partial{\mathbf{C_2}_y}}{\partial{\mathbf{q_n}_x}}&amp;
+\frac{\partial{\mathbf{C_2}_y}}{\partial{\mathbf{q_n}_y}}\\
+\vdots&amp;
+\vdots&amp;
+\vdots&amp;
+\vdots&amp;\ddots&amp;
+\vdots&amp;
+\vdots\\
+\frac{\partial{\mathbf{C_m}_x}}{\partial{\mathbf{q_1}_x}}&amp;
+\frac{\partial{\mathbf{C_m}_x}}{\partial{\mathbf{q_1}_y}}&amp;
+\frac{\partial{\mathbf{C_m}_x}}{\partial{\mathbf{q_2}_x}}&amp;
+\frac{\partial{\mathbf{C_m}_x}}{\partial{\mathbf{q_2}_y}}&amp;\dots&amp;
+\frac{\partial{\mathbf{C_m}_x}}{\partial{\mathbf{q_n}_x}}&amp;
+\frac{\partial{\mathbf{C_m}_x}}{\partial{\mathbf{q_n}_y}}\\
+\frac{\partial{\mathbf{C_m}_y}}{\partial{\mathbf{q_1}_x}}&amp;
+\frac{\partial{\mathbf{C_m}_y}}{\partial{\mathbf{q_1}_y}}&amp;
+\frac{\partial{\mathbf{C_m}_y}}{\partial{\mathbf{q_2}_x}}&amp;
+\frac{\partial{\mathbf{C_m}_y}}{\partial{\mathbf{q_2}_y}}&amp;\dots&amp;
+\frac{\partial{\mathbf{C_m}_y}}{\partial{\mathbf{q_n}_x}}&amp;
+\frac{\partial{\mathbf{C_m}_y}}{\partial{\mathbf{q_n}_y}}\\
+\end{bmatrix},\mathbf{\dot{J}}=\frac{\mathrm{d}\mathbf{J}}{\mathrm{d}t}\]
+
+<p>The state and force vectors are \(2n\) elements tall. The Jacobian matrices are \(2m\) elements tall and \(2n\) elements wide.</p>
+
+<p>In this summary I am assuming that each constraint yields one (and only one) corrective force, with two \((x,y)\) components as is the case in the constraints discussed so far. More complicated contraints may contribute more than two components, making \(\mathbf{J}\) be taller.</p>
+
+<h3 id="countering-drift">Countering drift</h3>
+
+<p>We may inject a spring-y term in \(\mathbf{\ddot{C}}=0\) resulting in this monstrosity:</p>
+
+\[\mathbf{J}\mathbf{W}\mathbf{J}^T\mathbf{\lambda}=-(\mathbf{\dot{J}}\mathbf{\dot{q}}+\mathbf{J}\mathbf{W}\mathbf{Q_a}+k_s\mathbf{C}+k_d\mathbf{\dot{C}})\]
+
+<p>As explained in the previous post, these extra terms will make sure that particles “spring back” to legal positions as soon as they attempt to drift away.</p>
+
+<h3 id="extension-to-rigid-bodies">Extension to rigid bodies</h3>
+
+<p>So far we’ve used point-mass particles. But the extension to 2D <em>rigid bodies</em> is fairly easy:</p>
+
+<ul>
+  <li>Rotation aside, a rigid body behaves exactly as a point-mass positioned at its <a href="https://en.wikipedia.org/wiki/Center_of_mass">center-of-mass</a>.</li>
+  <li>Position \(\mathbf{p}\) <em>vs.</em> angle \(\theta\), linear \(\mathbf{\dot{p}}\) <em>vs.</em> angular \(\dot{\theta}\) velocity, linear \(\mathbf{\ddot{p}}\) <em>vs.</em> angular \(\ddot{\theta}\) acceleration, and mass \(m\) <em>vs.</em> <a href="https://en.wikipedia.org/wiki/Moment_of_inertia">moment-of-inertia</a> \(I\) all exhibit analogous behavior. In particular, Newton’s 2nd Law applied to angular motion states that:</li>
+</ul>
+
+\[\tau=I\ddot{\theta}\]
+
+<p>A body’s moment of inertia \(I\) defines how hard it is for a rotational force \(\tau\) (called torque) to induce a change in its angular acceleration \(\ddot{\theta}\). Just like mass \(m\) defines how hard it is for a linear force \(\mathbf{F}\) to induce a change in the body’s linear acceleration:</p>
+
+\[\mathbf{F}=m\mathbf{\ddot{p}}\]
+
+<p>In our code we must extend the <em>particle state</em> <code class="language-plaintext highlighter-rouge">struct</code> \([\mathbf{p}, \mathbf{\dot{p}}]\) to the <em>body state</em> <code class="language-plaintext highlighter-rouge">struct</code> \([\mathbf{p}, \theta, \mathbf{\dot{p}}, \dot{\theta}]\).</p>
+
+<p>The \(I\) of a rigid body is a characteristic of its shape and mass distribution. Simple shapes such as disks and rectangles have <a href="https://en.wikipedia.org/wiki/List_of_moments_of_inertia">well-known expressions</a> as long as their density is homogeneous.</p>
+
+<h3 id="summary-rigid-bodies">Summary (rigid bodies)</h3>
+
+<p>This parallelism between angular/linear makes it easy to extend our matrix form to support torque/rotation alongside linear force/position.</p>
+
+\[\mathbf{q}=\begin{bmatrix}{p_1}_x\\{p_1}_y\\ \theta_1\\{p_2}_x\\{p_2}_y\\ \theta_2\\ \vdots\\{p_n}_x\\{p_n}_y\\ \theta_n\end{bmatrix},\mathbf{\dot{q}}=\begin{bmatrix}\dot{p_1}_x\\ \dot{p_1}_y\\ \dot{\theta_1}\\ \dot{p_2}_x\\ \dot{p_2}_y\\ \dot{\theta_2}\\ \vdots\\ \dot{p_n}_x\\ \dot{p_n}_y\\ \dot{\theta_n}\end{bmatrix},\mathbf{Q_a}=\begin{bmatrix}{\mathbf{Q_a}_1}_x\\{\mathbf{Q_a}_1}_y\\ \tau_1\\{\mathbf{Q_a}_2}_x\\{\mathbf{Q_a}_2}_y\\ \tau_2\\ \vdots\\{\mathbf{Q_a}_n}_x\\{\mathbf{Q_a}_n}_y\\ \tau_n\end{bmatrix},\mathbf{W}=\begin{bmatrix}m_1&amp; &amp; &amp; &amp; &amp; &amp; &amp; &amp; &amp;\\&amp;m_1&amp; &amp; &amp; &amp; &amp; &amp; &amp; &amp;\\&amp; &amp;I_1&amp; &amp; &amp; &amp; &amp; &amp; &amp;\\&amp; &amp; &amp;m_2&amp; &amp; &amp; &amp; &amp; &amp;\\&amp; &amp; &amp; &amp;m_2&amp; &amp; &amp; &amp; &amp;\\&amp; &amp; &amp; &amp; &amp;I_2&amp; &amp; &amp; &amp;\\&amp; &amp; &amp; &amp; &amp; &amp;\ddots&amp; &amp; &amp;\\&amp; &amp; &amp; &amp; &amp; &amp; &amp;m_n&amp; &amp;\\&amp; &amp; &amp; &amp; &amp; &amp; &amp; &amp;m_n&amp;\\&amp; &amp; &amp; &amp; &amp; &amp; &amp; &amp; &amp;I_n\end{bmatrix}^{-1}\]
+
+<p>And likewise for \(\mathbf{J}\) and \(\mathbf{\dot{J}}\), which also must involve \(\theta_i\) and \(\tau_i\).</p>
+
+<p>The state and force vectors are now \(3n\) elements tall. The Jacobian matrices are now \(2m\) elements tall and \(3n\) elements wide.</p>
+
+<h2 id="my-implementation">My implementation</h2>
+
+<p>I have recently implemented all this into my beloved <a href="https://topotoy.com/">Topotoy</a> engine.</p>
+
+<p>This contraption below is a force-based rigid-body simulation where there is a motorized constraint, and then a bunch of different constraints I support: spring, distance, and rack-and-pinion. Everything is coded exactly as described in this post.</p>
+
+<p><img src="/uploads/2023/chemaguerra-contraption.gif" alt="Constraints system" /></p>
+
+<p>As one might expect, accurate-and-efficient implementation of this all brings its own universe of challenges and opportunities for exploration. So… down the rabbit-hole I went.</p>
+
+<p>Each of these subjects below is worth their own blog post, but for the sake of brevity I will not get into that much detail here.</p>
+
+<h3 id="large-sle-solvers">Large SLE solvers</h3>
+
+<p>The size of all the vectors and matrices involved grows \(O(n)\) and \(O(n^2)\) respectively with the number of bodies/constraints in the system. This very quickly poses a problem both in storage space and more so in efficiency.</p>
+
+<p>I’ve tried <a href="https://en.wikipedia.org/wiki/Gauss%E2%80%93Seidel_method">Gauss-Seidel</a>, <a href="https://en.wikipedia.org/wiki/Gaussian_elimination">Gaussian Elimination</a>, and the Conjugate Gradient method. The CG method in particular benefits from the fact that \(\mathbf{J}\) is very <em>sparse</em> (read below).</p>
+
+<p>Efficient and numerically-robust implementation of these methods is definitely a meaty subject itself.</p>
+
+<h3 id="sparse-matrices">Sparse matrices</h3>
+
+<p>The matrix \(\mathbf{W}\) is all zeros except for the diagonal, so it can be stored as a vector. Multiplying by \(\mathbf{W}\) can be coded as a simple per-row scalar multiplication instead of a full-fledged \(O(n^4)\) matrix product.</p>
+
+<p>But the most relevant observation here is that \(\mathbf{J}\) is a <a href="https://en.wikipedia.org/wiki/Sparse_matrix">sparse matrix</a>.</p>
+
+<blockquote>
+  <p>Constraints usually define a relationship between 2 bodies. This makes rows \(2i,2i+1\) for constraint \(\mathbf{C_i}\) contain only \(6=2\times\{m,m,I\}\) non-zero coefficients each because the coefficients corresponding to bodies not affected by \(\mathbf{C_i}\) are constant (0 derivative) with respect to the state of those bodies.</p>
+</blockquote>
+
+<p>In our particular case, matrix sparsity is <em>aligned</em> in blocks of 3 coefficients because of the \(\{m,m,I\}\) arrangement. The implementation can exploit this knowledge to give proper column block granularity.</p>
+
+<p>Actually, the way in which each constraint contributes its own coefficients to the large matrices \(\mathbf{J},\mathbf{\dot{J}}\) goes like this:</p>
+
+<ul>
+  <li>Start with a blank sparse matrix.</li>
+  <li>For each constraint \(\mathbf{C_i}\):
+    <ul>
+      <li>Compute the constraint’s own \(\mathbf{J}\) 6 (3 coeffs x 2 bodies) coefficients.</li>
+      <li>Allocate two 3x1 blocks per row in the large \(\mathbf{J}\) at the right locations.</li>
+      <li>Fill those in with a copy of the constraint’s coefficients.</li>
+    </ul>
+  </li>
+  <li>Do the same for \(\mathbf{\dot{J}}\).</li>
+</ul>
+
+<p>Sparse matrices bring some big opportunities for optimization. For example, the product of 2 sparse matrices can skip the zero’d blocks and approach \(O(n^2)\) complexity instead of \(O(n^4)\) the higher the proportion of zero <em>vs.</em> non-zero elements becomes.</p>
+
+<p>Remarkably, \(\mathbf{J}\mathbf{W}\mathbf{J}^T\) happens to be sparse as well (and also symmetric). This encourages the use of the <a href="https://en.wikipedia.org/wiki/Conjugate_gradient_method">Conjugate Gradient</a> method for the SLE solver. This algorithm solves \(\mathbf{L}\mathbf{\lambda}=\mathbf{R}\) iteratively in way that preserves sparsity of the operands involved all the way through. This is unlike general methods such as GS or GE where sparsity is not exploited and the large size of the matrices involved becomes a serious drag performance-wise.</p>
+
+<h3 id="ode-solvers">ODE solvers</h3>
+
+<p>I’ve tried semi-implicit Euler and <a href="https://en.wikipedia.org/wiki/Runge%E2%80%93Kutta_methods">Runge-Kutta 4</a> so far. Simulations withstand more stress with RK4, clearly.</p>
+
+<h2 id="coming-soon">Coming soon…</h2>
+
+<p>The next and last chapter in this series will be about the <em>impulse-based approach</em>, which is the method used by (among others) the widely-popular <a href="https://box2d.org/">box2d</a> library.</p>
+
+<p>I am currently in the process of supporting impulse-based dynamics (alongside force-based) in my engine myself. So I intend to document the process a little bit very soon.</p>
+
+<p>Stay tuned!</p>
+
+<p><em>P.S.:</em> Apologies for any typos, imprecisions or mistakes there may be in this series. &gt;.&lt;</p>
+
+  </div><a class="u-url" href="/2023/09/05/constrained-dynamics-iv.html" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading">Chema Guerra</h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name">Chema Guerra</li><li><a class="u-email" href="mailto:brashandplucky@gmail.com">brashandplucky@gmail.com</a></li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"><li><a href="https://github.com/chemaguerra"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#github"></use></svg> <span class="username">chemaguerra</span></a></li><li><a href="https://www.twitter.com/chemaguerra"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#twitter"></use></svg> <span class="username">chemaguerra</span></a></li></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p>This is a coding blog where I post about the various projects that I am currently working on, both at work, or as an independent researcher. Most content here revolves around computer graphics and physics simulation.</p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>

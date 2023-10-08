@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="http://localhost:4000/feed.xml" title="Chema Guerra" /><!-- favicon -->
+    <link rel="shortcut icon" type="image/png" href="/favicon.png">
+    <!-- MathJax -->
+    <script type="text/javascript" id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <!-- Open Graph cards -->
+    <meta name="og:url" content="@/2023/07/30/constrained-dynamics-i.html">
+    <meta name="og:title" content="Constrained Dynamics (I)">
+    <meta name="og:description" content="Introductory entry in my series of posts about constrained dynamics.">
+    <meta name="og:image" content="http://localhost:4000/thumbnails/2023/chemaguerra-constrained-dynamics-i.png">
+    <meta name="og:image:type" content="image/png">
+    <!-- Twitter cards -->
+    <meta name="twitter:site" content="@chemaguerra">
+    <meta name="twitter:creator" content="@">
+    <meta name="twitter:title" content="Constrained Dynamics (I)">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:description" content="Introductory entry in my series of posts about constrained dynamics.">
+    <meta name="twitter:image" content="http://localhost:4000/thumbnails/2023/chemaguerra-constrained-dynamics-i.png">
+    <meta name="twitter:image:src" content="http://localhost:4000/thumbnails/2023/chemaguerra-constrained-dynamics-i.png">
+</head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">Chema Guerra</a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/archive/">Archive</a><a class="page-link" href="/about/">About</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">Constrained Dynamics (I)</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2023-07-30T00:00:00+02:00" itemprop="datePublished">Jul 30, 2023
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <p>I am starting a mini-series of posts that go through the mathematical derivation necessary to build a <strong>minimal physics engine</strong> with support for <em>constrained dynamics</em>.</p>
+
+<p>This first post is about <em>unconstrained dynamics</em>, using a free-falling particle as an example.</p>
+
+<p>Upcoming posts will describe constrained dynamics, then build a (single-constraint) pendulum, and finally a (multi-constraint) double-pendulum.</p>
+
+<p>We will restrict ourselves to:</p>
+
+<ul>
+  <li>2D.</li>
+  <li>Only one particle mass.</li>
+  <li>Only one external force (gravity).</li>
+  <li>Only one type of constraint (distance).</li>
+</ul>
+
+<p>Rigid bodies with a surface area, collisions, contacts, frictions, etc… will be left out of the picture.</p>
+
+<h2 id="incredibly-useful-links">Incredibly useful links</h2>
+
+<p>This mini-series is nothing but a digest of knowledge that can be found in great detail here:</p>
+
+<ul>
+  <li>Erin Catto’s <a href="https://box2d.org/publications/">Box2D publications</a> area.</li>
+  <li><a href="http://www.cs.cmu.edu/~baraff/sigcourse/">Physically Based Modeling: Principles and Practice</a> by Andrew Witkin and David Baraff.</li>
+</ul>
+
+<p>In particular:</p>
+
+<ul>
+  <li>This <a href="https://box2d.org/files/ErinCatto_ModelingAndSolvingConstraints_GDC2009.pdf">presentation</a> by Erin Catto.</li>
+  <li>These <a href="http://www.cs.cmu.edu/~baraff/sigcourse/notesf.pdf">lecture notes</a> by Andrew Witkin.</li>
+</ul>
+
+<h2 id="unconstrained-dynamics">Unconstrained dynamics</h2>
+
+<p>By way of <a href="https://en.wikipedia.org/wiki/Newton%27s_laws_of_motion">newtonian mechanics</a>:</p>
+
+<ul>
+  <li><em>1st Law</em>: The velocity (or lack thereof) of a particle remains unchanged until a force is applied to it.</li>
+  <li><em>2nd Law</em>: When a force is applied to a particle, it experiments an acceleration of magnitude \(\frac{\|\mathbf{F}\|}{m}\) in the direction of \(\mathbf{F}\).</li>
+</ul>
+
+<p>As a consequence of the 1st Law, we can describe the state \(\mathbf{x}\) of a particle of mass \(m\) by its position and its velocity.</p>
+
+<p>As a consequence of the 2nd Law, we can’t consider acceleration to be part of the state as it only spawns for as long as an external force is applied to the particle. Force (acceleration) is actually the only agent that causes changes of state.</p>
+
+<p>These three magnitudes are 2D vectors. We will use the following notation:</p>
+
+\[\begin{flalign}
+&amp; &amp;&amp; \mathbf{p}=position &amp; \\
+&amp; &amp;&amp; \dot{\mathbf{p}}=\frac{\mathrm{d}\mathbf{p}}{\mathrm{d}t}=velocity &amp; \\
+&amp; &amp;&amp; \ddot{\mathbf{p}}=\frac{\mathrm{d}\dot{\mathbf{p}}}{\mathrm{d}t}=\frac{\mathrm{d}^2\mathbf{p}}{\mathrm{d}t^2}=acceleration &amp;
+\end{flalign}\]
+
+<h2 id="momentum">Momentum</h2>
+
+<p>Mass and velocity together lead to the definition of <a href="https://en.wikipedia.org/wiki/Momentum">linear momentum</a>:</p>
+
+\[\mathbf{\rho}=m\mathbf{\dot{p}}\]
+
+<p>Another way to read the 2nd Law is that a force acting on a particle induces a change on its momentum.</p>
+
+\[\mathbf{F}=\frac{\mathrm{d}\mathbf{\rho}}{\mathrm{d}t}=\frac{\mathrm{d}(m\mathbf{\dot{p}})}{\mathrm{d}t}=m\mathbf{\ddot{p}}\]
+
+<p>We can reason that momentum is a measure of the <a href="https://en.wikipedia.org/wiki/Impulse_(physics)">impulse</a> (force over time) that one must exert in order to stop the particle (<em>i.e.,</em> cancel out its current velocity).</p>
+
+<p>For a steady force, this is:</p>
+
+\[\begin{flalign}
+&amp; &amp;&amp; \mathbf{Imp} = \int_{t_0}^{t_1}{\mathbf{F}}\mathrm{d}{t} = \mathbf{F} \Delta{t} &amp; \\
+&amp; &amp;&amp; \mathbf{Imp} = \int_{t_0}^{t_1}{\frac{\mathrm{d}\mathbf{\rho}}{\mathrm{d}t}}\mathrm{d}{t} = \Delta{\mathbf{\rho}} &amp;
+\end{flalign}\]
+
+<h2 id="state-over-time">State over time</h2>
+
+<p>The evolution of the particle’s position is so ruled by the <em>differential equation</em>:</p>
+
+\[\mathbf{p}=\mathbf{p}_0+\int_{t_0}^{t_1}{(\dot{\mathbf{p}}_0+\int_{t_0}^{t_1}{\frac{\mathbf{F}}{m}}\mathrm{d}{t})}\mathrm{d}{t}\]
+
+<p>Which can be read as: <em>the particle position is a function of the initial state \(\mathbf{x}_0\) (at \(t=t_0\)) and the forces applied to the particle, which cause acceleration, which modifies the velocity, which modifies the position</em>.</p>
+
+<p>The classic and most intuitive way to iteratively solve the above diffential equation is the <a href="https://en.wikipedia.org/wiki/Semi-implicit_Euler_method">Semi-Implicit Euler method</a>:</p>
+
+\[\begin{flalign}
+&amp; &amp;&amp; \ddot{\mathbf{p}}_t=\frac{\mathbf{F}}{m} &amp; \\
+&amp; &amp;&amp; \dot{\mathbf{p}}_{t+\Delta{t}}=\dot{\mathbf{p}}_t+\ddot{\mathbf{p}}_t\Delta{t} &amp; \\
+&amp; &amp;&amp; \mathbf{p}_{t+\Delta{t}}=\mathbf{p}_t+\dot{\mathbf{p}}_t\Delta{t} &amp;
+\end{flalign}\]
+
+<p>Where each iteration is meant to encompass a discrete time slice of duration \(\Delta{t}\).</p>
+
+<p>These expressions can be read as:</p>
+
+<ul>
+  <li>Calc the acceleration caused by the total sum of applied forces at time \(t\).</li>
+  <li>Update the particle’s velocity with said acceleration (times \(\Delta{t}\)).</li>
+  <li>Update the particle’s position with the updated velocity (times \(\Delta{t}\)).</li>
+</ul>
+
+<p>The intricacies of numerical solvers for differential equations are outside the scope of this post. But the above method does a fine job at producing a <em>discrete approximation</em> to the <em>true</em> state over time. At least, as long as \(\Delta{t}\) is small enough. For starters \(\Delta{t}=1/60\) (60 steps per second) is a sensible choice.</p>
+
+<p>Note that the smaller the \(\Delta{t}\), the more closely that we will be approximating the exact analytic solution. More accuracy sounds ideal, but the smaller the delta, the more the steps necessary to integrate over the same total time. Also, tiny deltas may drown in the muddy waters of insufficient floating-point precision. So a value that is small, but not too small, is the right choice.</p>
+
+<h2 id="free-fall-iterative">Free-fall (iterative)</h2>
+
+<p>We’re only considering gravity in this post (\(\mathbf{F}=\mathbf{g}\)). So the only acceleration is downwards and always steady: \(\ddot{\mathbf{p}}=\frac{\mathbf{g}}{m}\). The simulation steps become:</p>
+
+\[\begin{flalign}
+&amp; &amp;&amp; \dot{\mathbf{p}}_{t+\Delta{t}} = \dot{\mathbf{p}}_t + \frac{\mathbf{g}}{m} \Delta{t} &amp; \\
+&amp; &amp;&amp; \mathbf{p}_{t+\Delta{t}} = \dot{\mathbf{p}}_t \Delta{t} &amp;
+\end{flalign}\]
+
+<p>Here’s a simple implementation for the particle state and the simulation step:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>struct particle_t
+{
+  explicit particle_t() : m( 1 ), p( 0 ), v( 0 ) {}
+
+  void step( const f64_t dt, const vec2d_c&amp; F )
+  {
+    const vec2d_c a = ( F / m );
+
+    v += ( a * dt );
+    p += ( v * dt );
+  }
+
+    f64_t m;  // Mass.
+  vec2d_c p;  // Position.
+  vec2d_c v;  // Velocity.
+};
+</code></pre></div></div>
+
+<p>Here’s a humble animation of the particle in free-fall:</p>
+
+<p><img src="/uploads/2023/chemaguerra-particle-free-fall.gif" alt="Projectile motion" /></p>
+
+<p>If we give an initial velocity to the particle (\(t=0\)), we end up with projectile motion:</p>
+
+<p><img src="/uploads/2023/chemaguerra-particle-projectile-motion.gif" alt="Projectile motion" /></p>
+
+<h2 id="free-fall-analytic">Free-fall (analytic)</h2>
+
+<p><a href="https://en.wikipedia.org/wiki/Differential_equation">Differential equations</a> are outside the scope of this post. But let’s say at least that an analytic solution to this example, where there’s only one steady external force, is possible and easy.</p>
+
+<p>The analytic solution gives us a function that explicitly describes the position of the particle at <em>any given time</em>. This sounds <em>better</em> than an iterative simulation, although analytic solutions are untractable in non-trivial systems.</p>
+
+<p>The vertical force that gravity exerts on a particle is proportional to its mass, which in turn makes gravity accelerate any particle the same regardless of its mass:</p>
+
+\[\mathbf{g}=\begin{bmatrix}0\\ {m}g_y\end{bmatrix}\]
+
+<p>Plugging \(\mathbf{g}\) into the differential equation above:</p>
+
+\[\begin{flalign}
+&amp; &amp;&amp; x=x_0+\int_{t_0}^{t_1}{(\dot{x}_0+\int_{t_0}^{t_1}{\frac{0    }{m}}\mathrm{d}{t})}\mathrm{d}{t} &amp; \\
+&amp; &amp;&amp; y=y_0+\int_{t_0}^{t_1}{(\dot{y}_0+\int_{t_0}^{t_1}{\frac{m g_y}{m}}\mathrm{d}{t})}\mathrm{d}{t} &amp;
+\end{flalign}\]
+
+<p>Which analytic solution is the very familiar <a href="https://en.wikipedia.org/wiki/Projectile_motion">projectile motion</a> formula:</p>
+
+\[\begin{flalign}
+&amp; &amp;&amp; x=x_0+\dot{x}_0t &amp; \\
+&amp; &amp;&amp; y=y_0+\dot{y}_0t+g_y{t^2} &amp;
+\end{flalign}\]
+
+<p>This type of motion is also called <em>parabolic throw</em>. As can be seen both in the above animation and by looking at the formula, the ballistic trajectory w.r.t. time is horizontally linear, and vertically parabolic.</p>
+
+<p>Things are about to get exciting. I promise!</p>
+
+  </div><a class="u-url" href="/2023/07/30/constrained-dynamics-i.html" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading">Chema Guerra</h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name">Chema Guerra</li><li><a class="u-email" href="mailto:brashandplucky@gmail.com">brashandplucky@gmail.com</a></li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"><li><a href="https://github.com/chemaguerra"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#github"></use></svg> <span class="username">chemaguerra</span></a></li><li><a href="https://www.twitter.com/chemaguerra"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#twitter"></use></svg> <span class="username">chemaguerra</span></a></li></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p>This is a coding blog where I post about the various projects that I am currently working on, both at work, or as an independent researcher. Most content here revolves around computer graphics and physics simulation.</p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>

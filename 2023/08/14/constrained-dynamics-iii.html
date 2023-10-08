@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="http://localhost:4000/feed.xml" title="Chema Guerra" /><!-- favicon -->
+    <link rel="shortcut icon" type="image/png" href="/favicon.png">
+    <!-- MathJax -->
+    <script type="text/javascript" id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <!-- Open Graph cards -->
+    <meta name="og:url" content="@/2023/08/14/constrained-dynamics-iii.html">
+    <meta name="og:title" content="Constrained Dynamics (III)">
+    <meta name="og:description" content="A new entry in my constrained dynamics series. Force-based constraints.">
+    <meta name="og:image" content="http://localhost:4000/thumbnails/2023/chemaguerra-constrained-dynamics-iii.png">
+    <meta name="og:image:type" content="image/png">
+    <!-- Twitter cards -->
+    <meta name="twitter:site" content="@chemaguerra">
+    <meta name="twitter:creator" content="@">
+    <meta name="twitter:title" content="Constrained Dynamics (III)">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:description" content="A new entry in my constrained dynamics series. Force-based constraints.">
+    <meta name="twitter:image" content="http://localhost:4000/thumbnails/2023/chemaguerra-constrained-dynamics-iii.png">
+    <meta name="twitter:image:src" content="http://localhost:4000/thumbnails/2023/chemaguerra-constrained-dynamics-iii.png">
+</head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">Chema Guerra</a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/archive/">Archive</a><a class="page-link" href="/about/">About</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">Constrained Dynamics (III)</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2023-08-14T10:00:00+02:00" itemprop="datePublished">Aug 14, 2023
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <p>This post is a continuation to the first two entries in this series:</p>
+
+<ul>
+  <li>Part II: <a href="https://brashandplucky.com/2023/08/04/constrained-dynamics-ii.html">Constrained Dynamics (II)</a> - <em>Don’t use springs to model rigid constraints</em>.</li>
+  <li>Part I: <a href="https://brashandplucky.com/2023/07/30/constrained-dynamics-i.html">Constrained Dynamics (I)</a> - <em>Unconstrained dynamics</em>.</li>
+</ul>
+
+<h2 id="constrained-dynamics-recap">Constrained dynamics (recap)</h2>
+
+<blockquote>
+  <p>In a system where masses (particles) are ruled by newtonian dynamics (forces/accelerations), <em>“constrained dynamics”</em> is the ability to enforce custom restrictions on the way the particles are permitted to move.</p>
+</blockquote>
+
+<p>For example, we might constrain a particle to follow a given path, or keep a certain distance from a fixed point in space, or make two particles stay a specified distance apart. In other words: <em>remove degrees of freedom of movement</em>.</p>
+
+<p>The goal is to enforce these constraints <em>strictly within the framework of newtonian dynamics</em>, where forces are the <em>only</em> agent that induces a change of state (via acceleration). So our job here is to directly <em>calculate the corrective forces</em> required to satisfy the constraints at all times.</p>
+
+<p>There are different ways to achieve this, but in this mini-series we will focus on these two:</p>
+
+<ul>
+  <li><strong>Force-based constraints</strong>: Which works in the acceleration realm (2nd derivative).</li>
+  <li>Impulse-based constraints: Which works in the velocity realm (1st derivative).</li>
+</ul>
+
+<p>Actually, this post describes the force-based dynamics approach.</p>
+
+<h3 id="nomenclature">Nomenclature</h3>
+
+<p>We will distinguish between:</p>
+
+<ul>
+  <li>\(\mathbf{F_a}\) - <strong>Applied forces</strong>. Such as gravity, wind, or other user-interaction forces.</li>
+  <li>\(\mathbf{F_c}\) - <strong>Constraint forces</strong>. Forces we will calculate ourselves in order to satisfy the constraints.</li>
+</ul>
+
+<p>Particles are affected by the sum of both.</p>
+
+<p>The job of the constraint forces is to cancel out those components of the applied forces that act against the constraints. This in turn makes sure that the resulting particle accelerations are consistent with the constraints.</p>
+
+<h3 id="example-distance-constraint">Example: Distance constraint</h3>
+
+<p>We will use again a distance constraint as an example, where we have one particle under the effect of gravity, which motion is restricted to the unit circle. You can picture this as an ideal pendulum where the particle hangs by a unit-length mass-less thread pinned to the origin.</p>
+
+<blockquote>
+  <p>In its simplest form, a constraint is any function \(C\) of the state \(\mathbf{x}\) of the particle.</p>
+</blockquote>
+
+<blockquote>
+  <p>An equality constraint is said to be satisfied only when \(C(\mathbf{x})=0\).</p>
+</blockquote>
+
+<p>The expression of the unit circle distance constraint can be written as:</p>
+
+\[C(\mathbf{x})=\sqrt{\mathbf{p}\cdot\mathbf{p}}-1=0\]
+
+<p>Which is derived from the implicit equation of the circle (\(r=1\)):</p>
+
+\[\mathbf{p}\cdot\mathbf{p}=x^2+y^2=r^2=1^2\]
+
+<h4 id="geometric-intuition">Geometric intuition</h4>
+
+<p>Our \(C(\mathbf{x})\) happens to be a <em>Signed Distance Function</em> which radiates away from the origin, perpendicular to the unit circle (in black):</p>
+
+<p><img src="/uploads/2023/chemaguerra-distance-constraint-hypersurface-1.png" alt="Projectile motion" /></p>
+
+<p>If we plot \(z=C(x,y)=\sqrt{x^2+y^2}-1\) in <a href="https://wolframalpha.com/">Wolfram Alpha</a> we get this surface:</p>
+
+<p><img src="/uploads/2023/chemaguerra-distance-constraint-hypersurface-2.png" alt="Projectile motion" /></p>
+
+<p>This is called the <em>constraint hypersurface</em>, and can be understood as a <em>gradient field</em>. Any constraint you may specify has its own characteristic hypersurface.</p>
+
+<p>In our case, the hypersurface is a cone and the subset of legal positions for the particle (\(C=0\)) is highlighted as a black ring.</p>
+
+<p>We would expect that if \(\mathbf{p}\) is on the black ring, then the only legal velocities \(\mathbf{\dot{p}}\) would be <em>tangential</em>, causing <em>no increase/decrease</em> along the gradient \(C\) whatsoever.</p>
+
+<p>Likewise, whenever the particle attempts to abandon the black ring, the corrective constraint force \(\mathbf{F_c}\) would act on the particle in a direction <em>perpendicular</em> to the ring, causing <em>maximum corrective increase/decrease</em> along the gradient \(C\).</p>
+
+<p><em>Trick:</em> We can find an equivalent expression for \(C\) by using squared distances, or multiplying by a constant. Why do this? Well, we may want to get rid of the square root so the derivatives we will be calculating next will be greatly simplified:</p>
+
+\[C(\mathbf{x})=\frac{1}{2}(\mathbf{p}\cdot\mathbf{p}-1)=0\]
+
+<p>In doing so the constraint hypersurface becomes a paraboloid instead of a cone. But everything discussed so far remains the same.</p>
+
+<h4 id="deriving-c-wrt-time">Deriving \(C\) w.r.t. time</h4>
+
+<p>If the <strong>position constraint</strong> \(C\) is 0 then the particle is on the unit circle, at a <em>legal</em> position. Over time, the only permitted walk through the constraint hypersurface is such that \(C = 0\) is never violated:</p>
+
+\[\begin{flalign}
+C = 0 \\
+\dot{C} = 0 \\
+\ddot{C} = 0
+\end{flalign}\]
+
+<p>Reminder: The derivative of the dot product of two vectors is given by:</p>
+
+\[\frac{\mathrm{d}(\mathbf{u}(t)\cdot\mathbf{v}(t))}{\mathrm{d}t}=\mathbf{u}(t)\cdot\frac{\mathrm{d}\mathbf{v}(t)}{\mathrm{d}t}+\frac{\mathrm{d}\mathbf{u}(t)}{\mathrm{d}t}\cdot\mathbf{v}(t)\]
+
+<p>So the <strong>velocity constraint</strong> is:</p>
+
+\[\dot{C}=\frac{\mathrm{d}{\frac{1}{2}(\mathbf{p}\cdot\mathbf{p}-1)}}{\mathrm{d}t}=\frac{1}{2}(\mathbf{p}\cdot\mathbf{\dot{p}}+\mathbf{\dot{p}}\cdot\mathbf{p})=\mathbf{p}\cdot\mathbf{\dot{p}}=0\]
+
+<p>This coincides with the above geometrical intuition: legal velocities must be perpendicular to legal position vectors. <em>i.e.,</em> tangential to the unit circle.</p>
+
+<p>The <strong>acceleration constraint</strong> is:</p>
+
+\[\ddot{C}=\frac{\mathrm{d}{(\mathbf{p}\cdot\mathbf{\dot{p}})}}{\mathrm{d}t}=\mathbf{p}\cdot\mathbf{\ddot{p}}+\mathbf{\dot{p}}\cdot\mathbf{\dot{p}}=0\]
+
+<h4 id="solving-for-mathbff_c">Solving for \(\mathbf{F_c}\)</h4>
+
+<p>By Newton’s 2nd Law:</p>
+
+\[\mathbf{F}=\mathbf{F_a}+\mathbf{F_c}=m\ddot{\mathbf{p}}\]
+
+<p>Which we can combine with \(\ddot{C}\):</p>
+
+\[\ddot{C}=\mathbf{p}\cdot\frac{\mathbf{F_a}+\mathbf{F_c}}{m}+\mathbf{\dot{p}}\cdot\mathbf{\dot{p}}=0\]
+
+<p>Only the constraint force is unknown, so let’s try and isolate \(\mathbf{F_c}\):</p>
+
+\[\mathbf{p}\cdot\mathbf{F_c}=-(\mathbf{p}\cdot\mathbf{F_a}+m\mathbf{\dot{p}}\cdot\mathbf{\dot{p}})\]
+
+<p>Note that because \(\mathbf{F_c}\) is a 2D vector, this is really one equation with two unknowns: \(\mathbf{F_c}=(\mathbf{F_c}_x,\mathbf{F_c}_y)\).</p>
+
+<h4 id="principle-of-virtual-work">Principle of virtual work</h4>
+
+<p>We expect constraint forces to never add or remove energy from the system.</p>
+
+<blockquote>
+  <p>constraint forces do no work.</p>
+</blockquote>
+
+<p>Let’s take the (kinetic) energy of the particle:</p>
+
+\[E_k=\frac{m}{2}\mathbf{\dot{p}}\cdot\mathbf{\dot{p}}\]
+
+<p>And its derivative w.r.t. time:</p>
+
+\[\dot{E_k}=\frac{m}{2}(\mathbf{\dot{p}}\cdot\mathbf{\ddot{p}}+\mathbf{\ddot{p}}\cdot\mathbf{\dot{p}})=m\mathbf{\dot{p}}\cdot\mathbf{\ddot{p}}=\mathbf{F_a}\cdot\mathbf{\dot{p}}+\mathbf{F_c}\cdot\mathbf{\dot{p}}\]
+
+<p>We end up with the <em>work</em> done by \(\mathbf{F_a}\) and \(\mathbf{F_c}\), and we expect the \(\mathbf{F_c}\) part to be 0:</p>
+
+\[\mathbf{F_c}\cdot\mathbf{\dot{p}}=0\]
+
+<p>Which geometrically means that legal constraint forces must be perpendicular to legal velocities, which are tangential. Which in turn means that \(\mathbf{F_c}\) must be aligned with the position vector \(\mathbf{p}\) as illustrated above.</p>
+
+<p>This alignment can be expressed as \(\mathbf{F_c}=\lambda\mathbf{p}\). So now instead of two unknowns we have just one: \(\lambda\).</p>
+
+<h4 id="solving-for-lambda">Solving for \(\lambda\)</h4>
+
+<p>Plugging back into \(\ddot{C}\) we obtain this expression where every value to the right is known:</p>
+
+\[\lambda=-\frac{\mathbf{p}\cdot\mathbf{F_a}+m\mathbf{\dot{p}}\cdot\mathbf{\dot{p}}}{\mathbf{p}\cdot\mathbf{p}}\]
+
+<p>Finally (!) the total acceleration experienced by the particle is:</p>
+
+\[\mathbf{\ddot{p}}=\frac{\mathbf{F_a}+\lambda\mathbf{p}}{m}\]
+
+<h3 id="source-code">Source code</h3>
+
+<p>Whoa! That was an awful lot of mathematical blah-blah…</p>
+
+<p>The source code implementation is a bit less intimidating, though:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>struct particle_t
+{
+  explicit particle_t() : m( 1 ), p( 1, 0 ), v( 0 ) {}
+
+  void step( const f64_t dt, const vec2d_c&amp; Fa )
+  {
+    const   f64_t pp =  ( p * p );
+    const   f64_t vv =  ( v * v );
+
+    const   f64_t lambda = -( ( ( p * Fa ) + ( m * vv ) ) / pp );
+
+    const vec2d_c Fc = ( p * lambda );
+
+    const vec2d_c a  = ( ( Fa + Fc ) / m );
+
+    v += ( a * dt );
+    p += ( v * dt );
+  }
+
+    f64_t m;  // Mass.
+  vec2d_c p;  // Position.
+  vec2d_c v;  // Velocity.
+};
+</code></pre></div></div>
+
+<p>This is the code in action, assuming that the particle starts at rest at a legal position in the circle.</p>
+
+<p><img src="/uploads/2023/chemaguerra-force-based-drift-1.gif" alt="Force-based (high drift)" /></p>
+
+<p>Ouch! The distance sadly stretches away… :( What we’re witnessing here is numerical drift when iteratively solving the position ODE with the Semi-implicit Euler method. The simulation is using <code class="language-plaintext highlighter-rouge">dt=1/60</code>. Time resolution greatly affects the quality of the numerical solution. So let’s try with <code class="language-plaintext highlighter-rouge">dt=1/1500</code> which is 25 times smaller:</p>
+
+<p><img src="/uploads/2023/chemaguerra-force-based-drift-2.gif" alt="Force-based (low drift)" /></p>
+
+<p>The drift is certainly reduced, but not quite gone.</p>
+
+<p>Using tiny <code class="language-plaintext highlighter-rouge">dt</code> values is terrible for performance, because then each visual frame has the burden to run many simulation steps instead of just one or only a few. And simulation steps in non-trivial setups get very performance-heavy very quickly.</p>
+
+<p>Using a numerical solver that is less prone to drift may certainly help. But won’t provide a definitive answer to this problem anyway.</p>
+
+<p>So let’s resort to our old friends: <em>springs</em>.</p>
+
+<h3 id="countering-drift">Countering drift</h3>
+
+<p>The problem with the simulations above is not just drift <em>per se</em>. But the fact that <em>nothing</em> is bringing the particle back to a legal position once it drifts away to a non-legal position. So as numerical errors make the corrective forces insufficient, the situation is never rectified.</p>
+
+<p>A robust solution to drift is to patch up the formulation above so instead of solving for \(\ddot{C}=0\) we solve for \(\ddot{C}=-(k_s{C}+k_d\dot{C})\).</p>
+
+<p>This expression <a href="https://brashandplucky.com/2023/08/04/constrained-dynamics-ii.html">looks familiar</a> since \(k_s\) and \(k_d\) are damped spring (<em>stiffness</em> and <em>damping</em>) constants.</p>
+
+<p>The intention here is to bring drift (\(C\neq{0}\)) back to \(C=0\) in a spring-y fashion. Choosing \(k_s\) and \(k_d\) may require some trial-and-error, but good values are not hard to find because drift is easily absorbed:</p>
+
+\[\lambda=-\frac{\mathbf{p}\cdot\mathbf{F_a}+m\mathbf{\dot{p}}\cdot\mathbf{\dot{p}}+k_s{C}+k_d\dot{C}}{\mathbf{p}\cdot\mathbf{p}}\]
+
+<p>Here’s the new simulation with <code class="language-plaintext highlighter-rouge">dt=1/600</code>. Now the distance fluctuates but stays in the viccinity of 1:</p>
+
+<p><img src="/uploads/2023/chemaguerra-force-based-drift-4.gif" alt="Force-based (low drift)" /></p>
+
+<p>And here’s the new simulation code:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>struct particle_t
+{
+  explicit particle_t() : m( 1 ), p( 1, 0 ), v( 0 ) {}
+
+  void step( const f64_t dt, const vec2d_c&amp; Fa )
+  {
+    const   f64_t ks     = 1e+2;
+    const   f64_t kd     = 1e-2;
+
+    const   f64_t pp     =  ( p * p );
+    const   f64_t vv     =  ( v * v );
+    const   f64_t C_dot  =  ( p * v );
+
+    const   f64_t C      =  ( ( pp - 1 ) / 2 );
+
+    const   f64_t k      =  ( ( ks * C ) + ( kd * C_dot ) );
+
+    const   f64_t lambda = -( ( ( p * Fa ) + ( m * vv ) + k ) ) / pp );
+
+    const vec2d_c Fc     =  ( p * lambda );
+
+    const vec2d_c a      =  ( ( Fa + Fc ) / m );
+
+    v += ( a * dt );
+    p += ( v * dt );
+  }
+
+    f64_t m;
+  vec2d_c p;  // Position.
+  vec2d_c v;  // Velocity.
+};
+</code></pre></div></div>
+
+<h2 id="generalization">Generalization</h2>
+
+<p>In the next chapter we will discuss:</p>
+
+<ul>
+  <li>A general <strong>formulation in vector/matrix form</strong>.</li>
+  <li>How to handle systems with <strong>multiple particles/constraints</strong>.</li>
+</ul>
+
+<p>Stay tuned!</p>
+
+  </div><a class="u-url" href="/2023/08/14/constrained-dynamics-iii.html" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading">Chema Guerra</h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name">Chema Guerra</li><li><a class="u-email" href="mailto:brashandplucky@gmail.com">brashandplucky@gmail.com</a></li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"><li><a href="https://github.com/chemaguerra"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#github"></use></svg> <span class="username">chemaguerra</span></a></li><li><a href="https://www.twitter.com/chemaguerra"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#twitter"></use></svg> <span class="username">chemaguerra</span></a></li></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p>This is a coding blog where I post about the various projects that I am currently working on, both at work, or as an independent researcher. Most content here revolves around computer graphics and physics simulation.</p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>

@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="http://localhost:4000/feed.xml" title="Chema Guerra" /><!-- favicon -->
+    <link rel="shortcut icon" type="image/png" href="/favicon.png">
+    <!-- MathJax -->
+    <script type="text/javascript" id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <!-- Open Graph cards -->
+    <meta name="og:url" content="@/2022/09/04/playing-with-the-fourier-transform-ii.html">
+    <meta name="og:title" content="Playing with the Fourier Transform (II)">
+    <meta name="og:description" content="What happens to the Fourier Transform when you apply affine transforms to the input signal?">
+    <meta name="og:image" content="http://localhost:4000/thumbnails/2022/chemaguerra-playing-with-the-fourier-transform-ii.png">
+    <meta name="og:image:type" content="image/png">
+    <!-- Twitter cards -->
+    <meta name="twitter:site" content="@chemaguerra">
+    <meta name="twitter:creator" content="@">
+    <meta name="twitter:title" content="Playing with the Fourier Transform (II)">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:description" content="What happens to the Fourier Transform when you apply affine transforms to the input signal?">
+    <meta name="twitter:image" content="http://localhost:4000/thumbnails/2022/chemaguerra-playing-with-the-fourier-transform-ii.png">
+    <meta name="twitter:image:src" content="http://localhost:4000/thumbnails/2022/chemaguerra-playing-with-the-fourier-transform-ii.png">
+</head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">Chema Guerra</a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/archive/">Archive</a><a class="page-link" href="/about/">About</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">Playing with the Fourier Transform (II)</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2022-09-04T00:00:00+02:00" itemprop="datePublished">Sep 4, 2022
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <p>This post is an extension of a post I wrote many years ago called <a href="/2016/07/28/playing-with-the-fourier-transform-i.html">Playing with the Fourier Transform (I)</a>.</p>
+
+<p>The <a href="https://en.wikipedia.org/wiki/Fourier_transform">Fourier Transform</a> has become an often-used tool in my toolbox because:</p>
+
+<ul>
+  <li>it provides a means to optimize (large) convolutions via the <a href="https://en.wikipedia.org/wiki/Convolution_theorem">Convolution Theorem</a>. <em>i.e.,</em> image filtering, certain tonemapping operations, …</li>
+  <li>the FT corresponds to the <a href="https://en.wikipedia.org/wiki/Fraunhofer_diffraction">Fraunhofer/far-field diffraction</a> of light through an aperture, which is a key component in <a href="http://www.arionfx.com/">ArionFX</a> and <a href="https://maverickrender.com/">Maverick Render</a>.</li>
+</ul>
+
+<p>I will not be unveiling anything new here, but wanted to post visualizations I just made of some properties of the Fourier Transform that everyone in the field of Computer Graphics (or anyone dealing with the FT) should be familiar with. The videos below come straight out of Maverick’s Unit Testing system.</p>
+
+<p>In the videos:</p>
+
+<ul>
+  <li>The <em>input signal</em> (top-left) is in white.</li>
+  <li>The <em>real part</em> of the FT (bottom-left) is in red (-) and green (+).</li>
+  <li>The <em>imaginary part</em> of the FT (bottom-right) is in red (-) and green (+).</li>
+  <li>The <em>magnitude</em> of the FT (top-right) is in faux color.</li>
+</ul>
+
+<h2 id="changing-the-amplitude-of-the-input-signal">Changing the amplitude of the input signal</h2>
+
+<p>When the amplitude of the input signal is multiplied up or down, the magnitude of the FT is equally multiplied up or down.</p>
+
+<video controls="controls" playsinline="playsinline" loop="" src="/uploads/2022/chemaguerra-playing-with-the-fourier-transform-ii-1.mp4" width="600" height="600" poster="/uploads/2022/chemaguerra-playing-with-the-fourier-transform-ii-poster-1.png" preload="none"></video>
+
+<h2 id="shifting-the-input-signal">Shifting the input signal</h2>
+
+<p>Shifting the input signal causes changes in phase in the <code class="language-plaintext highlighter-rouge">(re,im)</code> components of the FT, but the FT magnitude stays invariant.</p>
+
+<p>Note that the small fluctuations in the FT magnitude below are due to anti-aliasing in the input signal and numerical drift in the computations. If sampling sizes and numerical precision were increased, the top-right quadrant would look completely frozen.</p>
+
+<video controls="controls" playsinline="playsinline" loop="" src="/uploads/2022/chemaguerra-playing-with-the-fourier-transform-ii-2.mp4" width="600" height="600" poster="/uploads/2022/chemaguerra-playing-with-the-fourier-transform-ii-poster-2.png" alt="" preload="none"></video>
+
+<h2 id="sampling-in-largersmaller-buffers">Sampling in larger/smaller buffers</h2>
+
+<p>Sampling the input signal and then computing the FT in larger buffers (<em>e.g.,</em> twice as large as in the video below) produces exactly the same FT, occupying the central part of the buffer, leaving padding space towards the edges before wrapping-around.</p>
+
+<video controls="controls" playsinline="playsinline" loop="" src="/uploads/2022/chemaguerra-playing-with-the-fourier-transform-ii-3.mp4" width="600" height="600" poster="/uploads/2022/chemaguerra-playing-with-the-fourier-transform-ii-poster-3.png" alt="" preload="none"></video>
+
+<p>The opposite happens if the buffers become smaller. The FT stays the same size (which will make it wrap-around earlier on all 4 edges).</p>
+
+<video controls="controls" playsinline="playsinline" loop="" src="/uploads/2022/chemaguerra-playing-with-the-fourier-transform-ii-4.mp4" width="600" height="600" poster="/uploads/2022/chemaguerra-playing-with-the-fourier-transform-ii-poster-4.png" alt="" preload="none"></video>
+
+<p>Note that these videos may appear to be the same size in your browser, because this blog’s layout will dock media content to the width of the page.</p>
+
+<h2 id="rotating-the-input-signal">Rotating the input signal</h2>
+
+<p>When the input signal is rotated, the FT rotates in sync.</p>
+
+<video controls="controls" playsinline="playsinline" loop="" src="/uploads/2022/chemaguerra-playing-with-the-fourier-transform-ii-5.mp4" width="600" height="600" poster="/uploads/2022/chemaguerra-playing-with-the-fourier-transform-ii-poster-5.png" alt="" preload="none"></video>
+
+<h2 id="scaling-the-input-signal">Scaling the input signal</h2>
+
+<p>When the input signal is scaled up or down, the overall shape of the FT gets scaled inversely. The overall power also changes, proportionally to the scale.</p>
+
+<video controls="controls" playsinline="playsinline" loop="" src="/uploads/2022/chemaguerra-playing-with-the-fourier-transform-ii-6.mp4" width="600" height="600" poster="/uploads/2022/chemaguerra-playing-with-the-fourier-transform-ii-poster-6.png" alt="" preload="none"></video>
+
+<h2 id="ft-of-a-polygonal-shape">FT of a polygonal shape</h2>
+
+<p>The Fourier Transform of an <code class="language-plaintext highlighter-rouge">n</code>-sided polygon casts <code class="language-plaintext highlighter-rouge">n</code> streaks. Because the FT is periodic, when <code class="language-plaintext highlighter-rouge">n</code> is even, only <code class="language-plaintext highlighter-rouge">n/2</code> streaks are apparent due to overlapping pairs. When <code class="language-plaintext highlighter-rouge">n</code> goes to infinity, the FT becomes the FT of a circle, which is called the <a href="https://en.wikipedia.org/wiki/Airy_disk">Airy disk</a>.</p>
+
+<p>The periodicity of the FT is visible when the streaks wrap around the edges of the image.</p>
+
+<video controls="controls" playsinline="playsinline" loop="" src="/uploads/2022/chemaguerra-playing-with-the-fourier-transform-ii-7.mp4" width="600" height="600" poster="/uploads/2022/chemaguerra-playing-with-the-fourier-transform-ii-poster-7.png" alt="" preload="none"></video>
+
+<h2 id="ft-of-a-gaussian">FT of a gaussian</h2>
+
+<p>While not strikingly obvious in the video below, the Fourier Transform of a 2D <a href="https://en.wikipedia.org/wiki/Gaussian_function">gaussian function</a> is another 2D gaussian. Note how the transform has no imaginary component in this case.</p>
+
+<video controls="controls" playsinline="playsinline" loop="" src="/uploads/2022/chemaguerra-playing-with-the-fourier-transform-ii-8.mp4" width="600" height="600" poster="/uploads/2022/chemaguerra-playing-with-the-fourier-transform-ii-poster-8.png" alt="" preload="none"></video>
+
+<p><strong>[EDIT]</strong> All throughout this post I loosely used the term FT to actually mean <a href="https://en.wikipedia.org/wiki/Discrete_Fourier_transform">DFT</a>.</p>
+
+<h2 id="youtube-versions-of-the-above-videos">Youtube versions of the above videos</h2>
+
+<div class="embed-container">
+  <iframe width="640" height="390" src="https://www.youtube.com/embed/Y9UuC7mWz7I" frameborder="0" allowfullscreen=""></iframe>
+</div>
+<style>
+.embed-container {
+  position: relative;
+  padding-bottom: 56.25%;
+  height: 0;
+  overflow: hidden;
+  max-width: 100%;
+}
+.embed-container iframe,
+.embed-container object,
+.embed-container embed {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+</style>
+
+<p><br /></p>
+<div class="embed-container">
+  <iframe width="640" height="390" src="https://www.youtube.com/embed/gSb7PpG0Gdw" frameborder="0" allowfullscreen=""></iframe>
+</div>
+<style>
+.embed-container {
+  position: relative;
+  padding-bottom: 56.25%;
+  height: 0;
+  overflow: hidden;
+  max-width: 100%;
+}
+.embed-container iframe,
+.embed-container object,
+.embed-container embed {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+</style>
+
+<p><br /></p>
+<div class="embed-container">
+  <iframe width="640" height="390" src="https://www.youtube.com/embed/hdgf2P63_L8" frameborder="0" allowfullscreen=""></iframe>
+</div>
+<style>
+.embed-container {
+  position: relative;
+  padding-bottom: 56.25%;
+  height: 0;
+  overflow: hidden;
+  max-width: 100%;
+}
+.embed-container iframe,
+.embed-container object,
+.embed-container embed {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+</style>
+
+<p><br /></p>
+<div class="embed-container">
+  <iframe width="640" height="390" src="https://www.youtube.com/embed/JHFVCnE20pU" frameborder="0" allowfullscreen=""></iframe>
+</div>
+<style>
+.embed-container {
+  position: relative;
+  padding-bottom: 56.25%;
+  height: 0;
+  overflow: hidden;
+  max-width: 100%;
+}
+.embed-container iframe,
+.embed-container object,
+.embed-container embed {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+</style>
+
+<p><br /></p>
+<div class="embed-container">
+  <iframe width="640" height="390" src="https://www.youtube.com/embed/aAjRX1NJvOY" frameborder="0" allowfullscreen=""></iframe>
+</div>
+<style>
+.embed-container {
+  position: relative;
+  padding-bottom: 56.25%;
+  height: 0;
+  overflow: hidden;
+  max-width: 100%;
+}
+.embed-container iframe,
+.embed-container object,
+.embed-container embed {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+</style>
+
+
+  </div><a class="u-url" href="/2022/09/04/playing-with-the-fourier-transform-ii.html" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading">Chema Guerra</h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name">Chema Guerra</li><li><a class="u-email" href="mailto:brashandplucky@gmail.com">brashandplucky@gmail.com</a></li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"><li><a href="https://github.com/chemaguerra"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#github"></use></svg> <span class="username">chemaguerra</span></a></li><li><a href="https://www.twitter.com/chemaguerra"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#twitter"></use></svg> <span class="username">chemaguerra</span></a></li></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p>This is a coding blog where I post about the various projects that I am currently working on, both at work, or as an independent researcher. Most content here revolves around computer graphics and physics simulation.</p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>

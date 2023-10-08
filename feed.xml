@@ -1,0 +1,1303 @@
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="4.3.2">Jekyll</generator><link href="http://localhost:4000/feed.xml" rel="self" type="application/atom+xml" /><link href="http://localhost:4000/" rel="alternate" type="text/html" /><updated>2023-10-08T02:28:15+02:00</updated><id>http://localhost:4000/feed.xml</id><title type="html">Chema Guerra</title><subtitle>This is a coding blog where I post about the various projects that I am currently working on, both at work, or as an independent researcher. Most content here revolves around computer graphics and physics simulation.</subtitle><entry><title type="html">Constrained Dynamics (IV)</title><link href="http://localhost:4000/2023/09/05/constrained-dynamics-iv.html" rel="alternate" type="text/html" title="Constrained Dynamics (IV)" /><published>2023-09-05T10:00:00+02:00</published><updated>2023-09-05T10:00:00+02:00</updated><id>http://localhost:4000/2023/09/05/constrained-dynamics-iv</id><content type="html" xml:base="http://localhost:4000/2023/09/05/constrained-dynamics-iv.html"><![CDATA[<p>This post is a direct continuation to the latest entry…</p>
+
+<ul>
+  <li>Part III: <a href="https://brashandplucky.com/2023/08/14/constrained-dynamics-iii.html">Constrained Dynamics (III)</a> - <em>Force-based constraints</em>.</li>
+</ul>
+
+<p>…and the rest of the series:</p>
+
+<ul>
+  <li>Part II: <a href="https://brashandplucky.com/2023/08/04/constrained-dynamics-ii.html">Constrained Dynamics (II)</a> - <em>Don’t use springs to model rigid constraints</em>.</li>
+  <li>Part I: <a href="https://brashandplucky.com/2023/07/30/constrained-dynamics-i.html">Constrained Dynamics (I)</a> - <em>Unconstrained dynamics</em>.</li>
+</ul>
+
+<p>Let’s continue where we left off and find a more compact <strong>vector/matrix form</strong> for force-based constraints.</p>
+
+<p><img src="/uploads/2023/chemaguerra-double-pendulum.gif" alt="Double pendulum" /></p>
+
+<h2 id="generic-constraints-vector-form">Generic constraints (vector form)</h2>
+
+<p>Everything we discussed in the previous post for the (unit circle) distance constraint can be extrapolated to generic motion, as long as we can define the trajectory as a (gradient) function \(C\) of the state of the particle:</p>
+
+<p><img src="/uploads/2023/chemaguerra-trajectory-constraint.png" alt="Trajectory constraint" /></p>
+
+<p>\(C\) is called <strong>position constraint</strong> and is satisfied only when \(C(\mathbf{x}=\mathbf{p})=0\).</p>
+
+<p><em>What comes next is derived from the <a href="https://brashandplucky.com/2023/08/14/constrained-dynamics-iii.html">previous post</a></em>.</p>
+
+<p>In vector form:</p>
+
+\[\mathbf{p}=\begin{bmatrix}x\\y\end{bmatrix},\mathbf{\dot{p}}=\begin{bmatrix}\dot{x}\\\dot{y}\end{bmatrix}\]
+
+<p>Via the chain rule the expression for the <strong>velocity constraint</strong> \(\dot{C}\) is:</p>
+
+\[\dot{C}=\frac{\mathrm{d}\mathbf{C}}{\mathrm{d}t}=\frac{\partial{\mathbf{C}}}{\partial{\mathbf{p}}}\frac{\mathrm{d}\mathbf{p}}{\mathrm{d}t}=\mathbf{J}\mathbf{\dot{p}}+b=0\]
+
+<p>Where \(\mathbf{J}=\frac{\partial{\mathbf{C}}}{\partial{\mathbf{p}}}\) (called the <a href="https://en.wikipedia.org/wiki/Jacobian_matrix_and_determinant">Jacobian</a>) is a row vector perpendicular to \(\mathbf{\dot{p}}\). The <em>bias</em> \(b\) is a residual term which may be used to model velocity-inducing constraints (<em>e.g.,</em> a motor like in the animation below).</p>
+
+<p>If \(\mathbf{J}\) is perpendicular to \(\mathbf{\dot{p}}\) then it is co-linear to the trajectory’s normal, which happens to be the direction of the corrective force:</p>
+
+\[\mathbf{F_c}=\mathbf{J}^T\lambda\]
+
+<p>\(\lambda\) is a scalar that gives orientation/magnitude to \(\mathbf{F_c}\) known as <a href="https://en.wikipedia.org/wiki/Lagrange_multiplier">Lagrange multiplier</a>.</p>
+
+<p>Via the chain rule again the expression for the <strong>acceleration constraint</strong> \(\ddot{C}\) is:</p>
+
+\[\ddot{C}=\mathbf{\dot{J}}\mathbf{\dot{p}}+\mathbf{J}\mathbf{\ddot{p}}=0\]
+
+<p>We expect constraint forces to do <em>no work</em> (<em>principle of virtual work</em>). Since power is force times velocity:</p>
+
+\[P_c=\mathbf{F_c}\cdot\mathbf{\dot{p}}=\mathbf{F_c}^T\mathbf{\dot{p}}=0\implies(\lambda\mathbf{J}^T)^T\mathbf{\dot{p}}=(\mathbf{J}\mathbf{\dot{p}})\lambda=0\]
+
+<p>Which is indeed 0 for \(\dot{C}=0,b=0\) (see above).</p>
+
+<p>Plugging in Newton’s 2nd Law (\(\mathbf{F}=m\mathbf{\ddot{p}}\)):</p>
+
+\[\ddot{C}=\mathbf{\dot{J}}\mathbf{\dot{p}}+\mathbf{J}\frac{\mathbf{F_a}+\mathbf{F_c}}{m}=\mathbf{\dot{J}}\mathbf{\dot{p}}+\frac{\mathbf{J}\mathbf{F_a}}{m}+\frac{\mathbf{J}\mathbf{J}^T}{m}\lambda=0\]
+
+<p>Let’s define \(w=m^{-1}\) to end up with this linear equation, where only \(\lambda\) is unknown:</p>
+
+\[\mathbf{J}w\mathbf{J}^T\lambda=-(\mathbf{\dot{J}}\mathbf{\dot{p}}+\mathbf{J}w\mathbf{F_a})\]
+
+<p>We won’t simplify this beauty any further to later appreciate the parallelism with its matrix form.</p>
+
+<p>Once we solve for \(\lambda\) we must apply \(\mathbf{F}=\mathbf{F_a}+\mathbf{J}^T\lambda\) to the particle to find \(\mathbf{\ddot{p}}\), then update \(\mathbf{\dot{p}}\) and \(\mathbf{p}\), and be done!</p>
+
+<p><img src="/uploads/2023/chemaguerra-velocity-motor.gif" alt="Velocity-inducing motor" /></p>
+
+<h3 id="example-distance-constraint">Example: Distance constraint</h3>
+
+<blockquote>
+  <p>The recipe to find \(\mathbf{J}\) is to derive the position constraint \(C\) expressed in vector form into \(\dot{C}\), and then rearrange the resulting expression until it resembles \(\mathbf{J}\mathbf{\dot{p}}+b\).</p>
+</blockquote>
+
+<p>We shall borrow the expression for \(C\) from the previous post:</p>
+
+\[\begin{flalign}
+&amp; &amp;&amp; C=\frac{1}{2}(\mathbf{p}\cdot\mathbf{p}-1) &amp; \\
+&amp; &amp;&amp; \dot{C}=\mathbf{p}\cdot\mathbf{\dot{p}}=\mathbf{J}\mathbf{\dot{p}}+0 &amp; \\
+&amp; &amp;&amp; \mathbf{J}=\mathbf{p}^T &amp; \\
+&amp; &amp;&amp; \mathbf{\dot{J}}=\mathbf{\dot{p}}^T &amp;
+\end{flalign}\]
+
+<p>Hooray! \(\lambda\) matches what we obtained back then:</p>
+
+\[\lambda=-\frac{m\mathbf{\dot{J}}\mathbf{\dot{p}}+\mathbf{J}\mathbf{F_a}}{\mathbf{J}\mathbf{J}^T}=-\frac{\mathbf{\dot{p}}\cdot\mathbf{F_a}+m\mathbf{\dot{p}}\cdot\mathbf{\dot{p}}}{\mathbf{p}\cdot\mathbf{p}}\]
+
+<h2 id="systems-of-constraints-matrix-form">Systems of constraints (matrix form)</h2>
+
+<p>So far we’ve dealt with just one particle and one constraint. But what happens when there are multiple particles subjected to multiple constraints? Well… things gets a bit more involved; especially if the constraints define relationships between two or more particles at once (<em>e.g.,</em> keep two particles a specified distance apart, etc…).</p>
+
+<p>Like above, the goal is to calculate one \(\lambda_i\) for each constraint and apply the corresponding constraint forces. But intuition (correctly) says that we must solve for <em>all</em> the \(\lambda_i\) <em>simultaneously</em> and <em>not</em> one by one. This makes sense, because otherwise satisfying one constraint at a time, isolated from the rest, would potentially violate all the others, and so on.</p>
+
+<p>This looks like a job for a (large) <a href="https://en.wikipedia.org/wiki/System_of_linear_equations">system of linear equations</a> solver!</p>
+
+<p>Please bear with me in the derivation:</p>
+
+<ul>
+  <li>Concat all the \((x,y)\) particle positions in a long column \(\mathbf{q}\) called <strong>state vector</strong>.</li>
+  <li>Define a diagonal matrix \(\mathbf{M}\) with all the particle masses. Define \(\mathbf{W}=\mathbf{M}^{-1}\).</li>
+  <li>Define two long column vectors \(\mathbf{Q_a}\) and \(\mathbf{Q_c}\) where all the force components (\(\mathbf{F_a}\) and \(\mathbf{F_c}\) respectively) are concatenated.</li>
+  <li>Define the <em>super-constraint</em> \(\mathbf{C}(\mathbf{q})\) as a function of the (concatenated) particle states.</li>
+  <li>By the chain rule:</li>
+</ul>
+
+\[\mathbf{\dot{C}}=\frac{\mathrm{d}\mathbf{C}}{\mathrm{d}t}=\frac{\partial{\mathbf{C}}}{\partial{\mathbf{q}}}\frac{\mathrm{d}\mathbf{q}}{\mathrm{d}t}=\mathbf{J}\mathbf{\dot{q}}\]
+
+<ul>
+  <li>By the chain rule again:</li>
+</ul>
+
+\[\mathbf{\ddot{C}}=\mathbf{\dot{J}}\mathbf{\dot{q}}+\mathbf{J}\mathbf{\ddot{q}}\]
+
+<ul>
+  <li>By Newton’s 2nd Law:</li>
+</ul>
+
+\[(\mathbf{Q_a}+\mathbf{Q_c})=\mathbf{M}\mathbf{\ddot{q}}\implies\mathbf{\ddot{q}}=\mathbf{W}(\mathbf{Q_a}+\mathbf{Q_c})\]
+
+<ul>
+  <li>By substitution:</li>
+</ul>
+
+\[\mathbf{\ddot{C}}=\mathbf{\dot{J}}\mathbf{\dot{q}}+\mathbf{J}\mathbf{W}(\mathbf{Q_a}+\mathbf{Q_c})=0\]
+
+<ul>
+  <li>By the principle of virtual work (perpendicular/co-linear like above):</li>
+</ul>
+
+\[\mathbf{Q_c}=\mathbf{J}^T\mathbf{\lambda}\]
+
+<ul>
+  <li>By substitution:</li>
+</ul>
+
+\[\mathbf{J}\mathbf{W}\mathbf{J}^T\mathbf{\lambda}=-(\mathbf{\dot{J}}\mathbf{\dot{q}}+\mathbf{J}\mathbf{W}\mathbf{Q_a})\]
+
+<p>This last expression is a (potentially large) system of linear equations where the vector \(\mathbf{\lambda}\) is the only unknown.</p>
+
+<p>Once we solve for \(\mathbf{\lambda}\) we must apply \(\mathbf{Q}=\mathbf{Q_a}+\mathbf{J}^T\mathbf{\lambda}\) to find \(\mathbf{\ddot{q}}\), then update \(\mathbf{\dot{q}}\) and \(\mathbf{q}\), and be done!</p>
+
+<p>Wonderful. Isn’t it?</p>
+
+<h3 id="summary-particles">Summary (particles)</h3>
+
+<p>For \(n\) particles and \(m\) constraints:</p>
+
+\[\mathbf{q}=\begin{bmatrix}{p_1}_x\\{p_1}_y\\{p_2}_x\\{p_2}_y\\ \vdots\\{p_n}_x\\{p_n}_y\end{bmatrix},\mathbf{\dot{q}}=\begin{bmatrix}\dot{p_1}_x\\ \dot{p_1}_y\\ \dot{p_2}_x\\ \dot{p_2}_y\\ \vdots\\ \dot{p_n}_x\\ \dot{p_n}_y\end{bmatrix},\mathbf{Q_a}=\begin{bmatrix}{\mathbf{Q_a}_1}_x\\{\mathbf{Q_a}_1}_y\\{\mathbf{Q_a}_2}_x\\{\mathbf{Q_a}_2}_y\\ \vdots\\{\mathbf{Q_a}_n}_x\\{\mathbf{Q_a}_n}_y\end{bmatrix},\mathbf{W}=\begin{bmatrix}m_1&amp; &amp; &amp; &amp; &amp; &amp;\\&amp;m_1&amp; &amp; &amp; &amp; &amp;\\&amp; &amp;m_2&amp; &amp; &amp; &amp;\\&amp; &amp; &amp;m_2&amp; &amp; &amp;\\&amp; &amp; &amp; &amp;\ddots&amp; &amp;\\&amp; &amp; &amp; &amp; &amp;m_n&amp;\\&amp; &amp; &amp; &amp; &amp; &amp;m_n\end{bmatrix}\]
+
+\[\mathbf{J}=\begin{bmatrix}
+\frac{\partial{\mathbf{C_1}_x}}{\partial{\mathbf{q_1}_x}}&amp;
+\frac{\partial{\mathbf{C_1}_x}}{\partial{\mathbf{q_1}_y}}&amp;
+\frac{\partial{\mathbf{C_1}_x}}{\partial{\mathbf{q_2}_x}}&amp;
+\frac{\partial{\mathbf{C_1}_x}}{\partial{\mathbf{q_2}_y}}&amp;\dots&amp;
+\frac{\partial{\mathbf{C_1}_x}}{\partial{\mathbf{q_n}_x}}&amp;
+\frac{\partial{\mathbf{C_1}_x}}{\partial{\mathbf{q_n}_y}}\\
+\frac{\partial{\mathbf{C_1}_y}}{\partial{\mathbf{q_1}_x}}&amp;
+\frac{\partial{\mathbf{C_1}_y}}{\partial{\mathbf{q_1}_y}}&amp;
+\frac{\partial{\mathbf{C_1}_y}}{\partial{\mathbf{q_2}_x}}&amp;
+\frac{\partial{\mathbf{C_1}_y}}{\partial{\mathbf{q_2}_y}}&amp;\dots&amp;
+\frac{\partial{\mathbf{C_1}_y}}{\partial{\mathbf{q_n}_x}}&amp;
+\frac{\partial{\mathbf{C_1}_y}}{\partial{\mathbf{q_n}_y}}\\
+\frac{\partial{\mathbf{C_2}_x}}{\partial{\mathbf{q_1}_x}}&amp;
+\frac{\partial{\mathbf{C_2}_x}}{\partial{\mathbf{q_1}_y}}&amp;
+\frac{\partial{\mathbf{C_2}_x}}{\partial{\mathbf{q_2}_x}}&amp;
+\frac{\partial{\mathbf{C_2}_x}}{\partial{\mathbf{q_2}_y}}&amp;\dots&amp;
+\frac{\partial{\mathbf{C_2}_x}}{\partial{\mathbf{q_n}_x}}&amp;
+\frac{\partial{\mathbf{C_2}_x}}{\partial{\mathbf{q_n}_y}}\\
+\frac{\partial{\mathbf{C_2}_y}}{\partial{\mathbf{q_1}_x}}&amp;
+\frac{\partial{\mathbf{C_2}_y}}{\partial{\mathbf{q_1}_y}}&amp;
+\frac{\partial{\mathbf{C_2}_y}}{\partial{\mathbf{q_2}_x}}&amp;
+\frac{\partial{\mathbf{C_2}_y}}{\partial{\mathbf{q_2}_y}}&amp;\dots&amp;
+\frac{\partial{\mathbf{C_2}_y}}{\partial{\mathbf{q_n}_x}}&amp;
+\frac{\partial{\mathbf{C_2}_y}}{\partial{\mathbf{q_n}_y}}\\
+\vdots&amp;
+\vdots&amp;
+\vdots&amp;
+\vdots&amp;\ddots&amp;
+\vdots&amp;
+\vdots\\
+\frac{\partial{\mathbf{C_m}_x}}{\partial{\mathbf{q_1}_x}}&amp;
+\frac{\partial{\mathbf{C_m}_x}}{\partial{\mathbf{q_1}_y}}&amp;
+\frac{\partial{\mathbf{C_m}_x}}{\partial{\mathbf{q_2}_x}}&amp;
+\frac{\partial{\mathbf{C_m}_x}}{\partial{\mathbf{q_2}_y}}&amp;\dots&amp;
+\frac{\partial{\mathbf{C_m}_x}}{\partial{\mathbf{q_n}_x}}&amp;
+\frac{\partial{\mathbf{C_m}_x}}{\partial{\mathbf{q_n}_y}}\\
+\frac{\partial{\mathbf{C_m}_y}}{\partial{\mathbf{q_1}_x}}&amp;
+\frac{\partial{\mathbf{C_m}_y}}{\partial{\mathbf{q_1}_y}}&amp;
+\frac{\partial{\mathbf{C_m}_y}}{\partial{\mathbf{q_2}_x}}&amp;
+\frac{\partial{\mathbf{C_m}_y}}{\partial{\mathbf{q_2}_y}}&amp;\dots&amp;
+\frac{\partial{\mathbf{C_m}_y}}{\partial{\mathbf{q_n}_x}}&amp;
+\frac{\partial{\mathbf{C_m}_y}}{\partial{\mathbf{q_n}_y}}\\
+\end{bmatrix},\mathbf{\dot{J}}=\frac{\mathrm{d}\mathbf{J}}{\mathrm{d}t}\]
+
+<p>The state and force vectors are \(2n\) elements tall. The Jacobian matrices are \(2m\) elements tall and \(2n\) elements wide.</p>
+
+<p>In this summary I am assuming that each constraint yields one (and only one) corrective force, with two \((x,y)\) components as is the case in the constraints discussed so far. More complicated contraints may contribute more than two components, making \(\mathbf{J}\) be taller.</p>
+
+<h3 id="countering-drift">Countering drift</h3>
+
+<p>We may inject a spring-y term in \(\mathbf{\ddot{C}}=0\) resulting in this monstrosity:</p>
+
+\[\mathbf{J}\mathbf{W}\mathbf{J}^T\mathbf{\lambda}=-(\mathbf{\dot{J}}\mathbf{\dot{q}}+\mathbf{J}\mathbf{W}\mathbf{Q_a}+k_s\mathbf{C}+k_d\mathbf{\dot{C}})\]
+
+<p>As explained in the previous post, these extra terms will make sure that particles “spring back” to legal positions as soon as they attempt to drift away.</p>
+
+<h3 id="extension-to-rigid-bodies">Extension to rigid bodies</h3>
+
+<p>So far we’ve used point-mass particles. But the extension to 2D <em>rigid bodies</em> is fairly easy:</p>
+
+<ul>
+  <li>Rotation aside, a rigid body behaves exactly as a point-mass positioned at its <a href="https://en.wikipedia.org/wiki/Center_of_mass">center-of-mass</a>.</li>
+  <li>Position \(\mathbf{p}\) <em>vs.</em> angle \(\theta\), linear \(\mathbf{\dot{p}}\) <em>vs.</em> angular \(\dot{\theta}\) velocity, linear \(\mathbf{\ddot{p}}\) <em>vs.</em> angular \(\ddot{\theta}\) acceleration, and mass \(m\) <em>vs.</em> <a href="https://en.wikipedia.org/wiki/Moment_of_inertia">moment-of-inertia</a> \(I\) all exhibit analogous behavior. In particular, Newton’s 2nd Law applied to angular motion states that:</li>
+</ul>
+
+\[\tau=I\ddot{\theta}\]
+
+<p>A body’s moment of inertia \(I\) defines how hard it is for a rotational force \(\tau\) (called torque) to induce a change in its angular acceleration \(\ddot{\theta}\). Just like mass \(m\) defines how hard it is for a linear force \(\mathbf{F}\) to induce a change in the body’s linear acceleration:</p>
+
+\[\mathbf{F}=m\mathbf{\ddot{p}}\]
+
+<p>In our code we must extend the <em>particle state</em> <code class="language-plaintext highlighter-rouge">struct</code> \([\mathbf{p}, \mathbf{\dot{p}}]\) to the <em>body state</em> <code class="language-plaintext highlighter-rouge">struct</code> \([\mathbf{p}, \theta, \mathbf{\dot{p}}, \dot{\theta}]\).</p>
+
+<p>The \(I\) of a rigid body is a characteristic of its shape and mass distribution. Simple shapes such as disks and rectangles have <a href="https://en.wikipedia.org/wiki/List_of_moments_of_inertia">well-known expressions</a> as long as their density is homogeneous.</p>
+
+<h3 id="summary-rigid-bodies">Summary (rigid bodies)</h3>
+
+<p>This parallelism between angular/linear makes it easy to extend our matrix form to support torque/rotation alongside linear force/position.</p>
+
+\[\mathbf{q}=\begin{bmatrix}{p_1}_x\\{p_1}_y\\ \theta_1\\{p_2}_x\\{p_2}_y\\ \theta_2\\ \vdots\\{p_n}_x\\{p_n}_y\\ \theta_n\end{bmatrix},\mathbf{\dot{q}}=\begin{bmatrix}\dot{p_1}_x\\ \dot{p_1}_y\\ \dot{\theta_1}\\ \dot{p_2}_x\\ \dot{p_2}_y\\ \dot{\theta_2}\\ \vdots\\ \dot{p_n}_x\\ \dot{p_n}_y\\ \dot{\theta_n}\end{bmatrix},\mathbf{Q_a}=\begin{bmatrix}{\mathbf{Q_a}_1}_x\\{\mathbf{Q_a}_1}_y\\ \tau_1\\{\mathbf{Q_a}_2}_x\\{\mathbf{Q_a}_2}_y\\ \tau_2\\ \vdots\\{\mathbf{Q_a}_n}_x\\{\mathbf{Q_a}_n}_y\\ \tau_n\end{bmatrix},\mathbf{W}=\begin{bmatrix}m_1&amp; &amp; &amp; &amp; &amp; &amp; &amp; &amp; &amp;\\&amp;m_1&amp; &amp; &amp; &amp; &amp; &amp; &amp; &amp;\\&amp; &amp;I_1&amp; &amp; &amp; &amp; &amp; &amp; &amp;\\&amp; &amp; &amp;m_2&amp; &amp; &amp; &amp; &amp; &amp;\\&amp; &amp; &amp; &amp;m_2&amp; &amp; &amp; &amp; &amp;\\&amp; &amp; &amp; &amp; &amp;I_2&amp; &amp; &amp; &amp;\\&amp; &amp; &amp; &amp; &amp; &amp;\ddots&amp; &amp; &amp;\\&amp; &amp; &amp; &amp; &amp; &amp; &amp;m_n&amp; &amp;\\&amp; &amp; &amp; &amp; &amp; &amp; &amp; &amp;m_n&amp;\\&amp; &amp; &amp; &amp; &amp; &amp; &amp; &amp; &amp;I_n\end{bmatrix}^{-1}\]
+
+<p>And likewise for \(\mathbf{J}\) and \(\mathbf{\dot{J}}\), which also must involve \(\theta_i\) and \(\tau_i\).</p>
+
+<p>The state and force vectors are now \(3n\) elements tall. The Jacobian matrices are now \(2m\) elements tall and \(3n\) elements wide.</p>
+
+<h2 id="my-implementation">My implementation</h2>
+
+<p>I have recently implemented all this into my beloved <a href="https://topotoy.com/">Topotoy</a> engine.</p>
+
+<p>This contraption below is a force-based rigid-body simulation where there is a motorized constraint, and then a bunch of different constraints I support: spring, distance, and rack-and-pinion. Everything is coded exactly as described in this post.</p>
+
+<p><img src="/uploads/2023/chemaguerra-contraption.gif" alt="Constraints system" /></p>
+
+<p>As one might expect, accurate-and-efficient implementation of this all brings its own universe of challenges and opportunities for exploration. So… down the rabbit-hole I went.</p>
+
+<p>Each of these subjects below is worth their own blog post, but for the sake of brevity I will not get into that much detail here.</p>
+
+<h3 id="large-sle-solvers">Large SLE solvers</h3>
+
+<p>The size of all the vectors and matrices involved grows \(O(n)\) and \(O(n^2)\) respectively with the number of bodies/constraints in the system. This very quickly poses a problem both in storage space and more so in efficiency.</p>
+
+<p>I’ve tried <a href="https://en.wikipedia.org/wiki/Gauss%E2%80%93Seidel_method">Gauss-Seidel</a>, <a href="https://en.wikipedia.org/wiki/Gaussian_elimination">Gaussian Elimination</a>, and the Conjugate Gradient method. The CG method in particular benefits from the fact that \(\mathbf{J}\) is very <em>sparse</em> (read below).</p>
+
+<p>Efficient and numerically-robust implementation of these methods is definitely a meaty subject itself.</p>
+
+<h3 id="sparse-matrices">Sparse matrices</h3>
+
+<p>The matrix \(\mathbf{W}\) is all zeros except for the diagonal, so it can be stored as a vector. Multiplying by \(\mathbf{W}\) can be coded as a simple per-row scalar multiplication instead of a full-fledged \(O(n^4)\) matrix product.</p>
+
+<p>But the most relevant observation here is that \(\mathbf{J}\) is a <a href="https://en.wikipedia.org/wiki/Sparse_matrix">sparse matrix</a>.</p>
+
+<blockquote>
+  <p>Constraints usually define a relationship between 2 bodies. This makes rows \(2i,2i+1\) for constraint \(\mathbf{C_i}\) contain only \(6=2\times\{m,m,I\}\) non-zero coefficients each because the coefficients corresponding to bodies not affected by \(\mathbf{C_i}\) are constant (0 derivative) with respect to the state of those bodies.</p>
+</blockquote>
+
+<p>In our particular case, matrix sparsity is <em>aligned</em> in blocks of 3 coefficients because of the \(\{m,m,I\}\) arrangement. The implementation can exploit this knowledge to give proper column block granularity.</p>
+
+<p>Actually, the way in which each constraint contributes its own coefficients to the large matrices \(\mathbf{J},\mathbf{\dot{J}}\) goes like this:</p>
+
+<ul>
+  <li>Start with a blank sparse matrix.</li>
+  <li>For each constraint \(\mathbf{C_i}\):
+    <ul>
+      <li>Compute the constraint’s own \(\mathbf{J}\) 6 (3 coeffs x 2 bodies) coefficients.</li>
+      <li>Allocate two 3x1 blocks per row in the large \(\mathbf{J}\) at the right locations.</li>
+      <li>Fill those in with a copy of the constraint’s coefficients.</li>
+    </ul>
+  </li>
+  <li>Do the same for \(\mathbf{\dot{J}}\).</li>
+</ul>
+
+<p>Sparse matrices bring some big opportunities for optimization. For example, the product of 2 sparse matrices can skip the zero’d blocks and approach \(O(n^2)\) complexity instead of \(O(n^4)\) the higher the proportion of zero <em>vs.</em> non-zero elements becomes.</p>
+
+<p>Remarkably, \(\mathbf{J}\mathbf{W}\mathbf{J}^T\) happens to be sparse as well (and also symmetric). This encourages the use of the <a href="https://en.wikipedia.org/wiki/Conjugate_gradient_method">Conjugate Gradient</a> method for the SLE solver. This algorithm solves \(\mathbf{L}\mathbf{\lambda}=\mathbf{R}\) iteratively in way that preserves sparsity of the operands involved all the way through. This is unlike general methods such as GS or GE where sparsity is not exploited and the large size of the matrices involved becomes a serious drag performance-wise.</p>
+
+<h3 id="ode-solvers">ODE solvers</h3>
+
+<p>I’ve tried semi-implicit Euler and <a href="https://en.wikipedia.org/wiki/Runge%E2%80%93Kutta_methods">Runge-Kutta 4</a> so far. Simulations withstand more stress with RK4, clearly.</p>
+
+<h2 id="coming-soon">Coming soon…</h2>
+
+<p>The next and last chapter in this series will be about the <em>impulse-based approach</em>, which is the method used by (among others) the widely-popular <a href="https://box2d.org/">box2d</a> library.</p>
+
+<p>I am currently in the process of supporting impulse-based dynamics (alongside force-based) in my engine myself. So I intend to document the process a little bit very soon.</p>
+
+<p>Stay tuned!</p>
+
+<p><em>P.S.:</em> Apologies for any typos, imprecisions or mistakes there may be in this series. &gt;.&lt;</p>]]></content><author><name></name></author><summary type="html"><![CDATA[This post is a direct continuation to the latest entry… Part III: Constrained Dynamics (III) - Force-based constraints. …and the rest of the series: Part II: Constrained Dynamics (II) - Don’t use springs to model rigid constraints. Part I: Constrained Dynamics (I) - Unconstrained dynamics. Let’s continue where we left off and find a more compact vector/matrix form for force-based constraints. Generic constraints (vector form) Everything we discussed in the previous post for the (unit circle) distance constraint can be extrapolated to generic motion, as long as we can define the trajectory as a (gradient) function \(C\) of the state of the particle: \(C\) is called position constraint and is satisfied only when \(C(\mathbf{x}=\mathbf{p})=0\). What comes next is derived from the previous post. In vector form: \[\mathbf{p}=\begin{bmatrix}x\\y\end{bmatrix},\mathbf{\dot{p}}=\begin{bmatrix}\dot{x}\\\dot{y}\end{bmatrix}\] Via the chain rule the expression for the velocity constraint \(\dot{C}\) is: \[\dot{C}=\frac{\mathrm{d}\mathbf{C}}{\mathrm{d}t}=\frac{\partial{\mathbf{C}}}{\partial{\mathbf{p}}}\frac{\mathrm{d}\mathbf{p}}{\mathrm{d}t}=\mathbf{J}\mathbf{\dot{p}}+b=0\] Where \(\mathbf{J}=\frac{\partial{\mathbf{C}}}{\partial{\mathbf{p}}}\) (called the Jacobian) is a row vector perpendicular to \(\mathbf{\dot{p}}\). The bias \(b\) is a residual term which may be used to model velocity-inducing constraints (e.g., a motor like in the animation below). If \(\mathbf{J}\) is perpendicular to \(\mathbf{\dot{p}}\) then it is co-linear to the trajectory’s normal, which happens to be the direction of the corrective force: \[\mathbf{F_c}=\mathbf{J}^T\lambda\] \(\lambda\) is a scalar that gives orientation/magnitude to \(\mathbf{F_c}\) known as Lagrange multiplier. Via the chain rule again the expression for the acceleration constraint \(\ddot{C}\) is: \[\ddot{C}=\mathbf{\dot{J}}\mathbf{\dot{p}}+\mathbf{J}\mathbf{\ddot{p}}=0\] We expect constraint forces to do no work (principle of virtual work). Since power is force times velocity: \[P_c=\mathbf{F_c}\cdot\mathbf{\dot{p}}=\mathbf{F_c}^T\mathbf{\dot{p}}=0\implies(\lambda\mathbf{J}^T)^T\mathbf{\dot{p}}=(\mathbf{J}\mathbf{\dot{p}})\lambda=0\] Which is indeed 0 for \(\dot{C}=0,b=0\) (see above). Plugging in Newton’s 2nd Law (\(\mathbf{F}=m\mathbf{\ddot{p}}\)): \[\ddot{C}=\mathbf{\dot{J}}\mathbf{\dot{p}}+\mathbf{J}\frac{\mathbf{F_a}+\mathbf{F_c}}{m}=\mathbf{\dot{J}}\mathbf{\dot{p}}+\frac{\mathbf{J}\mathbf{F_a}}{m}+\frac{\mathbf{J}\mathbf{J}^T}{m}\lambda=0\] Let’s define \(w=m^{-1}\) to end up with this linear equation, where only \(\lambda\) is unknown: \[\mathbf{J}w\mathbf{J}^T\lambda=-(\mathbf{\dot{J}}\mathbf{\dot{p}}+\mathbf{J}w\mathbf{F_a})\] We won’t simplify this beauty any further to later appreciate the parallelism with its matrix form. Once we solve for \(\lambda\) we must apply \(\mathbf{F}=\mathbf{F_a}+\mathbf{J}^T\lambda\) to the particle to find \(\mathbf{\ddot{p}}\), then update \(\mathbf{\dot{p}}\) and \(\mathbf{p}\), and be done! Example: Distance constraint The recipe to find \(\mathbf{J}\) is to derive the position constraint \(C\) expressed in vector form into \(\dot{C}\), and then rearrange the resulting expression until it resembles \(\mathbf{J}\mathbf{\dot{p}}+b\). We shall borrow the expression for \(C\) from the previous post: \[\begin{flalign} &amp; &amp;&amp; C=\frac{1}{2}(\mathbf{p}\cdot\mathbf{p}-1) &amp; \\ &amp; &amp;&amp; \dot{C}=\mathbf{p}\cdot\mathbf{\dot{p}}=\mathbf{J}\mathbf{\dot{p}}+0 &amp; \\ &amp; &amp;&amp; \mathbf{J}=\mathbf{p}^T &amp; \\ &amp; &amp;&amp; \mathbf{\dot{J}}=\mathbf{\dot{p}}^T &amp; \end{flalign}\] Hooray! \(\lambda\) matches what we obtained back then: \[\lambda=-\frac{m\mathbf{\dot{J}}\mathbf{\dot{p}}+\mathbf{J}\mathbf{F_a}}{\mathbf{J}\mathbf{J}^T}=-\frac{\mathbf{\dot{p}}\cdot\mathbf{F_a}+m\mathbf{\dot{p}}\cdot\mathbf{\dot{p}}}{\mathbf{p}\cdot\mathbf{p}}\] Systems of constraints (matrix form) So far we’ve dealt with just one particle and one constraint. But what happens when there are multiple particles subjected to multiple constraints? Well… things gets a bit more involved; especially if the constraints define relationships between two or more particles at once (e.g., keep two particles a specified distance apart, etc…). Like above, the goal is to calculate one \(\lambda_i\) for each constraint and apply the corresponding constraint forces. But intuition (correctly) says that we must solve for all the \(\lambda_i\) simultaneously and not one by one. This makes sense, because otherwise satisfying one constraint at a time, isolated from the rest, would potentially violate all the others, and so on. This looks like a job for a (large) system of linear equations solver! Please bear with me in the derivation: Concat all the \((x,y)\) particle positions in a long column \(\mathbf{q}\) called state vector. Define a diagonal matrix \(\mathbf{M}\) with all the particle masses. Define \(\mathbf{W}=\mathbf{M}^{-1}\). Define two long column vectors \(\mathbf{Q_a}\) and \(\mathbf{Q_c}\) where all the force components (\(\mathbf{F_a}\) and \(\mathbf{F_c}\) respectively) are concatenated. Define the super-constraint \(\mathbf{C}(\mathbf{q})\) as a function of the (concatenated) particle states. By the chain rule: \[\mathbf{\dot{C}}=\frac{\mathrm{d}\mathbf{C}}{\mathrm{d}t}=\frac{\partial{\mathbf{C}}}{\partial{\mathbf{q}}}\frac{\mathrm{d}\mathbf{q}}{\mathrm{d}t}=\mathbf{J}\mathbf{\dot{q}}\] By the chain rule again: \[\mathbf{\ddot{C}}=\mathbf{\dot{J}}\mathbf{\dot{q}}+\mathbf{J}\mathbf{\ddot{q}}\] By Newton’s 2nd Law: \[(\mathbf{Q_a}+\mathbf{Q_c})=\mathbf{M}\mathbf{\ddot{q}}\implies\mathbf{\ddot{q}}=\mathbf{W}(\mathbf{Q_a}+\mathbf{Q_c})\] By substitution: \[\mathbf{\ddot{C}}=\mathbf{\dot{J}}\mathbf{\dot{q}}+\mathbf{J}\mathbf{W}(\mathbf{Q_a}+\mathbf{Q_c})=0\] By the principle of virtual work (perpendicular/co-linear like above): \[\mathbf{Q_c}=\mathbf{J}^T\mathbf{\lambda}\] By substitution: \[\mathbf{J}\mathbf{W}\mathbf{J}^T\mathbf{\lambda}=-(\mathbf{\dot{J}}\mathbf{\dot{q}}+\mathbf{J}\mathbf{W}\mathbf{Q_a})\] This last expression is a (potentially large) system of linear equations where the vector \(\mathbf{\lambda}\) is the only unknown. Once we solve for \(\mathbf{\lambda}\) we must apply \(\mathbf{Q}=\mathbf{Q_a}+\mathbf{J}^T\mathbf{\lambda}\) to find \(\mathbf{\ddot{q}}\), then update \(\mathbf{\dot{q}}\) and \(\mathbf{q}\), and be done! Wonderful. Isn’t it? Summary (particles) For \(n\) particles and \(m\) constraints: \[\mathbf{q}=\begin{bmatrix}{p_1}_x\\{p_1}_y\\{p_2}_x\\{p_2}_y\\ \vdots\\{p_n}_x\\{p_n}_y\end{bmatrix},\mathbf{\dot{q}}=\begin{bmatrix}\dot{p_1}_x\\ \dot{p_1}_y\\ \dot{p_2}_x\\ \dot{p_2}_y\\ \vdots\\ \dot{p_n}_x\\ \dot{p_n}_y\end{bmatrix},\mathbf{Q_a}=\begin{bmatrix}{\mathbf{Q_a}_1}_x\\{\mathbf{Q_a}_1}_y\\{\mathbf{Q_a}_2}_x\\{\mathbf{Q_a}_2}_y\\ \vdots\\{\mathbf{Q_a}_n}_x\\{\mathbf{Q_a}_n}_y\end{bmatrix},\mathbf{W}=\begin{bmatrix}m_1&amp; &amp; &amp; &amp; &amp; &amp;\\&amp;m_1&amp; &amp; &amp; &amp; &amp;\\&amp; &amp;m_2&amp; &amp; &amp; &amp;\\&amp; &amp; &amp;m_2&amp; &amp; &amp;\\&amp; &amp; &amp; &amp;\ddots&amp; &amp;\\&amp; &amp; &amp; &amp; &amp;m_n&amp;\\&amp; &amp; &amp; &amp; &amp; &amp;m_n\end{bmatrix}\] \[\mathbf{J}=\begin{bmatrix} \frac{\partial{\mathbf{C_1}_x}}{\partial{\mathbf{q_1}_x}}&amp; \frac{\partial{\mathbf{C_1}_x}}{\partial{\mathbf{q_1}_y}}&amp; \frac{\partial{\mathbf{C_1}_x}}{\partial{\mathbf{q_2}_x}}&amp; \frac{\partial{\mathbf{C_1}_x}}{\partial{\mathbf{q_2}_y}}&amp;\dots&amp; \frac{\partial{\mathbf{C_1}_x}}{\partial{\mathbf{q_n}_x}}&amp; \frac{\partial{\mathbf{C_1}_x}}{\partial{\mathbf{q_n}_y}}\\ \frac{\partial{\mathbf{C_1}_y}}{\partial{\mathbf{q_1}_x}}&amp; \frac{\partial{\mathbf{C_1}_y}}{\partial{\mathbf{q_1}_y}}&amp; \frac{\partial{\mathbf{C_1}_y}}{\partial{\mathbf{q_2}_x}}&amp; \frac{\partial{\mathbf{C_1}_y}}{\partial{\mathbf{q_2}_y}}&amp;\dots&amp; \frac{\partial{\mathbf{C_1}_y}}{\partial{\mathbf{q_n}_x}}&amp; \frac{\partial{\mathbf{C_1}_y}}{\partial{\mathbf{q_n}_y}}\\ \frac{\partial{\mathbf{C_2}_x}}{\partial{\mathbf{q_1}_x}}&amp; \frac{\partial{\mathbf{C_2}_x}}{\partial{\mathbf{q_1}_y}}&amp; \frac{\partial{\mathbf{C_2}_x}}{\partial{\mathbf{q_2}_x}}&amp; \frac{\partial{\mathbf{C_2}_x}}{\partial{\mathbf{q_2}_y}}&amp;\dots&amp; \frac{\partial{\mathbf{C_2}_x}}{\partial{\mathbf{q_n}_x}}&amp; \frac{\partial{\mathbf{C_2}_x}}{\partial{\mathbf{q_n}_y}}\\ \frac{\partial{\mathbf{C_2}_y}}{\partial{\mathbf{q_1}_x}}&amp; \frac{\partial{\mathbf{C_2}_y}}{\partial{\mathbf{q_1}_y}}&amp; \frac{\partial{\mathbf{C_2}_y}}{\partial{\mathbf{q_2}_x}}&amp; \frac{\partial{\mathbf{C_2}_y}}{\partial{\mathbf{q_2}_y}}&amp;\dots&amp; \frac{\partial{\mathbf{C_2}_y}}{\partial{\mathbf{q_n}_x}}&amp; \frac{\partial{\mathbf{C_2}_y}}{\partial{\mathbf{q_n}_y}}\\ \vdots&amp; \vdots&amp; \vdots&amp; \vdots&amp;\ddots&amp; \vdots&amp; \vdots\\ \frac{\partial{\mathbf{C_m}_x}}{\partial{\mathbf{q_1}_x}}&amp; \frac{\partial{\mathbf{C_m}_x}}{\partial{\mathbf{q_1}_y}}&amp; \frac{\partial{\mathbf{C_m}_x}}{\partial{\mathbf{q_2}_x}}&amp; \frac{\partial{\mathbf{C_m}_x}}{\partial{\mathbf{q_2}_y}}&amp;\dots&amp; \frac{\partial{\mathbf{C_m}_x}}{\partial{\mathbf{q_n}_x}}&amp; \frac{\partial{\mathbf{C_m}_x}}{\partial{\mathbf{q_n}_y}}\\ \frac{\partial{\mathbf{C_m}_y}}{\partial{\mathbf{q_1}_x}}&amp; \frac{\partial{\mathbf{C_m}_y}}{\partial{\mathbf{q_1}_y}}&amp; \frac{\partial{\mathbf{C_m}_y}}{\partial{\mathbf{q_2}_x}}&amp; \frac{\partial{\mathbf{C_m}_y}}{\partial{\mathbf{q_2}_y}}&amp;\dots&amp; \frac{\partial{\mathbf{C_m}_y}}{\partial{\mathbf{q_n}_x}}&amp; \frac{\partial{\mathbf{C_m}_y}}{\partial{\mathbf{q_n}_y}}\\ \end{bmatrix},\mathbf{\dot{J}}=\frac{\mathrm{d}\mathbf{J}}{\mathrm{d}t}\] The state and force vectors are \(2n\) elements tall. The Jacobian matrices are \(2m\) elements tall and \(2n\) elements wide. In this summary I am assuming that each constraint yields one (and only one) corrective force, with two \((x,y)\) components as is the case in the constraints discussed so far. More complicated contraints may contribute more than two components, making \(\mathbf{J}\) be taller. Countering drift We may inject a spring-y term in \(\mathbf{\ddot{C}}=0\) resulting in this monstrosity: \[\mathbf{J}\mathbf{W}\mathbf{J}^T\mathbf{\lambda}=-(\mathbf{\dot{J}}\mathbf{\dot{q}}+\mathbf{J}\mathbf{W}\mathbf{Q_a}+k_s\mathbf{C}+k_d\mathbf{\dot{C}})\] As explained in the previous post, these extra terms will make sure that particles “spring back” to legal positions as soon as they attempt to drift away. Extension to rigid bodies So far we’ve used point-mass particles. But the extension to 2D rigid bodies is fairly easy: Rotation aside, a rigid body behaves exactly as a point-mass positioned at its center-of-mass. Position \(\mathbf{p}\) vs. angle \(\theta\), linear \(\mathbf{\dot{p}}\) vs. angular \(\dot{\theta}\) velocity, linear \(\mathbf{\ddot{p}}\) vs. angular \(\ddot{\theta}\) acceleration, and mass \(m\) vs. moment-of-inertia \(I\) all exhibit analogous behavior. In particular, Newton’s 2nd Law applied to angular motion states that: \[\tau=I\ddot{\theta}\] A body’s moment of inertia \(I\) defines how hard it is for a rotational force \(\tau\) (called torque) to induce a change in its angular acceleration \(\ddot{\theta}\). Just like mass \(m\) defines how hard it is for a linear force \(\mathbf{F}\) to induce a change in the body’s linear acceleration: \[\mathbf{F}=m\mathbf{\ddot{p}}\] In our code we must extend the particle state struct \([\mathbf{p}, \mathbf{\dot{p}}]\) to the body state struct \([\mathbf{p}, \theta, \mathbf{\dot{p}}, \dot{\theta}]\). The \(I\) of a rigid body is a characteristic of its shape and mass distribution. Simple shapes such as disks and rectangles have well-known expressions as long as their density is homogeneous. Summary (rigid bodies) This parallelism between angular/linear makes it easy to extend our matrix form to support torque/rotation alongside linear force/position. \[\mathbf{q}=\begin{bmatrix}{p_1}_x\\{p_1}_y\\ \theta_1\\{p_2}_x\\{p_2}_y\\ \theta_2\\ \vdots\\{p_n}_x\\{p_n}_y\\ \theta_n\end{bmatrix},\mathbf{\dot{q}}=\begin{bmatrix}\dot{p_1}_x\\ \dot{p_1}_y\\ \dot{\theta_1}\\ \dot{p_2}_x\\ \dot{p_2}_y\\ \dot{\theta_2}\\ \vdots\\ \dot{p_n}_x\\ \dot{p_n}_y\\ \dot{\theta_n}\end{bmatrix},\mathbf{Q_a}=\begin{bmatrix}{\mathbf{Q_a}_1}_x\\{\mathbf{Q_a}_1}_y\\ \tau_1\\{\mathbf{Q_a}_2}_x\\{\mathbf{Q_a}_2}_y\\ \tau_2\\ \vdots\\{\mathbf{Q_a}_n}_x\\{\mathbf{Q_a}_n}_y\\ \tau_n\end{bmatrix},\mathbf{W}=\begin{bmatrix}m_1&amp; &amp; &amp; &amp; &amp; &amp; &amp; &amp; &amp;\\&amp;m_1&amp; &amp; &amp; &amp; &amp; &amp; &amp; &amp;\\&amp; &amp;I_1&amp; &amp; &amp; &amp; &amp; &amp; &amp;\\&amp; &amp; &amp;m_2&amp; &amp; &amp; &amp; &amp; &amp;\\&amp; &amp; &amp; &amp;m_2&amp; &amp; &amp; &amp; &amp;\\&amp; &amp; &amp; &amp; &amp;I_2&amp; &amp; &amp; &amp;\\&amp; &amp; &amp; &amp; &amp; &amp;\ddots&amp; &amp; &amp;\\&amp; &amp; &amp; &amp; &amp; &amp; &amp;m_n&amp; &amp;\\&amp; &amp; &amp; &amp; &amp; &amp; &amp; &amp;m_n&amp;\\&amp; &amp; &amp; &amp; &amp; &amp; &amp; &amp; &amp;I_n\end{bmatrix}^{-1}\] And likewise for \(\mathbf{J}\) and \(\mathbf{\dot{J}}\), which also must involve \(\theta_i\) and \(\tau_i\). The state and force vectors are now \(3n\) elements tall. The Jacobian matrices are now \(2m\) elements tall and \(3n\) elements wide. My implementation I have recently implemented all this into my beloved Topotoy engine. This contraption below is a force-based rigid-body simulation where there is a motorized constraint, and then a bunch of different constraints I support: spring, distance, and rack-and-pinion. Everything is coded exactly as described in this post. As one might expect, accurate-and-efficient implementation of this all brings its own universe of challenges and opportunities for exploration. So… down the rabbit-hole I went. Each of these subjects below is worth their own blog post, but for the sake of brevity I will not get into that much detail here. Large SLE solvers The size of all the vectors and matrices involved grows \(O(n)\) and \(O(n^2)\) respectively with the number of bodies/constraints in the system. This very quickly poses a problem both in storage space and more so in efficiency. I’ve tried Gauss-Seidel, Gaussian Elimination, and the Conjugate Gradient method. The CG method in particular benefits from the fact that \(\mathbf{J}\) is very sparse (read below). Efficient and numerically-robust implementation of these methods is definitely a meaty subject itself. Sparse matrices The matrix \(\mathbf{W}\) is all zeros except for the diagonal, so it can be stored as a vector. Multiplying by \(\mathbf{W}\) can be coded as a simple per-row scalar multiplication instead of a full-fledged \(O(n^4)\) matrix product. But the most relevant observation here is that \(\mathbf{J}\) is a sparse matrix. Constraints usually define a relationship between 2 bodies. This makes rows \(2i,2i+1\) for constraint \(\mathbf{C_i}\) contain only \(6=2\times\{m,m,I\}\) non-zero coefficients each because the coefficients corresponding to bodies not affected by \(\mathbf{C_i}\) are constant (0 derivative) with respect to the state of those bodies. In our particular case, matrix sparsity is aligned in blocks of 3 coefficients because of the \(\{m,m,I\}\) arrangement. The implementation can exploit this knowledge to give proper column block granularity. Actually, the way in which each constraint contributes its own coefficients to the large matrices \(\mathbf{J},\mathbf{\dot{J}}\) goes like this: Start with a blank sparse matrix. For each constraint \(\mathbf{C_i}\): Compute the constraint’s own \(\mathbf{J}\) 6 (3 coeffs x 2 bodies) coefficients. Allocate two 3x1 blocks per row in the large \(\mathbf{J}\) at the right locations. Fill those in with a copy of the constraint’s coefficients. Do the same for \(\mathbf{\dot{J}}\). Sparse matrices bring some big opportunities for optimization. For example, the product of 2 sparse matrices can skip the zero’d blocks and approach \(O(n^2)\) complexity instead of \(O(n^4)\) the higher the proportion of zero vs. non-zero elements becomes. Remarkably, \(\mathbf{J}\mathbf{W}\mathbf{J}^T\) happens to be sparse as well (and also symmetric). This encourages the use of the Conjugate Gradient method for the SLE solver. This algorithm solves \(\mathbf{L}\mathbf{\lambda}=\mathbf{R}\) iteratively in way that preserves sparsity of the operands involved all the way through. This is unlike general methods such as GS or GE where sparsity is not exploited and the large size of the matrices involved becomes a serious drag performance-wise. ODE solvers I’ve tried semi-implicit Euler and Runge-Kutta 4 so far. Simulations withstand more stress with RK4, clearly. Coming soon… The next and last chapter in this series will be about the impulse-based approach, which is the method used by (among others) the widely-popular box2d library. I am currently in the process of supporting impulse-based dynamics (alongside force-based) in my engine myself. So I intend to document the process a little bit very soon. Stay tuned! P.S.: Apologies for any typos, imprecisions or mistakes there may be in this series. &gt;.&lt;]]></summary><media:thumbnail xmlns:media="http://search.yahoo.com/mrss/" url="http://localhost:4000/thumbnails/2023/chemaguerra-constrained-dynamics-iv.png" /><media:content medium="image" url="http://localhost:4000/thumbnails/2023/chemaguerra-constrained-dynamics-iv.png" xmlns:media="http://search.yahoo.com/mrss/" /></entry><entry><title type="html">Constrained Dynamics (III)</title><link href="http://localhost:4000/2023/08/14/constrained-dynamics-iii.html" rel="alternate" type="text/html" title="Constrained Dynamics (III)" /><published>2023-08-14T10:00:00+02:00</published><updated>2023-08-14T10:00:00+02:00</updated><id>http://localhost:4000/2023/08/14/constrained-dynamics-iii</id><content type="html" xml:base="http://localhost:4000/2023/08/14/constrained-dynamics-iii.html"><![CDATA[<p>This post is a continuation to the first two entries in this series:</p>
+
+<ul>
+  <li>Part II: <a href="https://brashandplucky.com/2023/08/04/constrained-dynamics-ii.html">Constrained Dynamics (II)</a> - <em>Don’t use springs to model rigid constraints</em>.</li>
+  <li>Part I: <a href="https://brashandplucky.com/2023/07/30/constrained-dynamics-i.html">Constrained Dynamics (I)</a> - <em>Unconstrained dynamics</em>.</li>
+</ul>
+
+<h2 id="constrained-dynamics-recap">Constrained dynamics (recap)</h2>
+
+<blockquote>
+  <p>In a system where masses (particles) are ruled by newtonian dynamics (forces/accelerations), <em>“constrained dynamics”</em> is the ability to enforce custom restrictions on the way the particles are permitted to move.</p>
+</blockquote>
+
+<p>For example, we might constrain a particle to follow a given path, or keep a certain distance from a fixed point in space, or make two particles stay a specified distance apart. In other words: <em>remove degrees of freedom of movement</em>.</p>
+
+<p>The goal is to enforce these constraints <em>strictly within the framework of newtonian dynamics</em>, where forces are the <em>only</em> agent that induces a change of state (via acceleration). So our job here is to directly <em>calculate the corrective forces</em> required to satisfy the constraints at all times.</p>
+
+<p>There are different ways to achieve this, but in this mini-series we will focus on these two:</p>
+
+<ul>
+  <li><strong>Force-based constraints</strong>: Which works in the acceleration realm (2nd derivative).</li>
+  <li>Impulse-based constraints: Which works in the velocity realm (1st derivative).</li>
+</ul>
+
+<p>Actually, this post describes the force-based dynamics approach.</p>
+
+<h3 id="nomenclature">Nomenclature</h3>
+
+<p>We will distinguish between:</p>
+
+<ul>
+  <li>\(\mathbf{F_a}\) - <strong>Applied forces</strong>. Such as gravity, wind, or other user-interaction forces.</li>
+  <li>\(\mathbf{F_c}\) - <strong>Constraint forces</strong>. Forces we will calculate ourselves in order to satisfy the constraints.</li>
+</ul>
+
+<p>Particles are affected by the sum of both.</p>
+
+<p>The job of the constraint forces is to cancel out those components of the applied forces that act against the constraints. This in turn makes sure that the resulting particle accelerations are consistent with the constraints.</p>
+
+<h3 id="example-distance-constraint">Example: Distance constraint</h3>
+
+<p>We will use again a distance constraint as an example, where we have one particle under the effect of gravity, which motion is restricted to the unit circle. You can picture this as an ideal pendulum where the particle hangs by a unit-length mass-less thread pinned to the origin.</p>
+
+<blockquote>
+  <p>In its simplest form, a constraint is any function \(C\) of the state \(\mathbf{x}\) of the particle.</p>
+</blockquote>
+
+<blockquote>
+  <p>An equality constraint is said to be satisfied only when \(C(\mathbf{x})=0\).</p>
+</blockquote>
+
+<p>The expression of the unit circle distance constraint can be written as:</p>
+
+\[C(\mathbf{x})=\sqrt{\mathbf{p}\cdot\mathbf{p}}-1=0\]
+
+<p>Which is derived from the implicit equation of the circle (\(r=1\)):</p>
+
+\[\mathbf{p}\cdot\mathbf{p}=x^2+y^2=r^2=1^2\]
+
+<h4 id="geometric-intuition">Geometric intuition</h4>
+
+<p>Our \(C(\mathbf{x})\) happens to be a <em>Signed Distance Function</em> which radiates away from the origin, perpendicular to the unit circle (in black):</p>
+
+<p><img src="/uploads/2023/chemaguerra-distance-constraint-hypersurface-1.png" alt="Projectile motion" /></p>
+
+<p>If we plot \(z=C(x,y)=\sqrt{x^2+y^2}-1\) in <a href="https://wolframalpha.com/">Wolfram Alpha</a> we get this surface:</p>
+
+<p><img src="/uploads/2023/chemaguerra-distance-constraint-hypersurface-2.png" alt="Projectile motion" /></p>
+
+<p>This is called the <em>constraint hypersurface</em>, and can be understood as a <em>gradient field</em>. Any constraint you may specify has its own characteristic hypersurface.</p>
+
+<p>In our case, the hypersurface is a cone and the subset of legal positions for the particle (\(C=0\)) is highlighted as a black ring.</p>
+
+<p>We would expect that if \(\mathbf{p}\) is on the black ring, then the only legal velocities \(\mathbf{\dot{p}}\) would be <em>tangential</em>, causing <em>no increase/decrease</em> along the gradient \(C\) whatsoever.</p>
+
+<p>Likewise, whenever the particle attempts to abandon the black ring, the corrective constraint force \(\mathbf{F_c}\) would act on the particle in a direction <em>perpendicular</em> to the ring, causing <em>maximum corrective increase/decrease</em> along the gradient \(C\).</p>
+
+<p><em>Trick:</em> We can find an equivalent expression for \(C\) by using squared distances, or multiplying by a constant. Why do this? Well, we may want to get rid of the square root so the derivatives we will be calculating next will be greatly simplified:</p>
+
+\[C(\mathbf{x})=\frac{1}{2}(\mathbf{p}\cdot\mathbf{p}-1)=0\]
+
+<p>In doing so the constraint hypersurface becomes a paraboloid instead of a cone. But everything discussed so far remains the same.</p>
+
+<h4 id="deriving-c-wrt-time">Deriving \(C\) w.r.t. time</h4>
+
+<p>If the <strong>position constraint</strong> \(C\) is 0 then the particle is on the unit circle, at a <em>legal</em> position. Over time, the only permitted walk through the constraint hypersurface is such that \(C = 0\) is never violated:</p>
+
+\[\begin{flalign}
+C = 0 \\
+\dot{C} = 0 \\
+\ddot{C} = 0
+\end{flalign}\]
+
+<p>Reminder: The derivative of the dot product of two vectors is given by:</p>
+
+\[\frac{\mathrm{d}(\mathbf{u}(t)\cdot\mathbf{v}(t))}{\mathrm{d}t}=\mathbf{u}(t)\cdot\frac{\mathrm{d}\mathbf{v}(t)}{\mathrm{d}t}+\frac{\mathrm{d}\mathbf{u}(t)}{\mathrm{d}t}\cdot\mathbf{v}(t)\]
+
+<p>So the <strong>velocity constraint</strong> is:</p>
+
+\[\dot{C}=\frac{\mathrm{d}{\frac{1}{2}(\mathbf{p}\cdot\mathbf{p}-1)}}{\mathrm{d}t}=\frac{1}{2}(\mathbf{p}\cdot\mathbf{\dot{p}}+\mathbf{\dot{p}}\cdot\mathbf{p})=\mathbf{p}\cdot\mathbf{\dot{p}}=0\]
+
+<p>This coincides with the above geometrical intuition: legal velocities must be perpendicular to legal position vectors. <em>i.e.,</em> tangential to the unit circle.</p>
+
+<p>The <strong>acceleration constraint</strong> is:</p>
+
+\[\ddot{C}=\frac{\mathrm{d}{(\mathbf{p}\cdot\mathbf{\dot{p}})}}{\mathrm{d}t}=\mathbf{p}\cdot\mathbf{\ddot{p}}+\mathbf{\dot{p}}\cdot\mathbf{\dot{p}}=0\]
+
+<h4 id="solving-for-mathbff_c">Solving for \(\mathbf{F_c}\)</h4>
+
+<p>By Newton’s 2nd Law:</p>
+
+\[\mathbf{F}=\mathbf{F_a}+\mathbf{F_c}=m\ddot{\mathbf{p}}\]
+
+<p>Which we can combine with \(\ddot{C}\):</p>
+
+\[\ddot{C}=\mathbf{p}\cdot\frac{\mathbf{F_a}+\mathbf{F_c}}{m}+\mathbf{\dot{p}}\cdot\mathbf{\dot{p}}=0\]
+
+<p>Only the constraint force is unknown, so let’s try and isolate \(\mathbf{F_c}\):</p>
+
+\[\mathbf{p}\cdot\mathbf{F_c}=-(\mathbf{p}\cdot\mathbf{F_a}+m\mathbf{\dot{p}}\cdot\mathbf{\dot{p}})\]
+
+<p>Note that because \(\mathbf{F_c}\) is a 2D vector, this is really one equation with two unknowns: \(\mathbf{F_c}=(\mathbf{F_c}_x,\mathbf{F_c}_y)\).</p>
+
+<h4 id="principle-of-virtual-work">Principle of virtual work</h4>
+
+<p>We expect constraint forces to never add or remove energy from the system.</p>
+
+<blockquote>
+  <p>constraint forces do no work.</p>
+</blockquote>
+
+<p>Let’s take the (kinetic) energy of the particle:</p>
+
+\[E_k=\frac{m}{2}\mathbf{\dot{p}}\cdot\mathbf{\dot{p}}\]
+
+<p>And its derivative w.r.t. time:</p>
+
+\[\dot{E_k}=\frac{m}{2}(\mathbf{\dot{p}}\cdot\mathbf{\ddot{p}}+\mathbf{\ddot{p}}\cdot\mathbf{\dot{p}})=m\mathbf{\dot{p}}\cdot\mathbf{\ddot{p}}=\mathbf{F_a}\cdot\mathbf{\dot{p}}+\mathbf{F_c}\cdot\mathbf{\dot{p}}\]
+
+<p>We end up with the <em>work</em> done by \(\mathbf{F_a}\) and \(\mathbf{F_c}\), and we expect the \(\mathbf{F_c}\) part to be 0:</p>
+
+\[\mathbf{F_c}\cdot\mathbf{\dot{p}}=0\]
+
+<p>Which geometrically means that legal constraint forces must be perpendicular to legal velocities, which are tangential. Which in turn means that \(\mathbf{F_c}\) must be aligned with the position vector \(\mathbf{p}\) as illustrated above.</p>
+
+<p>This alignment can be expressed as \(\mathbf{F_c}=\lambda\mathbf{p}\). So now instead of two unknowns we have just one: \(\lambda\).</p>
+
+<h4 id="solving-for-lambda">Solving for \(\lambda\)</h4>
+
+<p>Plugging back into \(\ddot{C}\) we obtain this expression where every value to the right is known:</p>
+
+\[\lambda=-\frac{\mathbf{p}\cdot\mathbf{F_a}+m\mathbf{\dot{p}}\cdot\mathbf{\dot{p}}}{\mathbf{p}\cdot\mathbf{p}}\]
+
+<p>Finally (!) the total acceleration experienced by the particle is:</p>
+
+\[\mathbf{\ddot{p}}=\frac{\mathbf{F_a}+\lambda\mathbf{p}}{m}\]
+
+<h3 id="source-code">Source code</h3>
+
+<p>Whoa! That was an awful lot of mathematical blah-blah…</p>
+
+<p>The source code implementation is a bit less intimidating, though:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>struct particle_t
+{
+  explicit particle_t() : m( 1 ), p( 1, 0 ), v( 0 ) {}
+
+  void step( const f64_t dt, const vec2d_c&amp; Fa )
+  {
+    const   f64_t pp =  ( p * p );
+    const   f64_t vv =  ( v * v );
+
+    const   f64_t lambda = -( ( ( p * Fa ) + ( m * vv ) ) / pp );
+
+    const vec2d_c Fc = ( p * lambda );
+
+    const vec2d_c a  = ( ( Fa + Fc ) / m );
+
+    v += ( a * dt );
+    p += ( v * dt );
+  }
+
+    f64_t m;  // Mass.
+  vec2d_c p;  // Position.
+  vec2d_c v;  // Velocity.
+};
+</code></pre></div></div>
+
+<p>This is the code in action, assuming that the particle starts at rest at a legal position in the circle.</p>
+
+<p><img src="/uploads/2023/chemaguerra-force-based-drift-1.gif" alt="Force-based (high drift)" /></p>
+
+<p>Ouch! The distance sadly stretches away… :( What we’re witnessing here is numerical drift when iteratively solving the position ODE with the Semi-implicit Euler method. The simulation is using <code class="language-plaintext highlighter-rouge">dt=1/60</code>. Time resolution greatly affects the quality of the numerical solution. So let’s try with <code class="language-plaintext highlighter-rouge">dt=1/1500</code> which is 25 times smaller:</p>
+
+<p><img src="/uploads/2023/chemaguerra-force-based-drift-2.gif" alt="Force-based (low drift)" /></p>
+
+<p>The drift is certainly reduced, but not quite gone.</p>
+
+<p>Using tiny <code class="language-plaintext highlighter-rouge">dt</code> values is terrible for performance, because then each visual frame has the burden to run many simulation steps instead of just one or only a few. And simulation steps in non-trivial setups get very performance-heavy very quickly.</p>
+
+<p>Using a numerical solver that is less prone to drift may certainly help. But won’t provide a definitive answer to this problem anyway.</p>
+
+<p>So let’s resort to our old friends: <em>springs</em>.</p>
+
+<h3 id="countering-drift">Countering drift</h3>
+
+<p>The problem with the simulations above is not just drift <em>per se</em>. But the fact that <em>nothing</em> is bringing the particle back to a legal position once it drifts away to a non-legal position. So as numerical errors make the corrective forces insufficient, the situation is never rectified.</p>
+
+<p>A robust solution to drift is to patch up the formulation above so instead of solving for \(\ddot{C}=0\) we solve for \(\ddot{C}=-(k_s{C}+k_d\dot{C})\).</p>
+
+<p>This expression <a href="https://brashandplucky.com/2023/08/04/constrained-dynamics-ii.html">looks familiar</a> since \(k_s\) and \(k_d\) are damped spring (<em>stiffness</em> and <em>damping</em>) constants.</p>
+
+<p>The intention here is to bring drift (\(C\neq{0}\)) back to \(C=0\) in a spring-y fashion. Choosing \(k_s\) and \(k_d\) may require some trial-and-error, but good values are not hard to find because drift is easily absorbed:</p>
+
+\[\lambda=-\frac{\mathbf{p}\cdot\mathbf{F_a}+m\mathbf{\dot{p}}\cdot\mathbf{\dot{p}}+k_s{C}+k_d\dot{C}}{\mathbf{p}\cdot\mathbf{p}}\]
+
+<p>Here’s the new simulation with <code class="language-plaintext highlighter-rouge">dt=1/600</code>. Now the distance fluctuates but stays in the viccinity of 1:</p>
+
+<p><img src="/uploads/2023/chemaguerra-force-based-drift-4.gif" alt="Force-based (low drift)" /></p>
+
+<p>And here’s the new simulation code:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>struct particle_t
+{
+  explicit particle_t() : m( 1 ), p( 1, 0 ), v( 0 ) {}
+
+  void step( const f64_t dt, const vec2d_c&amp; Fa )
+  {
+    const   f64_t ks     = 1e+2;
+    const   f64_t kd     = 1e-2;
+
+    const   f64_t pp     =  ( p * p );
+    const   f64_t vv     =  ( v * v );
+    const   f64_t C_dot  =  ( p * v );
+
+    const   f64_t C      =  ( ( pp - 1 ) / 2 );
+
+    const   f64_t k      =  ( ( ks * C ) + ( kd * C_dot ) );
+
+    const   f64_t lambda = -( ( ( p * Fa ) + ( m * vv ) + k ) ) / pp );
+
+    const vec2d_c Fc     =  ( p * lambda );
+
+    const vec2d_c a      =  ( ( Fa + Fc ) / m );
+
+    v += ( a * dt );
+    p += ( v * dt );
+  }
+
+    f64_t m;
+  vec2d_c p;  // Position.
+  vec2d_c v;  // Velocity.
+};
+</code></pre></div></div>
+
+<h2 id="generalization">Generalization</h2>
+
+<p>In the next chapter we will discuss:</p>
+
+<ul>
+  <li>A general <strong>formulation in vector/matrix form</strong>.</li>
+  <li>How to handle systems with <strong>multiple particles/constraints</strong>.</li>
+</ul>
+
+<p>Stay tuned!</p>]]></content><author><name></name></author><summary type="html"><![CDATA[This post is a continuation to the first two entries in this series: Part II: Constrained Dynamics (II) - Don’t use springs to model rigid constraints. Part I: Constrained Dynamics (I) - Unconstrained dynamics. Constrained dynamics (recap) In a system where masses (particles) are ruled by newtonian dynamics (forces/accelerations), “constrained dynamics” is the ability to enforce custom restrictions on the way the particles are permitted to move. For example, we might constrain a particle to follow a given path, or keep a certain distance from a fixed point in space, or make two particles stay a specified distance apart. In other words: remove degrees of freedom of movement. The goal is to enforce these constraints strictly within the framework of newtonian dynamics, where forces are the only agent that induces a change of state (via acceleration). So our job here is to directly calculate the corrective forces required to satisfy the constraints at all times. There are different ways to achieve this, but in this mini-series we will focus on these two: Force-based constraints: Which works in the acceleration realm (2nd derivative). Impulse-based constraints: Which works in the velocity realm (1st derivative). Actually, this post describes the force-based dynamics approach. Nomenclature We will distinguish between: \(\mathbf{F_a}\) - Applied forces. Such as gravity, wind, or other user-interaction forces. \(\mathbf{F_c}\) - Constraint forces. Forces we will calculate ourselves in order to satisfy the constraints. Particles are affected by the sum of both. The job of the constraint forces is to cancel out those components of the applied forces that act against the constraints. This in turn makes sure that the resulting particle accelerations are consistent with the constraints. Example: Distance constraint We will use again a distance constraint as an example, where we have one particle under the effect of gravity, which motion is restricted to the unit circle. You can picture this as an ideal pendulum where the particle hangs by a unit-length mass-less thread pinned to the origin. In its simplest form, a constraint is any function \(C\) of the state \(\mathbf{x}\) of the particle. An equality constraint is said to be satisfied only when \(C(\mathbf{x})=0\). The expression of the unit circle distance constraint can be written as: \[C(\mathbf{x})=\sqrt{\mathbf{p}\cdot\mathbf{p}}-1=0\] Which is derived from the implicit equation of the circle (\(r=1\)): \[\mathbf{p}\cdot\mathbf{p}=x^2+y^2=r^2=1^2\] Geometric intuition Our \(C(\mathbf{x})\) happens to be a Signed Distance Function which radiates away from the origin, perpendicular to the unit circle (in black): If we plot \(z=C(x,y)=\sqrt{x^2+y^2}-1\) in Wolfram Alpha we get this surface: This is called the constraint hypersurface, and can be understood as a gradient field. Any constraint you may specify has its own characteristic hypersurface. In our case, the hypersurface is a cone and the subset of legal positions for the particle (\(C=0\)) is highlighted as a black ring. We would expect that if \(\mathbf{p}\) is on the black ring, then the only legal velocities \(\mathbf{\dot{p}}\) would be tangential, causing no increase/decrease along the gradient \(C\) whatsoever. Likewise, whenever the particle attempts to abandon the black ring, the corrective constraint force \(\mathbf{F_c}\) would act on the particle in a direction perpendicular to the ring, causing maximum corrective increase/decrease along the gradient \(C\). Trick: We can find an equivalent expression for \(C\) by using squared distances, or multiplying by a constant. Why do this? Well, we may want to get rid of the square root so the derivatives we will be calculating next will be greatly simplified: \[C(\mathbf{x})=\frac{1}{2}(\mathbf{p}\cdot\mathbf{p}-1)=0\] In doing so the constraint hypersurface becomes a paraboloid instead of a cone. But everything discussed so far remains the same. Deriving \(C\) w.r.t. time If the position constraint \(C\) is 0 then the particle is on the unit circle, at a legal position. Over time, the only permitted walk through the constraint hypersurface is such that \(C = 0\) is never violated: \[\begin{flalign} C = 0 \\ \dot{C} = 0 \\ \ddot{C} = 0 \end{flalign}\] Reminder: The derivative of the dot product of two vectors is given by: \[\frac{\mathrm{d}(\mathbf{u}(t)\cdot\mathbf{v}(t))}{\mathrm{d}t}=\mathbf{u}(t)\cdot\frac{\mathrm{d}\mathbf{v}(t)}{\mathrm{d}t}+\frac{\mathrm{d}\mathbf{u}(t)}{\mathrm{d}t}\cdot\mathbf{v}(t)\] So the velocity constraint is: \[\dot{C}=\frac{\mathrm{d}{\frac{1}{2}(\mathbf{p}\cdot\mathbf{p}-1)}}{\mathrm{d}t}=\frac{1}{2}(\mathbf{p}\cdot\mathbf{\dot{p}}+\mathbf{\dot{p}}\cdot\mathbf{p})=\mathbf{p}\cdot\mathbf{\dot{p}}=0\] This coincides with the above geometrical intuition: legal velocities must be perpendicular to legal position vectors. i.e., tangential to the unit circle. The acceleration constraint is: \[\ddot{C}=\frac{\mathrm{d}{(\mathbf{p}\cdot\mathbf{\dot{p}})}}{\mathrm{d}t}=\mathbf{p}\cdot\mathbf{\ddot{p}}+\mathbf{\dot{p}}\cdot\mathbf{\dot{p}}=0\] Solving for \(\mathbf{F_c}\) By Newton’s 2nd Law: \[\mathbf{F}=\mathbf{F_a}+\mathbf{F_c}=m\ddot{\mathbf{p}}\] Which we can combine with \(\ddot{C}\): \[\ddot{C}=\mathbf{p}\cdot\frac{\mathbf{F_a}+\mathbf{F_c}}{m}+\mathbf{\dot{p}}\cdot\mathbf{\dot{p}}=0\] Only the constraint force is unknown, so let’s try and isolate \(\mathbf{F_c}\): \[\mathbf{p}\cdot\mathbf{F_c}=-(\mathbf{p}\cdot\mathbf{F_a}+m\mathbf{\dot{p}}\cdot\mathbf{\dot{p}})\] Note that because \(\mathbf{F_c}\) is a 2D vector, this is really one equation with two unknowns: \(\mathbf{F_c}=(\mathbf{F_c}_x,\mathbf{F_c}_y)\). Principle of virtual work We expect constraint forces to never add or remove energy from the system. constraint forces do no work. Let’s take the (kinetic) energy of the particle: \[E_k=\frac{m}{2}\mathbf{\dot{p}}\cdot\mathbf{\dot{p}}\] And its derivative w.r.t. time: \[\dot{E_k}=\frac{m}{2}(\mathbf{\dot{p}}\cdot\mathbf{\ddot{p}}+\mathbf{\ddot{p}}\cdot\mathbf{\dot{p}})=m\mathbf{\dot{p}}\cdot\mathbf{\ddot{p}}=\mathbf{F_a}\cdot\mathbf{\dot{p}}+\mathbf{F_c}\cdot\mathbf{\dot{p}}\] We end up with the work done by \(\mathbf{F_a}\) and \(\mathbf{F_c}\), and we expect the \(\mathbf{F_c}\) part to be 0: \[\mathbf{F_c}\cdot\mathbf{\dot{p}}=0\] Which geometrically means that legal constraint forces must be perpendicular to legal velocities, which are tangential. Which in turn means that \(\mathbf{F_c}\) must be aligned with the position vector \(\mathbf{p}\) as illustrated above. This alignment can be expressed as \(\mathbf{F_c}=\lambda\mathbf{p}\). So now instead of two unknowns we have just one: \(\lambda\). Solving for \(\lambda\) Plugging back into \(\ddot{C}\) we obtain this expression where every value to the right is known: \[\lambda=-\frac{\mathbf{p}\cdot\mathbf{F_a}+m\mathbf{\dot{p}}\cdot\mathbf{\dot{p}}}{\mathbf{p}\cdot\mathbf{p}}\] Finally (!) the total acceleration experienced by the particle is: \[\mathbf{\ddot{p}}=\frac{\mathbf{F_a}+\lambda\mathbf{p}}{m}\] Source code Whoa! That was an awful lot of mathematical blah-blah… The source code implementation is a bit less intimidating, though: struct particle_t { explicit particle_t() : m( 1 ), p( 1, 0 ), v( 0 ) {} void step( const f64_t dt, const vec2d_c&amp; Fa ) { const f64_t pp = ( p * p ); const f64_t vv = ( v * v ); const f64_t lambda = -( ( ( p * Fa ) + ( m * vv ) ) / pp ); const vec2d_c Fc = ( p * lambda ); const vec2d_c a = ( ( Fa + Fc ) / m ); v += ( a * dt ); p += ( v * dt ); } f64_t m; // Mass. vec2d_c p; // Position. vec2d_c v; // Velocity. }; This is the code in action, assuming that the particle starts at rest at a legal position in the circle. Ouch! The distance sadly stretches away… :( What we’re witnessing here is numerical drift when iteratively solving the position ODE with the Semi-implicit Euler method. The simulation is using dt=1/60. Time resolution greatly affects the quality of the numerical solution. So let’s try with dt=1/1500 which is 25 times smaller: The drift is certainly reduced, but not quite gone. Using tiny dt values is terrible for performance, because then each visual frame has the burden to run many simulation steps instead of just one or only a few. And simulation steps in non-trivial setups get very performance-heavy very quickly. Using a numerical solver that is less prone to drift may certainly help. But won’t provide a definitive answer to this problem anyway. So let’s resort to our old friends: springs. Countering drift The problem with the simulations above is not just drift per se. But the fact that nothing is bringing the particle back to a legal position once it drifts away to a non-legal position. So as numerical errors make the corrective forces insufficient, the situation is never rectified. A robust solution to drift is to patch up the formulation above so instead of solving for \(\ddot{C}=0\) we solve for \(\ddot{C}=-(k_s{C}+k_d\dot{C})\). This expression looks familiar since \(k_s\) and \(k_d\) are damped spring (stiffness and damping) constants. The intention here is to bring drift (\(C\neq{0}\)) back to \(C=0\) in a spring-y fashion. Choosing \(k_s\) and \(k_d\) may require some trial-and-error, but good values are not hard to find because drift is easily absorbed: \[\lambda=-\frac{\mathbf{p}\cdot\mathbf{F_a}+m\mathbf{\dot{p}}\cdot\mathbf{\dot{p}}+k_s{C}+k_d\dot{C}}{\mathbf{p}\cdot\mathbf{p}}\] Here’s the new simulation with dt=1/600. Now the distance fluctuates but stays in the viccinity of 1: And here’s the new simulation code: struct particle_t { explicit particle_t() : m( 1 ), p( 1, 0 ), v( 0 ) {} void step( const f64_t dt, const vec2d_c&amp; Fa ) { const f64_t ks = 1e+2; const f64_t kd = 1e-2; const f64_t pp = ( p * p ); const f64_t vv = ( v * v ); const f64_t C_dot = ( p * v ); const f64_t C = ( ( pp - 1 ) / 2 ); const f64_t k = ( ( ks * C ) + ( kd * C_dot ) ); const f64_t lambda = -( ( ( p * Fa ) + ( m * vv ) + k ) ) / pp ); const vec2d_c Fc = ( p * lambda ); const vec2d_c a = ( ( Fa + Fc ) / m ); v += ( a * dt ); p += ( v * dt ); } f64_t m; vec2d_c p; // Position. vec2d_c v; // Velocity. }; Generalization In the next chapter we will discuss: A general formulation in vector/matrix form. How to handle systems with multiple particles/constraints. Stay tuned!]]></summary><media:thumbnail xmlns:media="http://search.yahoo.com/mrss/" url="http://localhost:4000/thumbnails/2023/chemaguerra-constrained-dynamics-iii.png" /><media:content medium="image" url="http://localhost:4000/thumbnails/2023/chemaguerra-constrained-dynamics-iii.png" xmlns:media="http://search.yahoo.com/mrss/" /></entry><entry><title type="html">Constrained Dynamics (II)</title><link href="http://localhost:4000/2023/08/04/constrained-dynamics-ii.html" rel="alternate" type="text/html" title="Constrained Dynamics (II)" /><published>2023-08-04T10:00:00+02:00</published><updated>2023-08-04T10:00:00+02:00</updated><id>http://localhost:4000/2023/08/04/constrained-dynamics-ii</id><content type="html" xml:base="http://localhost:4000/2023/08/04/constrained-dynamics-ii.html"><![CDATA[<p>This post is a continuation to the first entry in this series:</p>
+
+<ul>
+  <li>Part I: <a href="https://brashandplucky.com/2023/07/30/constrained-dynamics-i.html">Constrained Dynamics (I)</a> - <em>Unconstrained dynamics</em>.</li>
+</ul>
+
+<h2 id="constrained-dynamics">Constrained dynamics</h2>
+
+<p>We left off with a single unconstrained particle in free-fall.</p>
+
+<p>In order to build more interesting setups we need to define rules that constrain the motion of the particle in a certain desired way. For example, a rigid-arm pendulum could be modeled with a particle mass plus a constraint to keep the particle at all times at <em>exactly</em> the same distance from the origin.</p>
+
+<h3 id="example-distance-constraint">Example: Distance constraint</h3>
+
+<p>This will be our goal in this post: to simulate the motion of a particle that is subject to gravity, but is also constrained to keep a given distance to the origin at all times. Such type of constraint is called a <strong>distance constraint</strong>.</p>
+
+<p><img src="/uploads/2023/chemaguerra-distance-constraint-goal-256.gif" alt="Distance constraint" /></p>
+
+<p>In all the examples here we will make the particle start resting at arm’s length to the right side of the origin. So in each of the animations below, we will be expecting a <strong>yellow circle arc plot</strong> like this one. Any yellow plot that deviates from a circle arc will reveal that the distance constraint is not being successfully satisfied.</p>
+
+<h2 id="springs-as-constraints-dont">Springs as constraints (don’t!)</h2>
+
+<p>We <em>might</em> attempt to model such constraint with a sufficiently strong (mass-less) spring connecting the particle to the origin. The spring would allow the particle to orbit freely, but forbid it from abandoning the spring-long orbit.</p>
+
+<p>While this setup should work in principle, the spring would require a <em>very large stiffness constant</em> in order to not feel “goopy”. The spring would apply a corrective force to the particle as soon as it drifts off orbit. But this would eventually overshoot, and then rectify back, and so on, ending up in <em>oscillatory</em> motion. The stiffer the spring, the more acute the micro-oscillations. This is a recipe for disaster, specially as soon as the setup becomes more complex and more masses and springs are involved.</p>
+
+<h2 id="springs">Springs</h2>
+
+<p>The type of coiled metal spring that we’re all familiar with, remains at some <em>rest length</em>
+until you try to compress or extend it.</p>
+
+<p>If you try to compress the spring, it will resist your force, trying to extend back to its rest length.
+If you try to extend the spring, it will also resist your force, trying to compress back to its rest length.</p>
+
+<p><a href="https://en.wikipedia.org/wiki/Hooke%27s_law">Hooke’s law</a> states that the force needed to
+compress/extend an ideal spring by some distance \(\Delta{L}=(L_t-L)\) above/below its rest length \(L\)
+scales linearly with respect to said length increment:</p>
+
+\[\|\mathbf{F_t}\|=-k_s\Delta{L}=-k_s(L_t-L)\]
+
+<p>The source code below extends the previous post in order to incorporate a spring connecting the particle to the origin alongside the force of gravity.</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>struct spring_mass_t
+{
+  explicit spring_mass_t
+  
+      ( const f64_t rest_length = .5,
+        const f64_t stiffness   = 1e3,
+        const f64_t damping     = 1e3 )
+
+      : m( 100 ), p( rest_length, 0 ), v( 0 ),
+
+        L( rest_length ), ks( stiffness ), kd( damping ) {}
+
+  void step( const f64_t dt, const vec2d_c&amp; gravity )
+  {
+    // Current spring state.
+
+    const vec2d_c s_D  =   p;             // Spring dir. Anchored at (0,0).
+
+    const   f64_t s_L  =   s_D.length();  // Spring len.
+
+    const vec2d_c s_d  = ( s_D / s_L );   // Spring dir (normalized).
+
+    const vec2d_c s_Fs = ( s_d * ( ( L - s_L ) * ks ) );  // Hooke's Law.
+    const vec2d_c s_Fd = ( s_d * ( ( v * s_d ) * kd ) );  // Damping.
+
+    // Forces sum =&gt; Acceleration.
+
+    const vec2d_c a = ( gravity + ( ( s_Fs - s_Fd ) / m ) );
+
+    // Semi-implicit Euler.
+
+    v += ( a * dt );
+    p += ( v * dt );
+  }
+
+  // Particle state.
+
+    f64_t m;
+  vec2d_c p;
+  vec2d_c v;
+
+  // Spring.
+
+    f64_t L;   // Rest length.
+    f64_t ks;  // Stiffness.
+    f64_t kd;  // Damping.
+};
+</code></pre></div></div>
+
+<p>Here’s a goopy spring (\(k_s=1e3\)):</p>
+
+<p><img src="/uploads/2023/chemaguerra-goopy-spring-512.gif" alt="Goopy spring" /></p>
+
+<p>Here’s a stiff spring (\(k_s=1e6\)):</p>
+
+<p><img src="/uploads/2023/chemaguerra-stiff-spring-512.gif" alt="Stiff spring" /></p>
+
+<p>Numerical error accumulation aside, these systems neither gain nor lose energy. So pendular motion would never stop should the simulation run forever.</p>
+
+<p>Note that, <em>apparently</em>, the stiff spring successfully satisfies the distance constraint: the particle draws a seemingly perfect semicircle, which is exactly what we want. But later we’ll see how <strong>easy-to-break</strong> this apparent stability is as soon as we complicate the system a little bit.</p>
+
+<h2 id="damping">Damping</h2>
+
+<p><a href="https://en.wikipedia.org/wiki/Damping">Damping</a> is an influence upon an oscillatory system
+that has the effect of reducing or preventing the oscillation. A damped spring is often modeled like this:</p>
+
+\[\mathbf{F}_t=-\mathbf{d}_t(k_s(L_t-L)+k_d(\dot{\mathbf{p}}_t\cdot\mathbf{d}_t))\]
+
+<p>Which means that the force at either end of the spring:</p>
+
+<ul>
+  <li>Resists changes in length, proportionally to a certain <em>stiffness</em> constant \(k_s\).</li>
+  <li>Resists velocity along the spring’s direction \(\mathbf{d}_t\), proportionally to a certain <em>damping</em> constant \(k_d\).</li>
+</ul>
+
+<p>Here’s a damped goopy spring (\(k_d=1e3\)):</p>
+
+<p><img src="/uploads/2023/chemaguerra-damped-goopy-spring-512.gif" alt="Damped goopy spring" /></p>
+
+<p>Damping a spring effectively makes it calmer by reducing its tendency to gain velocity. Which in turn makes it lose energy and stop eventually. Like in real life.</p>
+
+<h2 id="adding-more-springs">Adding more springs</h2>
+
+<p>As explained in the beginning of this post, the oscillatory chaos induced by the use of springs, even when they are stiff and/or damped, becomes quickly uncontrollable as more particles/springs are involved.</p>
+
+<p>Let’s modify our code to connect a second spring-mass to the end of the first one.</p>
+
+<p>The state <code class="language-plaintext highlighter-rouge">struct</code> now manages two particle states. When summing forces, note that the particle where both mass-less springs meet is subject to opposing forces coming from both springs. The particle at the end of the contraption is only subject to the force from the second spring.</p>
+
+<blockquote>
+  <p>Remember that our goal is a perfectly semicircular trajectory for the first particle, in yellow.</p>
+</blockquote>
+
+<p>Things go crazy with a goopy double-spring now:</p>
+
+<p><img src="/uploads/2023/chemaguerra-goopy-double-spring-512.gif" alt="Goopy double spring" /></p>
+
+<p>Damping muffles the craziness a bit, but not quite:</p>
+
+<p><img src="/uploads/2023/chemaguerra-damped-goopy-double-spring-512.gif" alt="Damped goopy double spring" /></p>
+
+<p>Using stiffer springs seems to work well at first sight… until vibrations crawl up and jerky motion takes over eventually:</p>
+
+<p><img src="/uploads/2023/chemaguerra-stiff-double-spring-512.gif" alt="Stiff double spring" /></p>
+
+<p>Like before, damping helps. But the problem is visibly not fully gone. Also, adding more springs would make the situation spiral out of control anyway:</p>
+
+<p><img src="/uploads/2023/chemaguerra-damped-stiff-double-spring-512.gif" alt="Damped Stiff double spring" /></p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>struct double_spring_mass_t
+{
+  explicit double_spring_mass_t
+  
+      ( const f64_t rest_length =  .5,
+        const f64_t stiffness   = 1e3,
+        const f64_t damping     = 1e3 )
+
+      : m( 100 ), p1( ( rest_length * 1 ), 0 ), v1( 0 ),
+                  p2( ( rest_length * 2 ), 0 ), v2( 0 ),
+
+        L( rest_length ), ks( stiffness ), kd( damping ) {}
+
+  void step( const f64_t dt, const vec2d_c&amp; gravity )
+  {
+    // Current spring states.
+
+    const vec2d_c s1_D  = ( p1      );      // Spring dir.
+    const vec2d_c s2_D  = ( p2 - p1 );      //
+
+    const   f64_t s1_L  =   s1_D.length();  // Spring len.
+    const   f64_t s2_L  =   s2_D.length();  //
+
+    const vec2d_c s1_d  = ( s1_D / s1_L );  // Spring dir (normalized).
+    const vec2d_c s2_d  = ( s2_D / s2_L );  //
+
+    const vec2d_c s1_Fs = ( s1_d * ( ( L  - s1_L ) * ks ) );  // Hooke's Law.
+    const vec2d_c s2_Fs = ( s2_d * ( ( L  - s2_L ) * ks ) );  //
+
+    const vec2d_c s1_Fd = ( s1_d * ( ( v1 * s1_d ) * kd ) );  // Damping.
+    const vec2d_c s2_Fd = ( s2_d * ( ( v2 * s2_d ) * kd ) );  //
+
+    const vec2d_c s1_F  = ( s1_Fs - s1_Fd );
+    const vec2d_c s2_F  = ( s2_Fs - s2_Fd );
+
+    // Forces sum =&gt; Acceleration.
+
+    const vec2d_c a1 = ( gravity + ( ( s1_F - s2_F ) / m ) );
+    const vec2d_c a2 = ( gravity + ( ( s2_F        ) / m ) );
+
+    // Semi-implicit Euler.
+
+    v1 += ( a1 * dt ); p1 += ( v1 * dt );
+    v2 += ( a2 * dt ); p2 += ( v2 * dt );
+  }
+
+  // Particle state.
+
+    f64_t m;   // m=m1=m2.
+
+  vec2d_c p1, v1;
+  vec2d_c p2, v2;
+
+  // Both springs.
+
+    f64_t L;   // Rest length.
+    f64_t ks;  // Stiffness.
+    f64_t kd;  // Damping.
+};
+</code></pre></div></div>
+
+<h2 id="representing-constraints-properly">Representing constraints properly</h2>
+
+<p>We would wish for a general method that robustly satisfies rigid constraints without large stiffness constants that induce strong oscillatory forces. One that using only corrective forces (or impulses) gently nudges particles back to valid states constraints-wise.</p>
+
+<p>This is what the next entry in this mini-series will be about.</p>
+
+<p>Stay tuned!</p>]]></content><author><name></name></author><summary type="html"><![CDATA[This post is a continuation to the first entry in this series: Part I: Constrained Dynamics (I) - Unconstrained dynamics. Constrained dynamics We left off with a single unconstrained particle in free-fall. In order to build more interesting setups we need to define rules that constrain the motion of the particle in a certain desired way. For example, a rigid-arm pendulum could be modeled with a particle mass plus a constraint to keep the particle at all times at exactly the same distance from the origin. Example: Distance constraint This will be our goal in this post: to simulate the motion of a particle that is subject to gravity, but is also constrained to keep a given distance to the origin at all times. Such type of constraint is called a distance constraint. In all the examples here we will make the particle start resting at arm’s length to the right side of the origin. So in each of the animations below, we will be expecting a yellow circle arc plot like this one. Any yellow plot that deviates from a circle arc will reveal that the distance constraint is not being successfully satisfied. Springs as constraints (don’t!) We might attempt to model such constraint with a sufficiently strong (mass-less) spring connecting the particle to the origin. The spring would allow the particle to orbit freely, but forbid it from abandoning the spring-long orbit. While this setup should work in principle, the spring would require a very large stiffness constant in order to not feel “goopy”. The spring would apply a corrective force to the particle as soon as it drifts off orbit. But this would eventually overshoot, and then rectify back, and so on, ending up in oscillatory motion. The stiffer the spring, the more acute the micro-oscillations. This is a recipe for disaster, specially as soon as the setup becomes more complex and more masses and springs are involved. Springs The type of coiled metal spring that we’re all familiar with, remains at some rest length until you try to compress or extend it. If you try to compress the spring, it will resist your force, trying to extend back to its rest length. If you try to extend the spring, it will also resist your force, trying to compress back to its rest length. Hooke’s law states that the force needed to compress/extend an ideal spring by some distance \(\Delta{L}=(L_t-L)\) above/below its rest length \(L\) scales linearly with respect to said length increment: \[\|\mathbf{F_t}\|=-k_s\Delta{L}=-k_s(L_t-L)\] The source code below extends the previous post in order to incorporate a spring connecting the particle to the origin alongside the force of gravity. struct spring_mass_t { explicit spring_mass_t ( const f64_t rest_length = .5, const f64_t stiffness = 1e3, const f64_t damping = 1e3 ) : m( 100 ), p( rest_length, 0 ), v( 0 ), L( rest_length ), ks( stiffness ), kd( damping ) {} void step( const f64_t dt, const vec2d_c&amp; gravity ) { // Current spring state. const vec2d_c s_D = p; // Spring dir. Anchored at (0,0). const f64_t s_L = s_D.length(); // Spring len. const vec2d_c s_d = ( s_D / s_L ); // Spring dir (normalized). const vec2d_c s_Fs = ( s_d * ( ( L - s_L ) * ks ) ); // Hooke's Law. const vec2d_c s_Fd = ( s_d * ( ( v * s_d ) * kd ) ); // Damping. // Forces sum =&gt; Acceleration. const vec2d_c a = ( gravity + ( ( s_Fs - s_Fd ) / m ) ); // Semi-implicit Euler. v += ( a * dt ); p += ( v * dt ); } // Particle state. f64_t m; vec2d_c p; vec2d_c v; // Spring. f64_t L; // Rest length. f64_t ks; // Stiffness. f64_t kd; // Damping. }; Here’s a goopy spring (\(k_s=1e3\)): Here’s a stiff spring (\(k_s=1e6\)): Numerical error accumulation aside, these systems neither gain nor lose energy. So pendular motion would never stop should the simulation run forever. Note that, apparently, the stiff spring successfully satisfies the distance constraint: the particle draws a seemingly perfect semicircle, which is exactly what we want. But later we’ll see how easy-to-break this apparent stability is as soon as we complicate the system a little bit. Damping Damping is an influence upon an oscillatory system that has the effect of reducing or preventing the oscillation. A damped spring is often modeled like this: \[\mathbf{F}_t=-\mathbf{d}_t(k_s(L_t-L)+k_d(\dot{\mathbf{p}}_t\cdot\mathbf{d}_t))\] Which means that the force at either end of the spring: Resists changes in length, proportionally to a certain stiffness constant \(k_s\). Resists velocity along the spring’s direction \(\mathbf{d}_t\), proportionally to a certain damping constant \(k_d\). Here’s a damped goopy spring (\(k_d=1e3\)): Damping a spring effectively makes it calmer by reducing its tendency to gain velocity. Which in turn makes it lose energy and stop eventually. Like in real life. Adding more springs As explained in the beginning of this post, the oscillatory chaos induced by the use of springs, even when they are stiff and/or damped, becomes quickly uncontrollable as more particles/springs are involved. Let’s modify our code to connect a second spring-mass to the end of the first one. The state struct now manages two particle states. When summing forces, note that the particle where both mass-less springs meet is subject to opposing forces coming from both springs. The particle at the end of the contraption is only subject to the force from the second spring. Remember that our goal is a perfectly semicircular trajectory for the first particle, in yellow. Things go crazy with a goopy double-spring now: Damping muffles the craziness a bit, but not quite: Using stiffer springs seems to work well at first sight… until vibrations crawl up and jerky motion takes over eventually: Like before, damping helps. But the problem is visibly not fully gone. Also, adding more springs would make the situation spiral out of control anyway: struct double_spring_mass_t { explicit double_spring_mass_t ( const f64_t rest_length = .5, const f64_t stiffness = 1e3, const f64_t damping = 1e3 ) : m( 100 ), p1( ( rest_length * 1 ), 0 ), v1( 0 ), p2( ( rest_length * 2 ), 0 ), v2( 0 ), L( rest_length ), ks( stiffness ), kd( damping ) {} void step( const f64_t dt, const vec2d_c&amp; gravity ) { // Current spring states. const vec2d_c s1_D = ( p1 ); // Spring dir. const vec2d_c s2_D = ( p2 - p1 ); // const f64_t s1_L = s1_D.length(); // Spring len. const f64_t s2_L = s2_D.length(); // const vec2d_c s1_d = ( s1_D / s1_L ); // Spring dir (normalized). const vec2d_c s2_d = ( s2_D / s2_L ); // const vec2d_c s1_Fs = ( s1_d * ( ( L - s1_L ) * ks ) ); // Hooke's Law. const vec2d_c s2_Fs = ( s2_d * ( ( L - s2_L ) * ks ) ); // const vec2d_c s1_Fd = ( s1_d * ( ( v1 * s1_d ) * kd ) ); // Damping. const vec2d_c s2_Fd = ( s2_d * ( ( v2 * s2_d ) * kd ) ); // const vec2d_c s1_F = ( s1_Fs - s1_Fd ); const vec2d_c s2_F = ( s2_Fs - s2_Fd ); // Forces sum =&gt; Acceleration. const vec2d_c a1 = ( gravity + ( ( s1_F - s2_F ) / m ) ); const vec2d_c a2 = ( gravity + ( ( s2_F ) / m ) ); // Semi-implicit Euler. v1 += ( a1 * dt ); p1 += ( v1 * dt ); v2 += ( a2 * dt ); p2 += ( v2 * dt ); } // Particle state. f64_t m; // m=m1=m2. vec2d_c p1, v1; vec2d_c p2, v2; // Both springs. f64_t L; // Rest length. f64_t ks; // Stiffness. f64_t kd; // Damping. }; Representing constraints properly We would wish for a general method that robustly satisfies rigid constraints without large stiffness constants that induce strong oscillatory forces. One that using only corrective forces (or impulses) gently nudges particles back to valid states constraints-wise. This is what the next entry in this mini-series will be about. Stay tuned!]]></summary><media:thumbnail xmlns:media="http://search.yahoo.com/mrss/" url="http://localhost:4000/thumbnails/2023/chemaguerra-constrained-dynamics-ii.png" /><media:content medium="image" url="http://localhost:4000/thumbnails/2023/chemaguerra-constrained-dynamics-ii.png" xmlns:media="http://search.yahoo.com/mrss/" /></entry><entry><title type="html">Constrained Dynamics (I)</title><link href="http://localhost:4000/2023/07/30/constrained-dynamics-i.html" rel="alternate" type="text/html" title="Constrained Dynamics (I)" /><published>2023-07-30T00:00:00+02:00</published><updated>2023-07-30T00:00:00+02:00</updated><id>http://localhost:4000/2023/07/30/constrained-dynamics-i</id><content type="html" xml:base="http://localhost:4000/2023/07/30/constrained-dynamics-i.html"><![CDATA[<p>I am starting a mini-series of posts that go through the mathematical derivation necessary to build a <strong>minimal physics engine</strong> with support for <em>constrained dynamics</em>.</p>
+
+<p>This first post is about <em>unconstrained dynamics</em>, using a free-falling particle as an example.</p>
+
+<p>Upcoming posts will describe constrained dynamics, then build a (single-constraint) pendulum, and finally a (multi-constraint) double-pendulum.</p>
+
+<p>We will restrict ourselves to:</p>
+
+<ul>
+  <li>2D.</li>
+  <li>Only one particle mass.</li>
+  <li>Only one external force (gravity).</li>
+  <li>Only one type of constraint (distance).</li>
+</ul>
+
+<p>Rigid bodies with a surface area, collisions, contacts, frictions, etc… will be left out of the picture.</p>
+
+<h2 id="incredibly-useful-links">Incredibly useful links</h2>
+
+<p>This mini-series is nothing but a digest of knowledge that can be found in great detail here:</p>
+
+<ul>
+  <li>Erin Catto’s <a href="https://box2d.org/publications/">Box2D publications</a> area.</li>
+  <li><a href="http://www.cs.cmu.edu/~baraff/sigcourse/">Physically Based Modeling: Principles and Practice</a> by Andrew Witkin and David Baraff.</li>
+</ul>
+
+<p>In particular:</p>
+
+<ul>
+  <li>This <a href="https://box2d.org/files/ErinCatto_ModelingAndSolvingConstraints_GDC2009.pdf">presentation</a> by Erin Catto.</li>
+  <li>These <a href="http://www.cs.cmu.edu/~baraff/sigcourse/notesf.pdf">lecture notes</a> by Andrew Witkin.</li>
+</ul>
+
+<h2 id="unconstrained-dynamics">Unconstrained dynamics</h2>
+
+<p>By way of <a href="https://en.wikipedia.org/wiki/Newton%27s_laws_of_motion">newtonian mechanics</a>:</p>
+
+<ul>
+  <li><em>1st Law</em>: The velocity (or lack thereof) of a particle remains unchanged until a force is applied to it.</li>
+  <li><em>2nd Law</em>: When a force is applied to a particle, it experiments an acceleration of magnitude \(\frac{\|\mathbf{F}\|}{m}\) in the direction of \(\mathbf{F}\).</li>
+</ul>
+
+<p>As a consequence of the 1st Law, we can describe the state \(\mathbf{x}\) of a particle of mass \(m\) by its position and its velocity.</p>
+
+<p>As a consequence of the 2nd Law, we can’t consider acceleration to be part of the state as it only spawns for as long as an external force is applied to the particle. Force (acceleration) is actually the only agent that causes changes of state.</p>
+
+<p>These three magnitudes are 2D vectors. We will use the following notation:</p>
+
+\[\begin{flalign}
+&amp; &amp;&amp; \mathbf{p}=position &amp; \\
+&amp; &amp;&amp; \dot{\mathbf{p}}=\frac{\mathrm{d}\mathbf{p}}{\mathrm{d}t}=velocity &amp; \\
+&amp; &amp;&amp; \ddot{\mathbf{p}}=\frac{\mathrm{d}\dot{\mathbf{p}}}{\mathrm{d}t}=\frac{\mathrm{d}^2\mathbf{p}}{\mathrm{d}t^2}=acceleration &amp;
+\end{flalign}\]
+
+<h2 id="momentum">Momentum</h2>
+
+<p>Mass and velocity together lead to the definition of <a href="https://en.wikipedia.org/wiki/Momentum">linear momentum</a>:</p>
+
+\[\mathbf{\rho}=m\mathbf{\dot{p}}\]
+
+<p>Another way to read the 2nd Law is that a force acting on a particle induces a change on its momentum.</p>
+
+\[\mathbf{F}=\frac{\mathrm{d}\mathbf{\rho}}{\mathrm{d}t}=\frac{\mathrm{d}(m\mathbf{\dot{p}})}{\mathrm{d}t}=m\mathbf{\ddot{p}}\]
+
+<p>We can reason that momentum is a measure of the <a href="https://en.wikipedia.org/wiki/Impulse_(physics)">impulse</a> (force over time) that one must exert in order to stop the particle (<em>i.e.,</em> cancel out its current velocity).</p>
+
+<p>For a steady force, this is:</p>
+
+\[\begin{flalign}
+&amp; &amp;&amp; \mathbf{Imp} = \int_{t_0}^{t_1}{\mathbf{F}}\mathrm{d}{t} = \mathbf{F} \Delta{t} &amp; \\
+&amp; &amp;&amp; \mathbf{Imp} = \int_{t_0}^{t_1}{\frac{\mathrm{d}\mathbf{\rho}}{\mathrm{d}t}}\mathrm{d}{t} = \Delta{\mathbf{\rho}} &amp;
+\end{flalign}\]
+
+<h2 id="state-over-time">State over time</h2>
+
+<p>The evolution of the particle’s position is so ruled by the <em>differential equation</em>:</p>
+
+\[\mathbf{p}=\mathbf{p}_0+\int_{t_0}^{t_1}{(\dot{\mathbf{p}}_0+\int_{t_0}^{t_1}{\frac{\mathbf{F}}{m}}\mathrm{d}{t})}\mathrm{d}{t}\]
+
+<p>Which can be read as: <em>the particle position is a function of the initial state \(\mathbf{x}_0\) (at \(t=t_0\)) and the forces applied to the particle, which cause acceleration, which modifies the velocity, which modifies the position</em>.</p>
+
+<p>The classic and most intuitive way to iteratively solve the above diffential equation is the <a href="https://en.wikipedia.org/wiki/Semi-implicit_Euler_method">Semi-Implicit Euler method</a>:</p>
+
+\[\begin{flalign}
+&amp; &amp;&amp; \ddot{\mathbf{p}}_t=\frac{\mathbf{F}}{m} &amp; \\
+&amp; &amp;&amp; \dot{\mathbf{p}}_{t+\Delta{t}}=\dot{\mathbf{p}}_t+\ddot{\mathbf{p}}_t\Delta{t} &amp; \\
+&amp; &amp;&amp; \mathbf{p}_{t+\Delta{t}}=\mathbf{p}_t+\dot{\mathbf{p}}_t\Delta{t} &amp;
+\end{flalign}\]
+
+<p>Where each iteration is meant to encompass a discrete time slice of duration \(\Delta{t}\).</p>
+
+<p>These expressions can be read as:</p>
+
+<ul>
+  <li>Calc the acceleration caused by the total sum of applied forces at time \(t\).</li>
+  <li>Update the particle’s velocity with said acceleration (times \(\Delta{t}\)).</li>
+  <li>Update the particle’s position with the updated velocity (times \(\Delta{t}\)).</li>
+</ul>
+
+<p>The intricacies of numerical solvers for differential equations are outside the scope of this post. But the above method does a fine job at producing a <em>discrete approximation</em> to the <em>true</em> state over time. At least, as long as \(\Delta{t}\) is small enough. For starters \(\Delta{t}=1/60\) (60 steps per second) is a sensible choice.</p>
+
+<p>Note that the smaller the \(\Delta{t}\), the more closely that we will be approximating the exact analytic solution. More accuracy sounds ideal, but the smaller the delta, the more the steps necessary to integrate over the same total time. Also, tiny deltas may drown in the muddy waters of insufficient floating-point precision. So a value that is small, but not too small, is the right choice.</p>
+
+<h2 id="free-fall-iterative">Free-fall (iterative)</h2>
+
+<p>We’re only considering gravity in this post (\(\mathbf{F}=\mathbf{g}\)). So the only acceleration is downwards and always steady: \(\ddot{\mathbf{p}}=\frac{\mathbf{g}}{m}\). The simulation steps become:</p>
+
+\[\begin{flalign}
+&amp; &amp;&amp; \dot{\mathbf{p}}_{t+\Delta{t}} = \dot{\mathbf{p}}_t + \frac{\mathbf{g}}{m} \Delta{t} &amp; \\
+&amp; &amp;&amp; \mathbf{p}_{t+\Delta{t}} = \dot{\mathbf{p}}_t \Delta{t} &amp;
+\end{flalign}\]
+
+<p>Here’s a simple implementation for the particle state and the simulation step:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>struct particle_t
+{
+  explicit particle_t() : m( 1 ), p( 0 ), v( 0 ) {}
+
+  void step( const f64_t dt, const vec2d_c&amp; F )
+  {
+    const vec2d_c a = ( F / m );
+
+    v += ( a * dt );
+    p += ( v * dt );
+  }
+
+    f64_t m;  // Mass.
+  vec2d_c p;  // Position.
+  vec2d_c v;  // Velocity.
+};
+</code></pre></div></div>
+
+<p>Here’s a humble animation of the particle in free-fall:</p>
+
+<p><img src="/uploads/2023/chemaguerra-particle-free-fall.gif" alt="Projectile motion" /></p>
+
+<p>If we give an initial velocity to the particle (\(t=0\)), we end up with projectile motion:</p>
+
+<p><img src="/uploads/2023/chemaguerra-particle-projectile-motion.gif" alt="Projectile motion" /></p>
+
+<h2 id="free-fall-analytic">Free-fall (analytic)</h2>
+
+<p><a href="https://en.wikipedia.org/wiki/Differential_equation">Differential equations</a> are outside the scope of this post. But let’s say at least that an analytic solution to this example, where there’s only one steady external force, is possible and easy.</p>
+
+<p>The analytic solution gives us a function that explicitly describes the position of the particle at <em>any given time</em>. This sounds <em>better</em> than an iterative simulation, although analytic solutions are untractable in non-trivial systems.</p>
+
+<p>The vertical force that gravity exerts on a particle is proportional to its mass, which in turn makes gravity accelerate any particle the same regardless of its mass:</p>
+
+\[\mathbf{g}=\begin{bmatrix}0\\ {m}g_y\end{bmatrix}\]
+
+<p>Plugging \(\mathbf{g}\) into the differential equation above:</p>
+
+\[\begin{flalign}
+&amp; &amp;&amp; x=x_0+\int_{t_0}^{t_1}{(\dot{x}_0+\int_{t_0}^{t_1}{\frac{0    }{m}}\mathrm{d}{t})}\mathrm{d}{t} &amp; \\
+&amp; &amp;&amp; y=y_0+\int_{t_0}^{t_1}{(\dot{y}_0+\int_{t_0}^{t_1}{\frac{m g_y}{m}}\mathrm{d}{t})}\mathrm{d}{t} &amp;
+\end{flalign}\]
+
+<p>Which analytic solution is the very familiar <a href="https://en.wikipedia.org/wiki/Projectile_motion">projectile motion</a> formula:</p>
+
+\[\begin{flalign}
+&amp; &amp;&amp; x=x_0+\dot{x}_0t &amp; \\
+&amp; &amp;&amp; y=y_0+\dot{y}_0t+g_y{t^2} &amp;
+\end{flalign}\]
+
+<p>This type of motion is also called <em>parabolic throw</em>. As can be seen both in the above animation and by looking at the formula, the ballistic trajectory w.r.t. time is horizontally linear, and vertically parabolic.</p>
+
+<p>Things are about to get exciting. I promise!</p>]]></content><author><name></name></author><summary type="html"><![CDATA[I am starting a mini-series of posts that go through the mathematical derivation necessary to build a minimal physics engine with support for constrained dynamics. This first post is about unconstrained dynamics, using a free-falling particle as an example. Upcoming posts will describe constrained dynamics, then build a (single-constraint) pendulum, and finally a (multi-constraint) double-pendulum. We will restrict ourselves to: 2D. Only one particle mass. Only one external force (gravity). Only one type of constraint (distance). Rigid bodies with a surface area, collisions, contacts, frictions, etc… will be left out of the picture. Incredibly useful links This mini-series is nothing but a digest of knowledge that can be found in great detail here: Erin Catto’s Box2D publications area. Physically Based Modeling: Principles and Practice by Andrew Witkin and David Baraff. In particular: This presentation by Erin Catto. These lecture notes by Andrew Witkin. Unconstrained dynamics By way of newtonian mechanics: 1st Law: The velocity (or lack thereof) of a particle remains unchanged until a force is applied to it. 2nd Law: When a force is applied to a particle, it experiments an acceleration of magnitude \(\frac{\|\mathbf{F}\|}{m}\) in the direction of \(\mathbf{F}\). As a consequence of the 1st Law, we can describe the state \(\mathbf{x}\) of a particle of mass \(m\) by its position and its velocity. As a consequence of the 2nd Law, we can’t consider acceleration to be part of the state as it only spawns for as long as an external force is applied to the particle. Force (acceleration) is actually the only agent that causes changes of state. These three magnitudes are 2D vectors. We will use the following notation: \[\begin{flalign} &amp; &amp;&amp; \mathbf{p}=position &amp; \\ &amp; &amp;&amp; \dot{\mathbf{p}}=\frac{\mathrm{d}\mathbf{p}}{\mathrm{d}t}=velocity &amp; \\ &amp; &amp;&amp; \ddot{\mathbf{p}}=\frac{\mathrm{d}\dot{\mathbf{p}}}{\mathrm{d}t}=\frac{\mathrm{d}^2\mathbf{p}}{\mathrm{d}t^2}=acceleration &amp; \end{flalign}\] Momentum Mass and velocity together lead to the definition of linear momentum: \[\mathbf{\rho}=m\mathbf{\dot{p}}\] Another way to read the 2nd Law is that a force acting on a particle induces a change on its momentum. \[\mathbf{F}=\frac{\mathrm{d}\mathbf{\rho}}{\mathrm{d}t}=\frac{\mathrm{d}(m\mathbf{\dot{p}})}{\mathrm{d}t}=m\mathbf{\ddot{p}}\] We can reason that momentum is a measure of the impulse (force over time) that one must exert in order to stop the particle (i.e., cancel out its current velocity). For a steady force, this is: \[\begin{flalign} &amp; &amp;&amp; \mathbf{Imp} = \int_{t_0}^{t_1}{\mathbf{F}}\mathrm{d}{t} = \mathbf{F} \Delta{t} &amp; \\ &amp; &amp;&amp; \mathbf{Imp} = \int_{t_0}^{t_1}{\frac{\mathrm{d}\mathbf{\rho}}{\mathrm{d}t}}\mathrm{d}{t} = \Delta{\mathbf{\rho}} &amp; \end{flalign}\] State over time The evolution of the particle’s position is so ruled by the differential equation: \[\mathbf{p}=\mathbf{p}_0+\int_{t_0}^{t_1}{(\dot{\mathbf{p}}_0+\int_{t_0}^{t_1}{\frac{\mathbf{F}}{m}}\mathrm{d}{t})}\mathrm{d}{t}\] Which can be read as: the particle position is a function of the initial state \(\mathbf{x}_0\) (at \(t=t_0\)) and the forces applied to the particle, which cause acceleration, which modifies the velocity, which modifies the position. The classic and most intuitive way to iteratively solve the above diffential equation is the Semi-Implicit Euler method: \[\begin{flalign} &amp; &amp;&amp; \ddot{\mathbf{p}}_t=\frac{\mathbf{F}}{m} &amp; \\ &amp; &amp;&amp; \dot{\mathbf{p}}_{t+\Delta{t}}=\dot{\mathbf{p}}_t+\ddot{\mathbf{p}}_t\Delta{t} &amp; \\ &amp; &amp;&amp; \mathbf{p}_{t+\Delta{t}}=\mathbf{p}_t+\dot{\mathbf{p}}_t\Delta{t} &amp; \end{flalign}\] Where each iteration is meant to encompass a discrete time slice of duration \(\Delta{t}\). These expressions can be read as: Calc the acceleration caused by the total sum of applied forces at time \(t\). Update the particle’s velocity with said acceleration (times \(\Delta{t}\)). Update the particle’s position with the updated velocity (times \(\Delta{t}\)). The intricacies of numerical solvers for differential equations are outside the scope of this post. But the above method does a fine job at producing a discrete approximation to the true state over time. At least, as long as \(\Delta{t}\) is small enough. For starters \(\Delta{t}=1/60\) (60 steps per second) is a sensible choice. Note that the smaller the \(\Delta{t}\), the more closely that we will be approximating the exact analytic solution. More accuracy sounds ideal, but the smaller the delta, the more the steps necessary to integrate over the same total time. Also, tiny deltas may drown in the muddy waters of insufficient floating-point precision. So a value that is small, but not too small, is the right choice. Free-fall (iterative) We’re only considering gravity in this post (\(\mathbf{F}=\mathbf{g}\)). So the only acceleration is downwards and always steady: \(\ddot{\mathbf{p}}=\frac{\mathbf{g}}{m}\). The simulation steps become: \[\begin{flalign} &amp; &amp;&amp; \dot{\mathbf{p}}_{t+\Delta{t}} = \dot{\mathbf{p}}_t + \frac{\mathbf{g}}{m} \Delta{t} &amp; \\ &amp; &amp;&amp; \mathbf{p}_{t+\Delta{t}} = \dot{\mathbf{p}}_t \Delta{t} &amp; \end{flalign}\] Here’s a simple implementation for the particle state and the simulation step: struct particle_t { explicit particle_t() : m( 1 ), p( 0 ), v( 0 ) {} void step( const f64_t dt, const vec2d_c&amp; F ) { const vec2d_c a = ( F / m ); v += ( a * dt ); p += ( v * dt ); } f64_t m; // Mass. vec2d_c p; // Position. vec2d_c v; // Velocity. }; Here’s a humble animation of the particle in free-fall: If we give an initial velocity to the particle (\(t=0\)), we end up with projectile motion: Free-fall (analytic) Differential equations are outside the scope of this post. But let’s say at least that an analytic solution to this example, where there’s only one steady external force, is possible and easy. The analytic solution gives us a function that explicitly describes the position of the particle at any given time. This sounds better than an iterative simulation, although analytic solutions are untractable in non-trivial systems. The vertical force that gravity exerts on a particle is proportional to its mass, which in turn makes gravity accelerate any particle the same regardless of its mass: \[\mathbf{g}=\begin{bmatrix}0\\ {m}g_y\end{bmatrix}\] Plugging \(\mathbf{g}\) into the differential equation above: \[\begin{flalign} &amp; &amp;&amp; x=x_0+\int_{t_0}^{t_1}{(\dot{x}_0+\int_{t_0}^{t_1}{\frac{0 }{m}}\mathrm{d}{t})}\mathrm{d}{t} &amp; \\ &amp; &amp;&amp; y=y_0+\int_{t_0}^{t_1}{(\dot{y}_0+\int_{t_0}^{t_1}{\frac{m g_y}{m}}\mathrm{d}{t})}\mathrm{d}{t} &amp; \end{flalign}\] Which analytic solution is the very familiar projectile motion formula: \[\begin{flalign} &amp; &amp;&amp; x=x_0+\dot{x}_0t &amp; \\ &amp; &amp;&amp; y=y_0+\dot{y}_0t+g_y{t^2} &amp; \end{flalign}\] This type of motion is also called parabolic throw. As can be seen both in the above animation and by looking at the formula, the ballistic trajectory w.r.t. time is horizontally linear, and vertically parabolic. Things are about to get exciting. I promise!]]></summary><media:thumbnail xmlns:media="http://search.yahoo.com/mrss/" url="http://localhost:4000/thumbnails/2023/chemaguerra-constrained-dynamics-i.png" /><media:content medium="image" url="http://localhost:4000/thumbnails/2023/chemaguerra-constrained-dynamics-i.png" xmlns:media="http://search.yahoo.com/mrss/" /></entry><entry><title type="html">Reprojection Temporal Anti-Aliasing</title><link href="http://localhost:4000/2023/05/06/reprojection-temporal-antialiasing.html" rel="alternate" type="text/html" title="Reprojection Temporal Anti-Aliasing" /><published>2023-05-06T00:00:00+02:00</published><updated>2023-05-06T00:00:00+02:00</updated><id>http://localhost:4000/2023/05/06/reprojection-temporal-antialiasing</id><content type="html" xml:base="http://localhost:4000/2023/05/06/reprojection-temporal-antialiasing.html"><![CDATA[<p>Recently I dived into the rabbit-hole of real-time anti-aliasing techniques and ended up implementing <strong>Reprojection-based Temporal Anti-Aliasing</strong>.</p>
+
+<p>Here’s my TAA prototype, in Shadertoy form:</p>
+
+<p><a href="https://www.shadertoy.com/view/ct33WB">Shadertoy: Reprojection Temporal AA</a></p>
+
+<p>I am not embedding the shadertoy here to avoid web browser crashes. So here’s a recording instead:</p>
+
+<video controls="controls" playsinline="playsinline" loop="" src="/uploads/2023/chemaguerra-taa-shadertoy.mp4" width="600" height="337" poster="/uploads/2023/chemaguerra-taa-shadertoy-poster.png" alt="TAA shadertoy" preload="none"></video>
+
+<p>From <a href="https://en.wikipedia.org/wiki/Temporal_anti-aliasing">Wikipedia</a>:</p>
+
+<p><em>“Temporal anti-aliasing (TAA) … combines information from past frames and the current frame to remove jaggies in the current frame. In TAA, each pixel is sampled once per frame but in each frame the sample is at a different location within the image. Pixels sampled in past frames are blended with pixels sampled in the current frame to produce an anti-aliased image.”</em></p>
+
+<p>I won’t get super-deep into the details here. Please take a look at my shadertoy implementation instead. But before that, feel free to enjoy these seminal TAA resources:</p>
+
+<ul>
+  <li><a href="https://www.youtube.com/watch?v=2XXS5UyNjjU">GDC/playdead/INSIDE/Lasse</a></li>
+  <li><a href="https://advances.realtimerendering.com/s2014/#_HIGH-QUALITY_TEMPORAL_SUPERSAMPLING">UE4/Karis</a></li>
+</ul>
+
+<p><img src="/uploads/2023/chemaguerra-taa-comparison.png" alt="TAA comparison" /></p>
+
+<h2 id="the-intuition-behind-temporal-aa">The intuition behind <em>Temporal</em> AA</h2>
+
+<p>Most AA solutions sample each frame pixel multiple times (randomizing the sampling, jittering the camera, etc…) and output the averaged samples to the display. A straightforward example of this is MSAA, where each rasterized pixel is exploded into <code class="language-plaintext highlighter-rouge">N</code> fragments that get scattered through the surface of the pixel. The eventual output is simply the average of those fragments.</p>
+
+<p>This means that each frame will take (potentially) <code class="language-plaintext highlighter-rouge">N</code> times longer to compute if AA is enabled.</p>
+
+<p>On the other hand, Temporal AA samples each frame pixel -only once- and then averages the information found in the past <code class="language-plaintext highlighter-rouge">N</code> frames to complete the current frame. This is achieved by <em>rewinding the current pixel back in time into the previous frame(s)</em> via perspective/motion reprojection.</p>
+
+<p>This sounds like the holy grail of AA, because we can’t expect to go lower than one sample per pixel. TAA is indeed remarkably fast, and delivers quality comparable to other classic AA solutions. As a matter of fact, TAA has become the de-facto standard in game engines, and is even the foundation of higher-order algorithms such as DLSS.</p>
+
+<p>However, implementation is tricky and finicky, and some requirements must be met by your engine before support for TAA can be added.</p>
+
+<h2 id="reprojection-into-the-previous-frame">Reprojection (into the previous frame)</h2>
+
+<p><em>Reprojection</em> means figuring out the location of a current frame pixel in the previous frame:</p>
+
+<ul>
+  <li>Do nothing if everything is completely static (trivial case).</li>
+  <li>If 1px shear jittering is used: Undo jittering from the current frame and do jittering in the previous frame. This will reconstruct proper AA in all contours pretty much like MSAA would.</li>
+  <li>If the camera is moving: Unproject the pixel to world space with the current frame’s camera projection and then reproject from world space with the previous frame’s camera projection.</li>
+  <li>If the objects are moving: Unproject the pixel, then subtract the motion vector corresponding to the object the pixel belongs to, and reproject with the previous frame’s camera projection.</li>
+</ul>
+
+<p>In the general case, all the above combined are needed.</p>
+
+<h2 id="blending-with-the-history-buffer">Blending with the history buffer</h2>
+
+<p>For TAA we will just make the output of the current frame become the history frame for the next frame.</p>
+
+<p>For the blending policy between current vs. history (reprojected) pixels we may use an <em>Exponential Moving Average</em>. As the weight used for blending <code class="language-plaintext highlighter-rouge">current':=lerp(weight,current,history)</code> becomes lower and lower, the EMA converges to an arithmetic average of the past (infinite) frames.</p>
+
+<p>This means <em>infinite storage in finite space</em>. Kind of…</p>
+
+<p>Note that this continuous blending of pixel colors may cause some degree of <em>smearing and ghosting</em> in the frame. Especially when objects become occluded/unoccluded, pop in/out of the frame, or when the camera is shaking vigorously.</p>
+
+<h2 id="reprojection-is-inherently-faulty">Reprojection is inherently faulty</h2>
+
+<p>Unfortunately, when a pixel is reprojected back in time the information we’re looking for may simply not be there. <em>i.e.,</em> the current pixel was occluded (or out of the screen) in the previous frame.</p>
+
+<p>Such situations can’t be avoided. So we need some policy to decide to what extent a reprojected pixel must be accepted or rejected.</p>
+
+<p>Some reasonable possibilities are: keeping track of object/material IDs per pixel, keeping track of abrupt changes in the pixel’s depth, etc… However besides the extra buffer readouts, these ideas prove to be generally ad hoc and unreliable.</p>
+
+<p>A much simpler idea is to blend proportionally to the difference in color (or luminance). Which is simple enough and <em>kind of works</em>, but produces tons of motion smearing… until it is combined with <em>color clipping</em>.</p>
+
+<p>I believe that Sousa/Lottas/Karis (?) came up with a genius idea that is very stable, but also efficient and easy to implement without any extra pre-requisites:</p>
+
+<blockquote>
+  <p><em>clip the reprojected pixel color to the min-max color of the pixel’s neighborhood in the current frame</em>.</p>
+</blockquote>
+
+<p>The rationale here is that eventually (<em>e.g.,</em> when the camera stabilizies) each anti-aliased pixel will converge to a color that is a function of itself and its neighbors. So clipping the reprojected pixel in the history buffer to said min-max range ensures that highly different colors (<em>i.e.,</em> good candidates for rejection) won’t pull too hard from the current blend, while acceptable values (already within range) will blend peacefully.</p>
+
+<p>This works surprisingly well and, if implemented carefully, keeps flicker/smearing/ghosting to a minimum.</p>
+
+<h2 id="pre-requisites">Pre-requisites</h2>
+
+<p>All the above require from your engine:</p>
+
+<ul>
+  <li>A <code class="language-plaintext highlighter-rouge">WxH</code> history buffer. 1 color per pixel.</li>
+  <li>If objects are moving: A velocity buffer with 1 motion vector per pixel.</li>
+  <li>Recalling the camera projection and jittering used in the previous frame.</li>
+</ul>
+
+<p>Then, TAA becomes a one-pass full-frame pixel shader that reprojects/clips/weighs pixels as described.</p>
+
+<h2 id="bonuses">Bonuses</h2>
+
+<p>Since TAA averages pixel colors over time while being agnostic to how those colors came up to be, it <em>auto-magically</em> helps converge <em>every</em> effect that samples over time in the frame. <em>i.e.,</em> stochastic effects such as AO, volumetrics, etc…</p>
+
+<p>So it kind of doubles as Temporal AA and Temporal denoising. :-)</p>]]></content><author><name></name></author><summary type="html"><![CDATA[Recently I dived into the rabbit-hole of real-time anti-aliasing techniques and ended up implementing Reprojection-based Temporal Anti-Aliasing. Here’s my TAA prototype, in Shadertoy form: Shadertoy: Reprojection Temporal AA I am not embedding the shadertoy here to avoid web browser crashes. So here’s a recording instead: From Wikipedia: “Temporal anti-aliasing (TAA) … combines information from past frames and the current frame to remove jaggies in the current frame. In TAA, each pixel is sampled once per frame but in each frame the sample is at a different location within the image. Pixels sampled in past frames are blended with pixels sampled in the current frame to produce an anti-aliased image.” I won’t get super-deep into the details here. Please take a look at my shadertoy implementation instead. But before that, feel free to enjoy these seminal TAA resources: GDC/playdead/INSIDE/Lasse UE4/Karis The intuition behind Temporal AA Most AA solutions sample each frame pixel multiple times (randomizing the sampling, jittering the camera, etc…) and output the averaged samples to the display. A straightforward example of this is MSAA, where each rasterized pixel is exploded into N fragments that get scattered through the surface of the pixel. The eventual output is simply the average of those fragments. This means that each frame will take (potentially) N times longer to compute if AA is enabled. On the other hand, Temporal AA samples each frame pixel -only once- and then averages the information found in the past N frames to complete the current frame. This is achieved by rewinding the current pixel back in time into the previous frame(s) via perspective/motion reprojection. This sounds like the holy grail of AA, because we can’t expect to go lower than one sample per pixel. TAA is indeed remarkably fast, and delivers quality comparable to other classic AA solutions. As a matter of fact, TAA has become the de-facto standard in game engines, and is even the foundation of higher-order algorithms such as DLSS. However, implementation is tricky and finicky, and some requirements must be met by your engine before support for TAA can be added. Reprojection (into the previous frame) Reprojection means figuring out the location of a current frame pixel in the previous frame: Do nothing if everything is completely static (trivial case). If 1px shear jittering is used: Undo jittering from the current frame and do jittering in the previous frame. This will reconstruct proper AA in all contours pretty much like MSAA would. If the camera is moving: Unproject the pixel to world space with the current frame’s camera projection and then reproject from world space with the previous frame’s camera projection. If the objects are moving: Unproject the pixel, then subtract the motion vector corresponding to the object the pixel belongs to, and reproject with the previous frame’s camera projection. In the general case, all the above combined are needed. Blending with the history buffer For TAA we will just make the output of the current frame become the history frame for the next frame. For the blending policy between current vs. history (reprojected) pixels we may use an Exponential Moving Average. As the weight used for blending current':=lerp(weight,current,history) becomes lower and lower, the EMA converges to an arithmetic average of the past (infinite) frames. This means infinite storage in finite space. Kind of… Note that this continuous blending of pixel colors may cause some degree of smearing and ghosting in the frame. Especially when objects become occluded/unoccluded, pop in/out of the frame, or when the camera is shaking vigorously. Reprojection is inherently faulty Unfortunately, when a pixel is reprojected back in time the information we’re looking for may simply not be there. i.e., the current pixel was occluded (or out of the screen) in the previous frame. Such situations can’t be avoided. So we need some policy to decide to what extent a reprojected pixel must be accepted or rejected. Some reasonable possibilities are: keeping track of object/material IDs per pixel, keeping track of abrupt changes in the pixel’s depth, etc… However besides the extra buffer readouts, these ideas prove to be generally ad hoc and unreliable. A much simpler idea is to blend proportionally to the difference in color (or luminance). Which is simple enough and kind of works, but produces tons of motion smearing… until it is combined with color clipping. I believe that Sousa/Lottas/Karis (?) came up with a genius idea that is very stable, but also efficient and easy to implement without any extra pre-requisites: clip the reprojected pixel color to the min-max color of the pixel’s neighborhood in the current frame. The rationale here is that eventually (e.g., when the camera stabilizies) each anti-aliased pixel will converge to a color that is a function of itself and its neighbors. So clipping the reprojected pixel in the history buffer to said min-max range ensures that highly different colors (i.e., good candidates for rejection) won’t pull too hard from the current blend, while acceptable values (already within range) will blend peacefully. This works surprisingly well and, if implemented carefully, keeps flicker/smearing/ghosting to a minimum. Pre-requisites All the above require from your engine: A WxH history buffer. 1 color per pixel. If objects are moving: A velocity buffer with 1 motion vector per pixel. Recalling the camera projection and jittering used in the previous frame. Then, TAA becomes a one-pass full-frame pixel shader that reprojects/clips/weighs pixels as described. Bonuses Since TAA averages pixel colors over time while being agnostic to how those colors came up to be, it auto-magically helps converge every effect that samples over time in the frame. i.e., stochastic effects such as AO, volumetrics, etc… So it kind of doubles as Temporal AA and Temporal denoising. :-)]]></summary><media:thumbnail xmlns:media="http://search.yahoo.com/mrss/" url="http://localhost:4000/thumbnails/2023/chemaguerra-reprojection-temporal-antialiasing.png" /><media:content medium="image" url="http://localhost:4000/thumbnails/2023/chemaguerra-reprojection-temporal-antialiasing.png" xmlns:media="http://search.yahoo.com/mrss/" /></entry><entry><title type="html">Tiny path tracing in 2D</title><link href="http://localhost:4000/2023/04/14/tiny-path-tracing.html" rel="alternate" type="text/html" title="Tiny path tracing in 2D" /><published>2023-04-14T00:00:00+02:00</published><updated>2023-04-14T00:00:00+02:00</updated><id>http://localhost:4000/2023/04/14/tiny-path-tracing</id><content type="html" xml:base="http://localhost:4000/2023/04/14/tiny-path-tracing.html"><![CDATA[<p>This is a tiny pixelshader-only 2D path tracing engine. In my (little) spare time I’ve been writing a small C++ videogame/real-time engine and am doing some little experiments from time to time.</p>
+
+<p>The fragment shader here does stochastic PT and NEE, and MIS to weigh both. The rays and scene obstacles are all in 2D (line segments and rectangles).</p>
+
+<p>The 2 moving cubes are controlled by a gamepad, and the third cube that shows up in the trajectory between one and the other is a collision-detection test using the classic AABB vs. swept AABB algorithm (<a href="https://en.wikipedia.org/wiki/Minkowski_addition">minkowski sum</a>, etc…).</p>
+
+<video controls="controls" playsinline="playsinline" loop="" src="/uploads/2023/chemaguerra-tiny-pt.mp4" width="600" height="600" poster="/uploads/2023/chemaguerra-tiny-pt-poster.png" alt="Tiny Path Tracing (experiment)" preload="none"></video>
+
+<p><strong>UPDATE:</strong> More videos were posted on my Twitter account for recreational coding:</p>
+
+<p><a href="https://twitter.com/topotoygames/status/1647584758623289349">twitter.com/topotoygames #1</a></p>
+
+<p><a href="https://twitter.com/topotoygames/status/1646473620447809538">twitter.com/topotoygames #2</a></p>
+
+<p><a href="https://twitter.com/topotoygames/status/1644790986676002817">twitter.com/topotoygames #3</a></p>]]></content><author><name></name></author><summary type="html"><![CDATA[This is a tiny pixelshader-only 2D path tracing engine. In my (little) spare time I’ve been writing a small C++ videogame/real-time engine and am doing some little experiments from time to time. The fragment shader here does stochastic PT and NEE, and MIS to weigh both. The rays and scene obstacles are all in 2D (line segments and rectangles). The 2 moving cubes are controlled by a gamepad, and the third cube that shows up in the trajectory between one and the other is a collision-detection test using the classic AABB vs. swept AABB algorithm (minkowski sum, etc…). UPDATE: More videos were posted on my Twitter account for recreational coding: twitter.com/topotoygames #1 twitter.com/topotoygames #2 twitter.com/topotoygames #3]]></summary><media:thumbnail xmlns:media="http://search.yahoo.com/mrss/" url="http://localhost:4000/thumbnails/2023/chemaguerra-tiny-path-tracing.png" /><media:content medium="image" url="http://localhost:4000/thumbnails/2023/chemaguerra-tiny-path-tracing.png" xmlns:media="http://search.yahoo.com/mrss/" /></entry><entry><title type="html">u32 to f32 in [0..1)</title><link href="http://localhost:4000/2023/01/07/u-to-f.html" rel="alternate" type="text/html" title="u32 to f32 in [0..1)" /><published>2023-01-07T00:00:00+01:00</published><updated>2023-01-07T00:00:00+01:00</updated><id>http://localhost:4000/2023/01/07/u-to-f</id><content type="html" xml:base="http://localhost:4000/2023/01/07/u-to-f.html"><![CDATA[<p>Many sampling algorithms take as input random numbers in the <code class="language-plaintext highlighter-rouge">[0..1)</code> interval. On the other hand, Pseudo-Random Number Generators usually produce their output as (unsigned) integer 32-bit or 64-bit numbers.</p>
+
+<p>It is trivial to turn an <code class="language-plaintext highlighter-rouge">u:u32</code> integer into an <code class="language-plaintext highlighter-rouge">f:[0..1]</code> floating-point value, dividing <code class="language-plaintext highlighter-rouge">u</code> by <code class="language-plaintext highlighter-rouge">2^32-1</code>. This is because <code class="language-plaintext highlighter-rouge">u</code> ranges in <code class="language-plaintext highlighter-rouge">[0..2^32-1]</code>.</p>
+
+<p>One might think that <code class="language-plaintext highlighter-rouge">u/2^32</code> would produce a floating-point value lower than 1. But it does <em>not</em>, as evidenced by this loop:</p>
+
+<p><img src="/uploads/2023/chemaguerra-u-to-f.png" alt="Better u32 to f32 conversion" /></p>
+
+<p>The number printed out happens to be <code class="language-plaintext highlighter-rouge">0x100000101</code> which is <code class="language-plaintext highlighter-rouge">2^32+257</code>.</p>
+
+<p><code class="language-plaintext highlighter-rouge">( u / static_cast&lt; f32_t &gt;( 0x100000101ull ) )</code> is the <code class="language-plaintext highlighter-rouge">f:[0..1)</code> we were looking for.</p>
+
+<p><code class="language-plaintext highlighter-rouge">( u / static_cast&lt; f64_t &gt;( 0x100000080ull ) )</code> does the same in double-precision.</p>]]></content><author><name></name></author><summary type="html"><![CDATA[Many sampling algorithms take as input random numbers in the [0..1) interval. On the other hand, Pseudo-Random Number Generators usually produce their output as (unsigned) integer 32-bit or 64-bit numbers. It is trivial to turn an u:u32 integer into an f:[0..1] floating-point value, dividing u by 2^32-1. This is because u ranges in [0..2^32-1]. One might think that u/2^32 would produce a floating-point value lower than 1. But it does not, as evidenced by this loop: The number printed out happens to be 0x100000101 which is 2^32+257. ( u / static_cast&lt; f32_t &gt;( 0x100000101ull ) ) is the f:[0..1) we were looking for. ( u / static_cast&lt; f64_t &gt;( 0x100000080ull ) ) does the same in double-precision.]]></summary><media:thumbnail xmlns:media="http://search.yahoo.com/mrss/" url="http://localhost:4000/thumbnails/2023/chemaguerra-u-to-f.png" /><media:content medium="image" url="http://localhost:4000/thumbnails/2023/chemaguerra-u-to-f.png" xmlns:media="http://search.yahoo.com/mrss/" /></entry><entry><title type="html">Wool flyaways</title><link href="http://localhost:4000/2023/01/07/wool-flyaways.html" rel="alternate" type="text/html" title="Wool flyaways" /><published>2023-01-07T00:00:00+01:00</published><updated>2023-01-07T00:00:00+01:00</updated><id>http://localhost:4000/2023/01/07/wool-flyaways</id><content type="html" xml:base="http://localhost:4000/2023/01/07/wool-flyaways.html"><![CDATA[<p>Searching for a proper formulation for flyaways in wool and fabric in general.</p>
+
+<p><img src="/uploads/2023/chemaguerra-fibers.png" alt="Wool fibers" width="600px" /></p>
+
+<p>These are some simulations of growth from the root being randomly affected. From top to bottom, using different seeds. From left to right, the resulting B-Spline being evaluated using few or many control points.</p>
+
+<p>Everything happens in 3D, but this image is just the X-Z projection.</p>
+
+<h2 id="force-field-dynamics">Force-field dynamics</h2>
+
+<p><em>e.g.,</em> wind, vibrations, etc…</p>
+
+<p><img src="/uploads/2023/chemaguerra-vibrating-fiber-1.gif" alt="Vibrating fiber #1" />
+<img src="/uploads/2023/chemaguerra-vibrating-fiber-2.gif" alt="Vibrating fiber #2" /></p>]]></content><author><name></name></author><summary type="html"><![CDATA[Searching for a proper formulation for flyaways in wool and fabric in general. These are some simulations of growth from the root being randomly affected. From top to bottom, using different seeds. From left to right, the resulting B-Spline being evaluated using few or many control points. Everything happens in 3D, but this image is just the X-Z projection. Force-field dynamics e.g., wind, vibrations, etc…]]></summary><media:thumbnail xmlns:media="http://search.yahoo.com/mrss/" url="http://localhost:4000/thumbnails/2023/chemaguerra-wool-flyaways.png" /><media:content medium="image" url="http://localhost:4000/thumbnails/2023/chemaguerra-wool-flyaways.png" xmlns:media="http://search.yahoo.com/mrss/" /></entry><entry><title type="html">Micro-Patch Displacement Mapping</title><link href="http://localhost:4000/2022/09/30/micropatch-displacement-mapping.html" rel="alternate" type="text/html" title="Micro-Patch Displacement Mapping" /><published>2022-09-30T00:00:00+02:00</published><updated>2022-09-30T00:00:00+02:00</updated><id>http://localhost:4000/2022/09/30/micropatch-displacement-mapping</id><content type="html" xml:base="http://localhost:4000/2022/09/30/micropatch-displacement-mapping.html"><![CDATA[<p>One major endeavour that I undertook this past summer was the creation of a novel displacement mapping system for <a href="https://maverickrender.com/">Maverick Render</a>.</p>
+
+<p>The main motivations behind this have been:</p>
+
+<ul>
+  <li>Our customers were running out of GPU memory too often when using displacement.</li>
+  <li>Our main goal is that <strong>Maverick is an exquisite-quality tool for model visualization</strong>. Hence displacement is very important to us.</li>
+  <li>Open the door to some other geometry-generation features beyond displacement itself.</li>
+</ul>
+
+<p>So I undusted the old <em>virtualized geometry</em> solution I implemented for <a href="https://randomcontrol.com">fryrender</a> back in 2008 and re-engineered it for the Maverick core in the GPU.</p>
+
+<h2 id="say-hi-to-micro-patch-displacement-mapping">Say hi to: Micro-Patch Displacement Mapping</h2>
+
+<p><em>Non-affine MPDM in arbitrarily-curved surfaces</em></p>
+
+<video controls="controls" playsinline="playsinline" loop="" src="/uploads/2022/chemaguerra-micropatch-displacement-mapping-1.mp4" width="600" height="600" poster="/uploads/2022/chemaguerra-micropatch-displacement-mapping-poster-1.png" alt="" preload="none"></video>
+
+<p><em>Affine MPDM in flat surfaces</em></p>
+
+<video controls="controls" playsinline="playsinline" loop="" src="/uploads/2022/chemaguerra-micropatch-displacement-mapping-2.mp4" width="600" height="600" poster="/uploads/2022/chemaguerra-micropatch-displacement-mapping-poster-2.png" alt="" preload="none"></video>
+
+<p>Some good properties of Maverick’s displacement:</p>
+
+<ul>
+  <li>No requirements <em>whatsoever</em> on the base mesh or on the heightmap texture.</li>
+  <li>It costs near 0 in warm-up time.</li>
+  <li>It costs near 0 in memory (only a small payload is appended to the height map).</li>
+  <li>0 information is lost; every single texel in the heightmap is turned into a displaced <em>micro-patch</em>.</li>
+  <li>Implemented as a custom primitive in Maverick’s OptiX ray-tracing backend.</li>
+  <li>Used every trick in the book to optimize it as much as I could.</li>
+</ul>
+
+<h2 id="mpdm-vs-brute-force">MPDM vs. brute-force</h2>
+
+<p>MPDM is meant to address some classic problems with the <em>subdivide-and-displace-vertices</em> (brute-force) approach. Using brute-force:</p>
+
+<ul>
+  <li>There is some (often significant) wait time for warm-up.</li>
+  <li>Memory usage goes through the roof, more than often blowing up all available memory.</li>
+  <li>Height sampling happens at the vertices and not at the heightmap texels.</li>
+</ul>
+
+<p>Points 1-2 are very obvious. It becomes impossible to abuse displacement, or to recklessly use it for large surfaces. Some techniques such as back-face culling or camera culling can be used to work around these difficulties, but such techniques pose problems on their own. Expecting the user to be careful not to exceed his memory budget is always an ill-fated plan.</p>
+
+<p>Point 3 often means that the resulting displacement is smudgy, and not as crisp as it should be. <em>i.e.,</em> information is lost, and/or geometry is produced in excess. Some techniques (that Maverick itself has featured in the past) such as <em>autobump</em> can be used to work around this problem by kind-of-restoring the information that is lost in the process. But then again, optimal configuration would become the responsibility of the user.</p>
+
+<p>None of these issues happen with MPDM. :-)</p>
+
+<h2 id="are-there-any-benefits-to-the-old-brute-force-approach">Are there any benefits to the old brute-force approach?</h2>
+
+<p>As usual, nothing really good comes without a price. This is often very true in the realm of algorithm optimization.</p>
+
+<ul>
+  <li>MPDM unfolds virtualized geometry during ray-traversal. The displaced geometry <em>never</em> exists for real in memory (that is why it is said to be <em>virtualized</em>) and this is the reason why MPDM has a near 0-cost in memory usage. However, this virtualization comes at an algorithmic cost. Despite massively optimized, MPDM renders a bit more slowly than the same displaced geometry would if the vertices were pre-displaced during warm-up and entered the ray-tracing BVH as regular geometry.</li>
+  <li>For MPDM, part of the optimization process relies on the fact that the input map is discretized in <em>texels</em>, (as in a regular bitmap). For brute-force displacement the only requirement is that the height map can be evaluated at each geometry vertex, which is true to bitmaps, procedurals, and all map types. So MPDM is a priori limited to <code class="language-plaintext highlighter-rouge">filetex</code> maps, but we have added to Maverick a new map type called <code class="language-plaintext highlighter-rouge">bakemap</code> so the user can bake any procedural map tree into a <code class="language-plaintext highlighter-rouge">filetex</code> to feed MPDM if necessary.</li>
+</ul>
+
+<h2 id="how-does-mpdm-work">How does MPDM work?</h2>
+
+<p>Here’s a very broad explanation on how MPDM in Maverick works:</p>
+
+<ul>
+  <li>A (rather classic) hierarchical partitioning scheme based in min-max mip-map levels is performed on the input heightmap. As depicted in the images below.</li>
+  <li>Those voxels are efficiently ray-traceable… unless there is curvature in the base mesh. Hell breaks loose as soon as curvature is at play. Maverick does non-affine math here (visualized in a previous post on non-affine <a href="/2022/07/07/barycentric-coords-in.html">triangle sweeps</a>). I’ve tried different approaches for this (non-affine, discretized, and hybrid), and the code allows to flag-switch each mode on and off.</li>
+  <li>Because of the non-affine treatment, at the lowest hierarchy level you no longer have quads or triangles, but bilinear patches (hence the name: <em>Micro-PATCH Displacement Mapping</em>).</li>
+</ul>
+
+<p><em>Non-affine MPDM in arbitrarily-curved surfaces</em></p>
+
+<p><img src="/uploads/2022/chemaguerra-micropatch-displacement-mapping-3.png" alt="Non-affine MPDM in arbitrarily-curved surfaces" /></p>
+
+<p><em>The input heightmap used</em></p>
+
+<p><img src="/uploads/2022/chemaguerra-micropatch-displacement-mapping-4.jpg" alt="The input heightmap used" /></p>
+
+<p><em>Affine MPDM in flat surfaces (special optimization branch)</em></p>
+
+<p><img src="/uploads/2022/chemaguerra-micropatch-displacement-mapping-5.png" alt="Affine MPDM in flat surfaces" /></p>
+
+<p><em>The input heightmap used</em></p>
+
+<p><img src="/uploads/2022/chemaguerra-micropatch-displacement-mapping-6.jpg" alt="The input heightmap used" /></p>
+
+<p>But the devil lies in the details. Efficient implementation of this all was a multi-week hell working with data structures, low-level optimizations, coordinating MPDM with OptiX and the rest of the Maverick core, and dealing with plenty of non-obvious fine-grain issues such as:</p>
+
+<ul>
+  <li>Avoiding cracks across edges.</li>
+  <li>Dealing with UV mapping projections.</li>
+  <li>Transfer of shading normals.</li>
+  <li>Real-time notifications from the UI.</li>
+  <li>…</li>
+</ul>
+
+<p>Youtube 4K videos:</p>
+
+<div class="embed-container">
+  <iframe width="640" height="390" src="https://www.youtube.com/embed/2PdRx0sALgg" frameborder="0" allowfullscreen=""></iframe>
+</div>
+<style>
+.embed-container {
+  position: relative;
+  padding-bottom: 56.25%;
+  height: 0;
+  overflow: hidden;
+  max-width: 100%;
+}
+.embed-container iframe,
+.embed-container object,
+.embed-container embed {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+</style>
+
+<p><br /></p>
+
+<div class="embed-container">
+  <iframe width="640" height="390" src="https://www.youtube.com/embed/O9qUCZTxkTQ" frameborder="0" allowfullscreen=""></iframe>
+</div>
+<style>
+.embed-container {
+  position: relative;
+  padding-bottom: 56.25%;
+  height: 0;
+  overflow: hidden;
+  max-width: 100%;
+}
+.embed-container iframe,
+.embed-container object,
+.embed-container embed {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+</style>
+
+<p><br /></p>
+
+<div class="embed-container">
+  <iframe width="640" height="390" src="https://www.youtube.com/embed/ZKcLPQkhFWc" frameborder="0" allowfullscreen=""></iframe>
+</div>
+<style>
+.embed-container {
+  position: relative;
+  padding-bottom: 56.25%;
+  height: 0;
+  overflow: hidden;
+  max-width: 100%;
+}
+.embed-container iframe,
+.embed-container object,
+.embed-container embed {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+</style>
+
+<p><br /></p>
+
+<div class="embed-container">
+  <iframe width="640" height="390" src="https://www.youtube.com/embed/Y9DFtEo5Hgo" frameborder="0" allowfullscreen=""></iframe>
+</div>
+<style>
+.embed-container {
+  position: relative;
+  padding-bottom: 56.25%;
+  height: 0;
+  overflow: hidden;
+  max-width: 100%;
+}
+.embed-container iframe,
+.embed-container object,
+.embed-container embed {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+</style>]]></content><author><name></name></author><summary type="html"><![CDATA[One major endeavour that I undertook this past summer was the creation of a novel displacement mapping system for Maverick Render. The main motivations behind this have been: Our customers were running out of GPU memory too often when using displacement. Our main goal is that Maverick is an exquisite-quality tool for model visualization. Hence displacement is very important to us. Open the door to some other geometry-generation features beyond displacement itself. So I undusted the old virtualized geometry solution I implemented for fryrender back in 2008 and re-engineered it for the Maverick core in the GPU. Say hi to: Micro-Patch Displacement Mapping Non-affine MPDM in arbitrarily-curved surfaces Affine MPDM in flat surfaces Some good properties of Maverick’s displacement: No requirements whatsoever on the base mesh or on the heightmap texture. It costs near 0 in warm-up time. It costs near 0 in memory (only a small payload is appended to the height map). 0 information is lost; every single texel in the heightmap is turned into a displaced micro-patch. Implemented as a custom primitive in Maverick’s OptiX ray-tracing backend. Used every trick in the book to optimize it as much as I could. MPDM vs. brute-force MPDM is meant to address some classic problems with the subdivide-and-displace-vertices (brute-force) approach. Using brute-force: There is some (often significant) wait time for warm-up. Memory usage goes through the roof, more than often blowing up all available memory. Height sampling happens at the vertices and not at the heightmap texels. Points 1-2 are very obvious. It becomes impossible to abuse displacement, or to recklessly use it for large surfaces. Some techniques such as back-face culling or camera culling can be used to work around these difficulties, but such techniques pose problems on their own. Expecting the user to be careful not to exceed his memory budget is always an ill-fated plan. Point 3 often means that the resulting displacement is smudgy, and not as crisp as it should be. i.e., information is lost, and/or geometry is produced in excess. Some techniques (that Maverick itself has featured in the past) such as autobump can be used to work around this problem by kind-of-restoring the information that is lost in the process. But then again, optimal configuration would become the responsibility of the user. None of these issues happen with MPDM. :-) Are there any benefits to the old brute-force approach? As usual, nothing really good comes without a price. This is often very true in the realm of algorithm optimization. MPDM unfolds virtualized geometry during ray-traversal. The displaced geometry never exists for real in memory (that is why it is said to be virtualized) and this is the reason why MPDM has a near 0-cost in memory usage. However, this virtualization comes at an algorithmic cost. Despite massively optimized, MPDM renders a bit more slowly than the same displaced geometry would if the vertices were pre-displaced during warm-up and entered the ray-tracing BVH as regular geometry. For MPDM, part of the optimization process relies on the fact that the input map is discretized in texels, (as in a regular bitmap). For brute-force displacement the only requirement is that the height map can be evaluated at each geometry vertex, which is true to bitmaps, procedurals, and all map types. So MPDM is a priori limited to filetex maps, but we have added to Maverick a new map type called bakemap so the user can bake any procedural map tree into a filetex to feed MPDM if necessary. How does MPDM work? Here’s a very broad explanation on how MPDM in Maverick works: A (rather classic) hierarchical partitioning scheme based in min-max mip-map levels is performed on the input heightmap. As depicted in the images below. Those voxels are efficiently ray-traceable… unless there is curvature in the base mesh. Hell breaks loose as soon as curvature is at play. Maverick does non-affine math here (visualized in a previous post on non-affine triangle sweeps). I’ve tried different approaches for this (non-affine, discretized, and hybrid), and the code allows to flag-switch each mode on and off. Because of the non-affine treatment, at the lowest hierarchy level you no longer have quads or triangles, but bilinear patches (hence the name: Micro-PATCH Displacement Mapping). Non-affine MPDM in arbitrarily-curved surfaces The input heightmap used Affine MPDM in flat surfaces (special optimization branch) The input heightmap used But the devil lies in the details. Efficient implementation of this all was a multi-week hell working with data structures, low-level optimizations, coordinating MPDM with OptiX and the rest of the Maverick core, and dealing with plenty of non-obvious fine-grain issues such as: Avoiding cracks across edges. Dealing with UV mapping projections. Transfer of shading normals. Real-time notifications from the UI. … Youtube 4K videos:]]></summary><media:thumbnail xmlns:media="http://search.yahoo.com/mrss/" url="http://localhost:4000/thumbnails/2022/chemaguerra-micropatch-displacement-mapping.png" /><media:content medium="image" url="http://localhost:4000/thumbnails/2022/chemaguerra-micropatch-displacement-mapping.png" xmlns:media="http://search.yahoo.com/mrss/" /></entry><entry><title type="html">Diffraction vs. Multi-resolution</title><link href="http://localhost:4000/2022/09/29/diffraction-vs-multiresolution.html" rel="alternate" type="text/html" title="Diffraction vs. Multi-resolution" /><published>2022-09-29T00:00:00+02:00</published><updated>2022-09-29T00:00:00+02:00</updated><id>http://localhost:4000/2022/09/29/diffraction-vs-multiresolution</id><content type="html" xml:base="http://localhost:4000/2022/09/29/diffraction-vs-multiresolution.html"><![CDATA[<p>I’ve been working lately on glare/bloom/fringe and other post-processing effects in <a href="https://maverickrender.com">Maverick Render</a>. Some of these inherit from our lovely <a href="https://arionfx.com">ArionFX</a> Adobe Photoshop and AfterEffects plug-in.</p>
+
+<p>One complaint in ArionFX and also in Maverick is (was, because this post is about a successful fix) that Glare/Bloom diverge in <em>shape and power</em> when the input image is rendered at a different resolution, even if the Glare/Bloom parameters stay the same.</p>
+
+<p>There are some relatively unobvious reasons for this. Basically, the challenges are:</p>
+
+<ul>
+  <li><em>Hard challenge</em>: Diffraction is a frequency analysis effect. For a render, this happens in the discrete realm (pixels). The size (amount of pixels) of the images involved changes what frequencies and how they show up in the Fourier Transform.</li>
+  <li><em>Hard challenge</em>: Anti-Aliasing of neighboring pixels (more prevalent at low resolution) averages their power and dims the overall Glare/Bloom overlay. This can pose a real problem for thin geometries such as lightbulb filaments.</li>
+  <li><em>Easy challenge</em>: As illustrated in some of my previous posts, the FT itself has some properties that relate its scale and power to the scale and power of the aperture/obstacle of the lens iris. These of course must be compensated for.</li>
+  <li><em>Medium challenge</em>: Changes in aspect ratio, or in padding in the image buffers (such as the padding between the IPR size in the UI vs. the canvas size) must be taken into account as well.</li>
+</ul>
+
+<p>The upcoming release of Maverick will address these issues.</p>
+
+<p>Here’s a small video with a sequence of Maverick post-processing effects, all rendered alternating landscape and portrait aspect ratios between 512 and 2048. The video is cropped as landscape to be easier on the eyes. As can be seen, at lower resolutions there’s always some power divergence, and a little bit of blur. But those are unavoidable to some extent.</p>
+
+<div class="embed-container">
+  <iframe width="640" height="390" src="https://www.youtube.com/embed/4K8F8vP76Y0" frameborder="0" allowfullscreen=""></iframe>
+</div>
+<style>
+.embed-container {
+  position: relative;
+  padding-bottom: 56.25%;
+  height: 0;
+  overflow: hidden;
+  max-width: 100%;
+}
+.embed-container iframe,
+.embed-container object,
+.embed-container embed {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+</style>]]></content><author><name></name></author><summary type="html"><![CDATA[I’ve been working lately on glare/bloom/fringe and other post-processing effects in Maverick Render. Some of these inherit from our lovely ArionFX Adobe Photoshop and AfterEffects plug-in. One complaint in ArionFX and also in Maverick is (was, because this post is about a successful fix) that Glare/Bloom diverge in shape and power when the input image is rendered at a different resolution, even if the Glare/Bloom parameters stay the same. There are some relatively unobvious reasons for this. Basically, the challenges are: Hard challenge: Diffraction is a frequency analysis effect. For a render, this happens in the discrete realm (pixels). The size (amount of pixels) of the images involved changes what frequencies and how they show up in the Fourier Transform. Hard challenge: Anti-Aliasing of neighboring pixels (more prevalent at low resolution) averages their power and dims the overall Glare/Bloom overlay. This can pose a real problem for thin geometries such as lightbulb filaments. Easy challenge: As illustrated in some of my previous posts, the FT itself has some properties that relate its scale and power to the scale and power of the aperture/obstacle of the lens iris. These of course must be compensated for. Medium challenge: Changes in aspect ratio, or in padding in the image buffers (such as the padding between the IPR size in the UI vs. the canvas size) must be taken into account as well. The upcoming release of Maverick will address these issues. Here’s a small video with a sequence of Maverick post-processing effects, all rendered alternating landscape and portrait aspect ratios between 512 and 2048. The video is cropped as landscape to be easier on the eyes. As can be seen, at lower resolutions there’s always some power divergence, and a little bit of blur. But those are unavoidable to some extent.]]></summary><media:thumbnail xmlns:media="http://search.yahoo.com/mrss/" url="http://localhost:4000/thumbnails/2022/chemaguerra-diffraction-vs-multiresolution.png" /><media:content medium="image" url="http://localhost:4000/thumbnails/2022/chemaguerra-diffraction-vs-multiresolution.png" xmlns:media="http://search.yahoo.com/mrss/" /></entry></feed>

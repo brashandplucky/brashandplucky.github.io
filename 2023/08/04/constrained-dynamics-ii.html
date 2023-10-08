@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="http://localhost:4000/feed.xml" title="Chema Guerra" /><!-- favicon -->
+    <link rel="shortcut icon" type="image/png" href="/favicon.png">
+    <!-- MathJax -->
+    <script type="text/javascript" id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <!-- Open Graph cards -->
+    <meta name="og:url" content="@/2023/08/04/constrained-dynamics-ii.html">
+    <meta name="og:title" content="Constrained Dynamics (II)">
+    <meta name="og:description" content="A new entry in my constrained dynamics series. Springs are a no-go for constraints.">
+    <meta name="og:image" content="http://localhost:4000/thumbnails/2023/chemaguerra-constrained-dynamics-ii.png">
+    <meta name="og:image:type" content="image/png">
+    <!-- Twitter cards -->
+    <meta name="twitter:site" content="@chemaguerra">
+    <meta name="twitter:creator" content="@">
+    <meta name="twitter:title" content="Constrained Dynamics (II)">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:description" content="A new entry in my constrained dynamics series. Springs are a no-go for constraints.">
+    <meta name="twitter:image" content="http://localhost:4000/thumbnails/2023/chemaguerra-constrained-dynamics-ii.png">
+    <meta name="twitter:image:src" content="http://localhost:4000/thumbnails/2023/chemaguerra-constrained-dynamics-ii.png">
+</head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">Chema Guerra</a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/archive/">Archive</a><a class="page-link" href="/about/">About</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">Constrained Dynamics (II)</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2023-08-04T10:00:00+02:00" itemprop="datePublished">Aug 4, 2023
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <p>This post is a continuation to the first entry in this series:</p>
+
+<ul>
+  <li>Part I: <a href="https://brashandplucky.com/2023/07/30/constrained-dynamics-i.html">Constrained Dynamics (I)</a> - <em>Unconstrained dynamics</em>.</li>
+</ul>
+
+<h2 id="constrained-dynamics">Constrained dynamics</h2>
+
+<p>We left off with a single unconstrained particle in free-fall.</p>
+
+<p>In order to build more interesting setups we need to define rules that constrain the motion of the particle in a certain desired way. For example, a rigid-arm pendulum could be modeled with a particle mass plus a constraint to keep the particle at all times at <em>exactly</em> the same distance from the origin.</p>
+
+<h3 id="example-distance-constraint">Example: Distance constraint</h3>
+
+<p>This will be our goal in this post: to simulate the motion of a particle that is subject to gravity, but is also constrained to keep a given distance to the origin at all times. Such type of constraint is called a <strong>distance constraint</strong>.</p>
+
+<p><img src="/uploads/2023/chemaguerra-distance-constraint-goal-256.gif" alt="Distance constraint" /></p>
+
+<p>In all the examples here we will make the particle start resting at arm’s length to the right side of the origin. So in each of the animations below, we will be expecting a <strong>yellow circle arc plot</strong> like this one. Any yellow plot that deviates from a circle arc will reveal that the distance constraint is not being successfully satisfied.</p>
+
+<h2 id="springs-as-constraints-dont">Springs as constraints (don’t!)</h2>
+
+<p>We <em>might</em> attempt to model such constraint with a sufficiently strong (mass-less) spring connecting the particle to the origin. The spring would allow the particle to orbit freely, but forbid it from abandoning the spring-long orbit.</p>
+
+<p>While this setup should work in principle, the spring would require a <em>very large stiffness constant</em> in order to not feel “goopy”. The spring would apply a corrective force to the particle as soon as it drifts off orbit. But this would eventually overshoot, and then rectify back, and so on, ending up in <em>oscillatory</em> motion. The stiffer the spring, the more acute the micro-oscillations. This is a recipe for disaster, specially as soon as the setup becomes more complex and more masses and springs are involved.</p>
+
+<h2 id="springs">Springs</h2>
+
+<p>The type of coiled metal spring that we’re all familiar with, remains at some <em>rest length</em>
+until you try to compress or extend it.</p>
+
+<p>If you try to compress the spring, it will resist your force, trying to extend back to its rest length.
+If you try to extend the spring, it will also resist your force, trying to compress back to its rest length.</p>
+
+<p><a href="https://en.wikipedia.org/wiki/Hooke%27s_law">Hooke’s law</a> states that the force needed to
+compress/extend an ideal spring by some distance \(\Delta{L}=(L_t-L)\) above/below its rest length \(L\)
+scales linearly with respect to said length increment:</p>
+
+\[\|\mathbf{F_t}\|=-k_s\Delta{L}=-k_s(L_t-L)\]
+
+<p>The source code below extends the previous post in order to incorporate a spring connecting the particle to the origin alongside the force of gravity.</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>struct spring_mass_t
+{
+  explicit spring_mass_t
+  
+      ( const f64_t rest_length = .5,
+        const f64_t stiffness   = 1e3,
+        const f64_t damping     = 1e3 )
+
+      : m( 100 ), p( rest_length, 0 ), v( 0 ),
+
+        L( rest_length ), ks( stiffness ), kd( damping ) {}
+
+  void step( const f64_t dt, const vec2d_c&amp; gravity )
+  {
+    // Current spring state.
+
+    const vec2d_c s_D  =   p;             // Spring dir. Anchored at (0,0).
+
+    const   f64_t s_L  =   s_D.length();  // Spring len.
+
+    const vec2d_c s_d  = ( s_D / s_L );   // Spring dir (normalized).
+
+    const vec2d_c s_Fs = ( s_d * ( ( L - s_L ) * ks ) );  // Hooke's Law.
+    const vec2d_c s_Fd = ( s_d * ( ( v * s_d ) * kd ) );  // Damping.
+
+    // Forces sum =&gt; Acceleration.
+
+    const vec2d_c a = ( gravity + ( ( s_Fs - s_Fd ) / m ) );
+
+    // Semi-implicit Euler.
+
+    v += ( a * dt );
+    p += ( v * dt );
+  }
+
+  // Particle state.
+
+    f64_t m;
+  vec2d_c p;
+  vec2d_c v;
+
+  // Spring.
+
+    f64_t L;   // Rest length.
+    f64_t ks;  // Stiffness.
+    f64_t kd;  // Damping.
+};
+</code></pre></div></div>
+
+<p>Here’s a goopy spring (\(k_s=1e3\)):</p>
+
+<p><img src="/uploads/2023/chemaguerra-goopy-spring-512.gif" alt="Goopy spring" /></p>
+
+<p>Here’s a stiff spring (\(k_s=1e6\)):</p>
+
+<p><img src="/uploads/2023/chemaguerra-stiff-spring-512.gif" alt="Stiff spring" /></p>
+
+<p>Numerical error accumulation aside, these systems neither gain nor lose energy. So pendular motion would never stop should the simulation run forever.</p>
+
+<p>Note that, <em>apparently</em>, the stiff spring successfully satisfies the distance constraint: the particle draws a seemingly perfect semicircle, which is exactly what we want. But later we’ll see how <strong>easy-to-break</strong> this apparent stability is as soon as we complicate the system a little bit.</p>
+
+<h2 id="damping">Damping</h2>
+
+<p><a href="https://en.wikipedia.org/wiki/Damping">Damping</a> is an influence upon an oscillatory system
+that has the effect of reducing or preventing the oscillation. A damped spring is often modeled like this:</p>
+
+\[\mathbf{F}_t=-\mathbf{d}_t(k_s(L_t-L)+k_d(\dot{\mathbf{p}}_t\cdot\mathbf{d}_t))\]
+
+<p>Which means that the force at either end of the spring:</p>
+
+<ul>
+  <li>Resists changes in length, proportionally to a certain <em>stiffness</em> constant \(k_s\).</li>
+  <li>Resists velocity along the spring’s direction \(\mathbf{d}_t\), proportionally to a certain <em>damping</em> constant \(k_d\).</li>
+</ul>
+
+<p>Here’s a damped goopy spring (\(k_d=1e3\)):</p>
+
+<p><img src="/uploads/2023/chemaguerra-damped-goopy-spring-512.gif" alt="Damped goopy spring" /></p>
+
+<p>Damping a spring effectively makes it calmer by reducing its tendency to gain velocity. Which in turn makes it lose energy and stop eventually. Like in real life.</p>
+
+<h2 id="adding-more-springs">Adding more springs</h2>
+
+<p>As explained in the beginning of this post, the oscillatory chaos induced by the use of springs, even when they are stiff and/or damped, becomes quickly uncontrollable as more particles/springs are involved.</p>
+
+<p>Let’s modify our code to connect a second spring-mass to the end of the first one.</p>
+
+<p>The state <code class="language-plaintext highlighter-rouge">struct</code> now manages two particle states. When summing forces, note that the particle where both mass-less springs meet is subject to opposing forces coming from both springs. The particle at the end of the contraption is only subject to the force from the second spring.</p>
+
+<blockquote>
+  <p>Remember that our goal is a perfectly semicircular trajectory for the first particle, in yellow.</p>
+</blockquote>
+
+<p>Things go crazy with a goopy double-spring now:</p>
+
+<p><img src="/uploads/2023/chemaguerra-goopy-double-spring-512.gif" alt="Goopy double spring" /></p>
+
+<p>Damping muffles the craziness a bit, but not quite:</p>
+
+<p><img src="/uploads/2023/chemaguerra-damped-goopy-double-spring-512.gif" alt="Damped goopy double spring" /></p>
+
+<p>Using stiffer springs seems to work well at first sight… until vibrations crawl up and jerky motion takes over eventually:</p>
+
+<p><img src="/uploads/2023/chemaguerra-stiff-double-spring-512.gif" alt="Stiff double spring" /></p>
+
+<p>Like before, damping helps. But the problem is visibly not fully gone. Also, adding more springs would make the situation spiral out of control anyway:</p>
+
+<p><img src="/uploads/2023/chemaguerra-damped-stiff-double-spring-512.gif" alt="Damped Stiff double spring" /></p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>struct double_spring_mass_t
+{
+  explicit double_spring_mass_t
+  
+      ( const f64_t rest_length =  .5,
+        const f64_t stiffness   = 1e3,
+        const f64_t damping     = 1e3 )
+
+      : m( 100 ), p1( ( rest_length * 1 ), 0 ), v1( 0 ),
+                  p2( ( rest_length * 2 ), 0 ), v2( 0 ),
+
+        L( rest_length ), ks( stiffness ), kd( damping ) {}
+
+  void step( const f64_t dt, const vec2d_c&amp; gravity )
+  {
+    // Current spring states.
+
+    const vec2d_c s1_D  = ( p1      );      // Spring dir.
+    const vec2d_c s2_D  = ( p2 - p1 );      //
+
+    const   f64_t s1_L  =   s1_D.length();  // Spring len.
+    const   f64_t s2_L  =   s2_D.length();  //
+
+    const vec2d_c s1_d  = ( s1_D / s1_L );  // Spring dir (normalized).
+    const vec2d_c s2_d  = ( s2_D / s2_L );  //
+
+    const vec2d_c s1_Fs = ( s1_d * ( ( L  - s1_L ) * ks ) );  // Hooke's Law.
+    const vec2d_c s2_Fs = ( s2_d * ( ( L  - s2_L ) * ks ) );  //
+
+    const vec2d_c s1_Fd = ( s1_d * ( ( v1 * s1_d ) * kd ) );  // Damping.
+    const vec2d_c s2_Fd = ( s2_d * ( ( v2 * s2_d ) * kd ) );  //
+
+    const vec2d_c s1_F  = ( s1_Fs - s1_Fd );
+    const vec2d_c s2_F  = ( s2_Fs - s2_Fd );
+
+    // Forces sum =&gt; Acceleration.
+
+    const vec2d_c a1 = ( gravity + ( ( s1_F - s2_F ) / m ) );
+    const vec2d_c a2 = ( gravity + ( ( s2_F        ) / m ) );
+
+    // Semi-implicit Euler.
+
+    v1 += ( a1 * dt ); p1 += ( v1 * dt );
+    v2 += ( a2 * dt ); p2 += ( v2 * dt );
+  }
+
+  // Particle state.
+
+    f64_t m;   // m=m1=m2.
+
+  vec2d_c p1, v1;
+  vec2d_c p2, v2;
+
+  // Both springs.
+
+    f64_t L;   // Rest length.
+    f64_t ks;  // Stiffness.
+    f64_t kd;  // Damping.
+};
+</code></pre></div></div>
+
+<h2 id="representing-constraints-properly">Representing constraints properly</h2>
+
+<p>We would wish for a general method that robustly satisfies rigid constraints without large stiffness constants that induce strong oscillatory forces. One that using only corrective forces (or impulses) gently nudges particles back to valid states constraints-wise.</p>
+
+<p>This is what the next entry in this mini-series will be about.</p>
+
+<p>Stay tuned!</p>
+
+  </div><a class="u-url" href="/2023/08/04/constrained-dynamics-ii.html" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading">Chema Guerra</h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name">Chema Guerra</li><li><a class="u-email" href="mailto:brashandplucky@gmail.com">brashandplucky@gmail.com</a></li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"><li><a href="https://github.com/chemaguerra"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#github"></use></svg> <span class="username">chemaguerra</span></a></li><li><a href="https://www.twitter.com/chemaguerra"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#twitter"></use></svg> <span class="username">chemaguerra</span></a></li></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p>This is a coding blog where I post about the various projects that I am currently working on, both at work, or as an independent researcher. Most content here revolves around computer graphics and physics simulation.</p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>
