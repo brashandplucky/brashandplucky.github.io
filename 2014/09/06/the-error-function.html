@@ -55,11 +55,11 @@
 
 <p>Put in short, the <a href="https://en.wikipedia.org/wiki/Error_function">Error function</a> is the integral of the Gaussian function from \(0\) to a certain point \(x\):</p>
 
-\[\mathrm{erf}(x)=\frac{2}{\pi}\int_{0}^{x}{e^{-t^2}}\mathrm{d}{t}\]
+\[\mathrm{erf}(x)=\frac{2}{\sqrt{\pi}}\int_{0}^{x}{e^{-t^2}}\mathrm{d}{t}\]
 
 <p>At least, this is the way the formula is presented by Wikipedia and <a href="https://mathworld.wolfram.com/Erf.html">Wolfram Alpha</a> for \(\sigma=1\). But as soon as you try to work with it you find out that in order to really match the above Gaussian function, normalization and axis scaling must be taken care of:</p>
 
-\[\mathrm{erf}(x,\sigma)=\int_{0}^{\frac{x}{\sqrt{2}\sigma}}{e^{-t^2}}\mathrm{d}{t}\]
+\[\mathrm{erf}(x,\sigma)=\int_{0}^{\frac{x}{\sigma\sqrt{2}}}{e^{-t^2}}\mathrm{d}{t}\]
 
 <p>The plots below display \(G(x,\sigma)\) (bell-shaped) in blue, and \(\mathrm{erf}(x,\sigma)\) (S-shaped) in yellow.</p>
 
