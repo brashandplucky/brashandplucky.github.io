@@ -51,65 +51,65 @@
   <div class="post-content e-content" itemprop="articleBody">
     <p>Here is the 1D Gaussian function:</p>
 
-<p><img src="/uploads/2022/chemaguerra-the-error-function-1.png" alt=" " /></p>
+\[G(x,\sigma)=\frac{1}{\sqrt{2\pi\sigma}}e^{\frac{-x^2}{2\sigma^2}}\]
 
-<p>Put in short, the <a href="https://en.wikipedia.org/wiki/Error_function">Error function</a> is the integral of the Gaussian function from 0 to a certain point <code class="language-plaintext highlighter-rouge">x</code>:</p>
+<p>Put in short, the <a href="https://en.wikipedia.org/wiki/Error_function">Error function</a> is the integral of the Gaussian function from \(0\) to a certain point \(x\):</p>
 
-<p><img src="/uploads/2022/chemaguerra-the-error-function-2.png" alt=" " /></p>
+\[\mathrm{erf}(x)=\frac{2}{\pi}\int_{0}^{x}{e^{-t^2}}\mathrm{d}{t}\]
 
-<p>At least, that is the way the formula is presented by Wikipedia and <a href="https://mathworld.wolfram.com/Erf.html">Wolfram Alpha</a>. But as soon as you try to work with it you find out that in order to really match the above Gaussian function, normalization and axis scaling must be taken care of:</p>
+<p>At least, this is the way the formula is presented by Wikipedia and <a href="https://mathworld.wolfram.com/Erf.html">Wolfram Alpha</a> for \(\sigma=1\). But as soon as you try to work with it you find out that in order to really match the above Gaussian function, normalization and axis scaling must be taken care of:</p>
 
-<p><img src="/uploads/2022/chemaguerra-the-error-function-3.png" alt=" " /></p>
+\[\mathrm{erf}(x,\sigma)=\int_{0}^{\frac{x}{\sqrt{2}\sigma}}{e^{-t^2}}\mathrm{d}{t}\]
 
-<p>The plots below display <code class="language-plaintext highlighter-rouge">G(x,sigma)</code> (bell-shaped) in blue, and <code class="language-plaintext highlighter-rouge">erf(x,sigma)</code> (S-shaped) in yellow.</p>
+<p>The plots below display \(G(x,\sigma)\) (bell-shaped) in blue, and \(\mathrm{erf}(x,\sigma)\) (S-shaped) in yellow.</p>
 
-<p>A very typical use for <code class="language-plaintext highlighter-rouge">G(x,sigma)</code> that I’ve been talking about on this blog lately, is to build convolution kernels for Gaussian blur. An image convolution kernel, for example, is a pixel-centered discretization of a certain underlying function (a Gaussian, in this case). Said discretization splits the x axis in uniform unit-length bins (<em>a.k.a.,</em> taps, or intervals) centered at <code class="language-plaintext highlighter-rouge">x=0</code>.</p>
+<p>A very typical use for \(G(x,\sigma)\) that I’ve been talking about on this blog lately, is to build convolution kernels for Gaussian blur. An image convolution kernel, for example, is a pixel-centered discretization of a certain underlying function (a Gaussian, in this case). Said discretization splits the \(x\) axis in uniform unit-length bins (<em>a.k.a.,</em> taps, or intervals) centered at \(x=0\).</p>
 
-<p>For each bin, this is pretty much the definition of the integral of <code class="language-plaintext highlighter-rouge">G(x,sigma)</code> along the bin. That is, the increment of <code class="language-plaintext highlighter-rouge">erf(x,sigma)</code> between both end-points of the bin.</p>
+<p>For each bin, this is pretty much the definition of the integral of \(G(x,\sigma)\) along the bin. That is, the increment of \(\mathrm{erf}(x,\sigma)\) between both end-points of the bin.</p>
 
-<p><em>Discretized 1D Gaussian (<code class="language-plaintext highlighter-rouge">sigma=0.5</code>)</em></p>
+<p><em>Discretized 1D Gaussian (\(\sigma=0.5\))</em></p>
 
 <p><img src="/uploads/2022/chemaguerra-the-error-function-4.png" alt="Discretized 1D Gaussian" /></p>
 
-<p><em>Discretized 1D Gaussian (<code class="language-plaintext highlighter-rouge">sigma=1.0</code>)</em></p>
+<p><em>Discretized 1D Gaussian (\(\sigma=1\))</em></p>
 
 <p><img src="/uploads/2022/chemaguerra-the-error-function-5.png" alt="Discretized 1D Gaussian" /></p>
 
-<p><em>Discretized 1D Gaussian (<code class="language-plaintext highlighter-rouge">sigma=1.5</code>)</em></p>
+<p><em>Discretized 1D Gaussian (\(\sigma=1.5\))</em></p>
 
 <p><img src="/uploads/2022/chemaguerra-the-error-function-6.png" alt="Discretized 1D Gaussian" /></p>
 
 <h2 id="doing-it-wrong">Doing it wrong</h2>
 
-<p>Most implementations of Gaussian convolution kernels simply evaluate <code class="language-plaintext highlighter-rouge">G(x,sigma)</code> at the mid-point of each bin. This is a decent approximation that is also trivial to implement:</p>
+<p>Most implementations of Gaussian convolution kernels simply evaluate \(G(x,\sigma)\) at the mid-point of each bin. This is a decent approximation that is also trivial to implement:</p>
 
-<p><img src="/uploads/2022/chemaguerra-the-error-function-7.png" alt=" " /></p>
+\[\mathrm{bin}(a,b,\sigma)=G(\frac{a+b}{2},\sigma)\]
 
 <p>This value is represented in blue in the above plots.</p>
 
 <h2 id="implementing-erf">Implementing erf</h2>
 
-<p>While <code class="language-plaintext highlighter-rouge">G(x,sigma)</code> has a trivial explicit formulation, <code class="language-plaintext highlighter-rouge">erf</code> is an archetypical non-elementary function.</p>
+<p>While \(G(x,\sigma)\) has a trivial explicit formulation, \(\mathrm{erf}\) is an archetypical non-elementary function.</p>
 
-<p>Some development environments provide an <code class="language-plaintext highlighter-rouge">erf</code> implementation. But most (the ones I use) don’t. There are some smart example implementations out there if you Google a bit. Usually they are either numerical approximations, or piece-wise interpolations.</p>
+<p>Some development environments provide an \(\mathrm{erf}\) implementation. But most (the ones I use) don’t. There are some smart example implementations out there if you Google a bit. Usually they are either numerical approximations, or piece-wise interpolations.</p>
 
-<p>Assuming that one has an <code class="language-plaintext highlighter-rouge">erf</code> implementation at his disposal, the correct value for the bin <code class="language-plaintext highlighter-rouge">[a..b]</code> is:</p>
+<p>Assuming that one has an \(\mathrm{erf}\) implementation at his disposal, the correct value for the bin \([a..b]\) is:</p>
 
-<p><img src="/uploads/2022/chemaguerra-the-error-function-8.png" alt=" " /></p>
+\[\mathrm{bin}'(a,b,\sigma)=\mathrm{erf}(b,\sigma)-\mathrm{erf}(a,\sigma)\]
 
 <p>This value is represented in red in the above plots.</p>
 
 <h2 id="a-poor-mans-approximation">A poor-man’s approximation</h2>
 
-<p>If you are feeling lazy, an alternative approximation is to super-sample <code class="language-plaintext highlighter-rouge">G(x,sigma)</code> along the bin. The amount of samples can be chosen to be proportional to how small <code class="language-plaintext highlighter-rouge">sigma</code> is.</p>
+<p>If you are feeling lazy, an alternative approximation is to super-sample \(G(x,\sigma)\) along the bin. The amount of samples can be chosen to be proportional to how small \(\sigma\) is.</p>
 
 <p>This method is easy to implement. However, it is far less elegant and also less efficient as more evaluation calls are required.</p>
 
 <h2 id="conclusion">Conclusion</h2>
 
-<p>When discretizing a Gaussian function, as sigma becomes small (close to or smaller than <code class="language-plaintext highlighter-rouge">(b-a)</code>), the approximation <code class="language-plaintext highlighter-rouge">bin(a,b)</code> (in blue above) deviates significantly from the correct <code class="language-plaintext highlighter-rouge">bin'(a,b)</code> (in red above).</p>
+<p>When discretizing a Gaussian function, as \(\sigma\) becomes small (close to, or smaller than \((b-a)\)), the approximation \(\mathrm{bin}(a,b)\) (in blue above) deviates significantly from the correct \(\mathrm{bin}'(a,b)\) (in red above).</p>
 
-<p>So if you are going to Gaussian-blur at radius 1px or smaller, and precision is important, then it is necessary to use <code class="language-plaintext highlighter-rouge">erf(x,sigma)</code> or at least super-sample <code class="language-plaintext highlighter-rouge">G(x,sigma)</code>.</p>
+<p>So if you are going to Gaussian-blur at radius 1px or smaller, and precision is important, then it becomes necessary to use \(\mathrm{erf}(x,\sigma)\) or at least super-sample \(G(x,\sigma)\).</p>
 
   </div><a class="u-url" href="/2014/09/06/the-error-function.html" hidden></a>
 </article>
