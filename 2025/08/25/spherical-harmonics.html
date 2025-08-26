@@ -179,9 +179,9 @@ static T Y_1_2( const V3_t&amp; n ) { return ( -m_k02 * n.x ); }
 
 static T Y_2_0( const V3_t&amp; n ) { return (  m_k03 *    n.x*n.y                     ); }
 static T Y_2_1( const V3_t&amp; n ) { return ( -m_k03 *    n.y*n.z                     ); }
-static T Y_2_2( const V3_t&amp; n ) { return (  m_k04 * (3*n.z*n.z-1)                     ); }
+static T Y_2_2( const V3_t&amp; n ) { return (  m_k04 * (3*n.z*n.z-1)                  ); }
 static T Y_2_3( const V3_t&amp; n ) { return ( -m_k03 *    n.x*n.z                     ); }
-static T Y_2_4( const V3_t&amp; n ) { return (  m_k05 * (  n.x*n.x-n.y*n.y)                     ); }
+static T Y_2_4( const V3_t&amp; n ) { return (  m_k05 * (  n.x*n.x-n.y*n.y)            ); }
 
 static T Y_3_0( const V3_t&amp; n ) { return ( -m_k06 * n.y * ( ( 3 * n.x * n.x ) - ( n.y * n.y     ) ) ); }
 static T Y_3_1( const V3_t&amp; n ) { return (  m_k07 * n.z * ( (     n.y * n.x )                     ) ); }
