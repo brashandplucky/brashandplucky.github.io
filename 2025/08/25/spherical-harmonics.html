@@ -8,11 +8,11 @@
     <!-- MathJax -->
     <script type="text/javascript" id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <!-- Open Graph cards -->
-    <meta name="og:url" content="@/2025/08/25/spherical-harmonics.html">
-    <meta name="og:title" content="Spherical Harmonics">
-    <meta name="og:description" content="A math tool you can use to encode/decode the radiance arriving at a point with just a few coeffs.">
-    <meta name="og:image" content="https://brashandplucky.github.io/thumbnails/2023/chemaguerra-spherical-harmonics.png">
-    <meta name="og:image:type" content="image/png">
+    <meta property="og:url" content="https://brashandplucky.github.io/2025/08/25/spherical-harmonics.html">
+    <meta property="og:title" content="Spherical Harmonics">
+    <meta property="og:description" content="A math tool you can use to encode/decode the radiance arriving at a point with just a few coeffs.">
+    <meta property="og:image" content="https://brashandplucky.github.io/thumbnails/2023/chemaguerra-spherical-harmonics.png">
+    <meta property="og:type" content="article">
     <!-- Twitter cards -->
     <meta name="twitter:site" content="@chemaguerra">
     <meta name="twitter:creator" content="@">
@@ -177,11 +177,11 @@ static T Y_1_0( const V3_t&amp; n ) { return ( -m_k02 * n.y ); }
 static T Y_1_1( const V3_t&amp; n ) { return (  m_k02 * n.z ); }
 static T Y_1_2( const V3_t&amp; n ) { return ( -m_k02 * n.x ); }
 
-static T Y_2_0( const V3_t&amp; n ) { return (  m_k03 *    n.x*n.y                     ); }
-static T Y_2_1( const V3_t&amp; n ) { return ( -m_k03 *    n.y*n.z                     ); }
-static T Y_2_2( const V3_t&amp; n ) { return (  m_k04 * (3*n.z*n.z-1)                  ); }
-static T Y_2_3( const V3_t&amp; n ) { return ( -m_k03 *    n.x*n.z                     ); }
-static T Y_2_4( const V3_t&amp; n ) { return (  m_k05 * (  n.x*n.x-n.y*n.y)            ); }
+static T Y_2_0( const V3_t&amp; n ) { return (  m_k03 *               n.x * n.y                         ); }
+static T Y_2_1( const V3_t&amp; n ) { return ( -m_k03 *               n.y * n.z                         ); }
+static T Y_2_2( const V3_t&amp; n ) { return (  m_k04 *       ( ( 3 * n.z * n.z ) -   1               ) ); }
+static T Y_2_3( const V3_t&amp; n ) { return ( -m_k03 *               n.x * n.z                         ); }
+static T Y_2_4( const V3_t&amp; n ) { return (  m_k05 *       ( (     n.x * n.x ) - ( n.y * n.y     ) ) ); }
 
 static T Y_3_0( const V3_t&amp; n ) { return ( -m_k06 * n.y * ( ( 3 * n.x * n.x ) - ( n.y * n.y     ) ) ); }
 static T Y_3_1( const V3_t&amp; n ) { return (  m_k07 * n.z * ( (     n.y * n.x )                     ) ); }
