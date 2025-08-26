@@ -1,268 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="4.3.2">Jekyll</generator><link href="https://brashandplucky.github.io/feed.xml" rel="self" type="application/atom+xml" /><link href="https://brashandplucky.github.io/" rel="alternate" type="text/html" /><updated>2025-08-26T03:56:15+02:00</updated><id>https://brashandplucky.github.io/feed.xml</id><title type="html">Chema Guerra</title><subtitle>This is a coding blog where I post about the various projects that I am currently working on, both at work, or as an independent researcher. Most content here revolves around computer graphics and physics simulation.</subtitle><entry><title type="html">Spherical Harmonics</title><link href="https://brashandplucky.github.io/2023/10/01/spherical-harmonics.html" rel="alternate" type="text/html" title="Spherical Harmonics" /><published>2023-10-01T10:00:00+02:00</published><updated>2023-10-01T10:00:00+02:00</updated><id>https://brashandplucky.github.io/2023/10/01/spherical-harmonics</id><content type="html" xml:base="https://brashandplucky.github.io/2023/10/01/spherical-harmonics.html"><![CDATA[<blockquote>
-  <p><strong>Note:</strong> This post was written nearly 2 years ago and never published. I’m posting it now as-is, with some sections incomplete but the core content intact.</p>
-</blockquote>
-
-<p>This post is a quick crash course on what <a href="https://en.wikipedia.org/wiki/Spherical_harmonics">Spherical Harmonics</a> are and how they can be used to efficiently encode and decode <em>incoming radiance</em> (<em>i.e.,</em> a spherical view of the scene) at a point.</p>
-
-<h2 id="motivation">Motivation</h2>
-
-<h3 id="radiance-and-irradiance">Radiance and irradiance</h3>
-
-<p>In the context of rendering:</p>
-
-<p><strong>Radiance</strong> (\(L\)) is the amount of light that flows through or is emitted from a point in space in a particular direction.</p>
-
-<p><strong>Irradiance</strong> (\(E\)) is the total amount of light energy incident upon a surface at a specific point.</p>
-
-\[E=\int_{\Omega}{L(\mathbf{\omega})cos(\theta)\mathrm{d}\mathbf{\omega}}\]
-
-<p>Where:</p>
-
-<ul>
-  <li>\(E\) is the irradiance at a point on the surface.</li>
-  <li>\(L(\mathbf{\omega})\) is the radiance arriving from direction \(\mathbf{\omega}\).</li>
-  <li>\(\theta\) is the angle between the surface normal and the direction \(\mathbf{\omega}\).</li>
-  <li>\(d\mathbf{\omega}\) represents the differential solid angle in the hemisphere of incoming light directions.</li>
-</ul>
-
-<h3 id="light-probes">Light probes</h3>
-
-<p>The definition above talks about <em>surfaces</em> (with a normal). That is, radiance arriving at the point from the positive side of the surface. However, in this post we are interested on the radiance arriving at a point from all directions:</p>
-
-\[E=\int_{O}{L(\mathbf{\omega})\mathrm{d}\mathbf{\omega}}\]
-
-<p>Under certain circumstances we may want to precompute-and-store the incoming radiance \(L\) at a point or a collection of points in the scene in order to approximate illumination dynamically in real-time (possibly making use of \(E\) somehow).</p>
-
-<p>\(L\) is a function defined on the sphere, and is called light probe…</p>
-
-<p>\(E\) shows up in the <a href="https://en.wikipedia.org/wiki/Rendering_equation">Rendering Equation</a> but again, in this post we’re only interested in an efficient way to precompute-and-store \(L(\mathbf{\omega})\).</p>
-
-<p>In a real scenario, light probes can be placed either manually or automatically and they are meant to suffciently cover the scene. The goal of each individual light probe is to keep track of what illumination looks like in the volumetric neighborhood of the point they are centered at. Typically, nearby light probes are sampled and the samples obtained are interpolated to figure out the illumination arriving at any given 3D point. This can give a decent and fast-to-query approximation to Global Illumination and/or soft shadowing.</p>
-
-<p>The information stored by a light probe can be pictured of as a panoramic view of what the point sees around itself. So typical ways to initialize (or update) a light probe are to literally render/rasterize the scene around (maybe with 6 cubemap-arranged cameras) or ray-tracing the surroundings stochastically.</p>
-
-<p>Whichever the method, the resulting irradiance is a spherical collection of colors-and-their-magnitudes. Or, in better words, a function defined on the sphere which yields a color when evaluated at each unit direction. Which, in more humane terms, is a \(360\deg\) photograph of the scene from the point (a panorama or a cubemap if you prefer).</p>
-
-<p>Those are usually rather heavy, and since scenes typically require (many) thousands of light probes to sufficiently cover their volume, finding a highly efficient and performant (albeit lossless) way to encode such spherical color maps sounds ideal.</p>
-
-<p>It is important to note that such radiances-arriving-at-a-point maps can be very high-frequency as soon as we involve high-intensity point lights (such as the sun) and hard shadows. So in some engines all direct lighting coming from hard lights is calculated dynamically and light probes are used exclusively for indirect illumination and soft shadowing, which is much lower frequency.</p>
-
-<p>So let’s establish the goal of this post as:</p>
-
-<blockquote>
-  <p>Find a highly efficient/performant way to encode (low-frequency) spherical color maps with as little loss as possible.</p>
-</blockquote>
-
-<h3 id="cubemaps">Cubemaps</h3>
-
-<p>Throughout this post I will display \(L(\mathbf{\omega})\) as cubemaps because cubemap projections exhibit little distortion compared to angular or latitude-longitude maps.</p>
-
-<p>It is important to note that in doing so, the integrals we will be calculating below need to account for distortion in their differential element.</p>
-
-<p><img src="/uploads/2023/chemaguerra-spherical-harmonics-differential.png" alt="Directions and differentials" /></p>
-
-<p>The rgb-coded cubemap represents all the unit directions in a sphere \(\mathbf{\omega}\). The grayscale cubemap represents the differential element conversion between the unit sphere and the unit cubemap \(\mathrm{d}\mathbf{\omega}\). The HDR map unfolded as a cubemap is an example of an incoming radiance map \(L(\mathbf{\omega})\).</p>
-
-<p>Sanity check: The sum of all the grayscale patches must be \(4\pi\) = the surface of the unit sphere.</p>
-
-<h2 id="spherical-harmonics">Spherical Harmonics</h2>
-
-<p>SHs have no particular connection with rendering or radiance encoding. They are a generic mathematical contraption with which you can <em>project</em> some input data given in an input realm (usually space) onto another realm (usually frequency-related). This projection process is also reversible, which allows for encoding/decoding.</p>
-
-<p>This is all quite reminiscent of the Fourier Transform &amp; Co..</p>
-
-<p>SH are particularly interesting in the context of Computer Graphics because their domain is the unit sphere, which makes them ideal to encode <em>directional information</em>, such as light probes as described above.</p>
-
-<h3 id="orthogonality-and-key-properties">Orthogonality and Key Properties</h3>
-
-<p>Spherical Harmonics have several mathematical properties that make them ideal for encoding spherical functions:</p>
-
-<p><strong>Orthogonality:</strong> The SH functions are orthogonal over the sphere. This property allows us to decompose any spherical function into independent components without interference between different harmonics.</p>
-
-<p><strong>Completeness:</strong> Any square-integrable function on the sphere can be represented as a linear combination of spherical harmonics. For rendering, this means we can approximate any incoming radiance distribution to arbitrary precision by using enough SH coefficients.</p>
-
-<p><strong>Rotation Invariance:</strong> The total power in each frequency band (each level \(l\)) is preserved under rotation. This makes SH coefficients stable when objects or light probes are rotated.</p>
-
-<p><strong>Frequency Separation:</strong> Lower-order harmonics capture low-frequency (smooth) variations, while higher-order harmonics capture high-frequency (detailed) variations. This natural frequency ordering makes SH perfect for level-of-detail approximations.</p>
-
-<p>From Wikipedia:</p>
-
-<p><em>“Since the Spherical Harmonics form a complete set of orthogonal functions and thus an orthonormal basis, each function defined on the surface of a sphere can be written as a sum of these spherical harmonics.”</em></p>
-
-<h3 id="what-the-shs-look-like">What the SHs look like</h3>
-
-<p>Laplace’s Spherical Harmonics are denoted \(Y_l^m(\omega)\) where:</p>
-
-<ul>
-  <li>\(l\) is called the <strong>degree</strong> or <strong>order</strong> (ranging from 0 to infinity in theory, but we truncate for practical use).</li>
-  <li>\(m\) is called the <strong>order within degree</strong> (ranging from \(-l\) to \(+l\)).</li>
-</ul>
-
-<p>For a given order \(l\), there are \(2l+1\) different harmonics, each identified by a different value of \(m\). This gives us:</p>
-<ul>
-  <li>Level 0 (\(l=0\)): 1 harmonic</li>
-  <li>Level 1 (\(l=1\)): 3 harmonics</li>
-  <li>Level 2 (\(l=2\)): 5 harmonics</li>
-  <li>Level 3 (\(l=3\)): 7 harmonics</li>
-  <li>Total for \(L\) levels: \(L^2\) harmonics</li>
-</ul>
-
-<p>The harmonics are essentially different “shapes” or “patterns” on the sphere that form an orthogonal basis. Below is my implementation for the first 4 levels</p>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>static constexpr T m_k01 = 0.2820947918;  // sqrt(  1/pi)/2.
-static constexpr T m_k02 = 0.4886025119;  // sqrt(  3/pi)/2.
-static constexpr T m_k03 = 1.0925484306;  // sqrt( 15/pi)/2.
-static constexpr T m_k04 = 0.3153915652;  // sqrt(  5/pi)/4.
-static constexpr T m_k05 = 0.5462742153;  // sqrt( 15/pi)/4.
-static constexpr T m_k06 = 0.5900435860;  // sqrt( 70/pi)/8.
-static constexpr T m_k07 = 2.8906114210;  // sqrt(105/pi)/2.
-static constexpr T m_k08 = 0.4570214810;  // sqrt( 42/pi)/8.
-static constexpr T m_k09 = 0.3731763300;  // sqrt(  7/pi)/4.
-static constexpr T m_k10 = 1.4453057110;  // sqrt(105/pi)/4.
-
-static T Y_0_0( const V3_t&amp;   ) { return    m_k01; }
-
-static T Y_1_0( const V3_t&amp; n ) { return ( -m_k02 * n.y ); }
-static T Y_1_1( const V3_t&amp; n ) { return (  m_k02 * n.z ); }
-static T Y_1_2( const V3_t&amp; n ) { return ( -m_k02 * n.x ); }
-
-static T Y_2_0( const V3_t&amp; n ) { return (  m_k03 *    n.x*n.y                     ); }
-static T Y_2_1( const V3_t&amp; n ) { return ( -m_k03 *    n.y*n.z                     ); }
-static T Y_2_2( const V3_t&amp; n ) { return (  m_k04 * (3*n.z*n.z-1)                     ); }
-static T Y_2_3( const V3_t&amp; n ) { return ( -m_k03 *    n.x*n.z                     ); }
-static T Y_2_4( const V3_t&amp; n ) { return (  m_k05 * (  n.x*n.x-n.y*n.y)                     ); }
-
-static T Y_3_0( const V3_t&amp; n ) { return ( -m_k06 * n.y * ( ( 3 * n.x * n.x ) - ( n.y * n.y     ) ) ); }
-static T Y_3_1( const V3_t&amp; n ) { return (  m_k07 * n.z * ( (     n.y * n.x )                     ) ); }
-static T Y_3_2( const V3_t&amp; n ) { return ( -m_k08 * n.y * ( ( 5 * n.z * n.z ) - ( 1             ) ) ); }
-static T Y_3_3( const V3_t&amp; n ) { return (  m_k09 * n.z * ( ( 5 * n.z * n.z ) - ( 3             ) ) ); }
-static T Y_3_4( const V3_t&amp; n ) { return ( -m_k08 * n.x * ( ( 5 * n.z * n.z ) - ( 1             ) ) ); }
-static T Y_3_5( const V3_t&amp; n ) { return (  m_k10 * n.z * ( (     n.x * n.x ) - (     n.y * n.y ) ) ); }
-static T Y_3_6( const V3_t&amp; n ) { return ( -m_k06 * n.x * ( (     n.x * n.x ) - ( 3 * n.y * n.y ) ) ); }
-</code></pre></div></div>
-
-<p>This spherical (<em>i.e.,</em> polar in 3D) plot represents the SH basis for the first four levels (L0-L1-L2-L3). The SH magnitude is used for the radius at each spherical coord and the sign is used for the color.</p>
-
-<p><img src="/uploads/2023/chemaguerra-spherical-harmonics.jpg" alt="L0-L1-L2-L3 Spherical Harmonics" /></p>
-
-<p>This is the same type of plot, but fixating \(r=1\) and using the magnitude/sign to interpolate between both colors. Note that I have thresholded the magnitude a bit so sign-flip boundaries more sharply distinct.</p>
-
-<p><img src="/uploads/2023/chemaguerra-spherical-harmonics-unit.jpg" alt="Trajectory constraint" /></p>
-
-<p>This is again the same plot, but now each unit sphere is unfolded in a cubemap layout. The same color thresholding is used here.</p>
-
-<p><img src="/uploads/2023/chemaguerra-spherical-harmonics-cubemap.jpg" alt="Trajectory constraint" /></p>
-
-<h3 id="what-the-shs-will-do-for-us">What the SHs will do for us</h3>
-
-<p>Recap: The radiance arriving at a point from all directions is a fundamental building block in many real-time GI approximation algorithms. Let’s use the term light probe from now on.</p>
-
-<p>A light probe stores what a point in space <em>sees</em> if it <em>looks around</em>. In other words, a light probe is nothing but a <em>render of the scene</em> with a <em>spherical cam</em> centered at the point.</p>
-
-<p>The radiance arriving at a point from all directions is precisely a (color) function defined on the surface of a sphere centered at the point. Thus, we can encode arriving directional radiance with SHs.</p>
-
-<h2 id="encodingdecoding">Encoding/Decoding</h2>
-
-<p>Let’s define some terminology here:</p>
-
-<p>L: Number of SH levels we will use.</p>
-
-<p>Each level contributes \(L+1+L\) SHs.</p>
-
-<p>So, for example, if we choose \(L=4\), then the total number of SHs involved will be \(N_{SH}=1+3+5+7=16\). It can be easily proven that for any \(L\), the total number of SHs will be \(N_{SH}=L^2\).</p>
-
-<p><strong>Encoding:</strong> The process of projecting the input panorama onto each of the \(N_{SH}\) harmonics. This process yields exactly \(N_{SH}\) real coefficients.</p>
-
-<p><strong>Decoding:</strong> The process of restoring the input panorama with the linear combination of those \(N_{SH}\) real coefficients each multiplied by its corresponding harmonic.</p>
-
-<p><strong>SH codec:</strong> This is the shortname with which we will refer to the process of encoding-and-decoding an input panorama.</p>
-
-<p>Naturally, the higher the number of levels \(L\) the lower the loss of information. But also the number of coefficients (storage and mathematical operations required) will grow quadratically.</p>
-
-<p>For light probes in real-time \(L=3\) or \(L=4\) are usual choices. Radiance arriving at a point is hoefully low-frequency, so few coefficients offer a good compromise between detail preservation and storage size.</p>
-
-<p>It goes without saying, but the SH codec is called once per color component (<em>i.e.,</em> \(3\) times per component). This also means that the actual number of real coefficients for a color input panorama is \(3L^2\).</p>
-
-<h3 id="ldr-panorama">LDR panorama</h3>
-
-<p>Let’s start with this panorama taken from <a href="https://commons.wikimedia.org/wiki/File:Harderwijk_harbour_2018_-_360_panorama.jpg">commons.wikimedia.org</a>. The image is 8-bit, Low-Dynamic-Range, and not particularly high-frequency. <em>i.e.,</em> a 360-degree panorama of a pretty exterior.</p>
-
-<p><img src="/uploads/2023/chemaguerra-spherical-harmonics-ldr.png" alt="LDR panorama" /></p>
-
-<p>Here’s what happens if we pass it through our SH codec with \(L=3\) (\(9 \times 3=27\) coefficients).</p>
-
-<p><img src="/uploads/2023/chemaguerra-spherical-harmonics-ldr-9x3.png" alt="SH reconstruction LDR 27" /></p>
-
-<p>Now with \(L=4\) (\(16 \times 3=48\) coefficients).</p>
-
-<p><img src="/uploads/2023/chemaguerra-spherical-harmonics-ldr-16x3.png" alt="SH reconstruction LDR 48" /></p>
-
-<p>And now with \(L=10\) (\(100 \times 3=300\) coefficients).</p>
-
-<p><img src="/uploads/2023/chemaguerra-spherical-harmonics-ldr-100x3.png" alt="SH reconstruction LDR 300" /></p>
-
-<blockquote>
-  <p>You can right-click and download (or open in another tab) to view these images at 1:1 scale.</p>
-</blockquote>
-
-<p>The more the SHs (and coefficients) the more faithful and detailed the reconstruction becomes. While this is obvious, it is important to remark that the SH basis we’re using is “ordered by frequency”, meaning that the first ones encode lower-frequency bands, and adding more and more SHs adds more and more higher-frequency bands. In the continuous case, an infinite number of SHs and coefficients would be required to guarantee an ever lossless restoration. In the discrete case, as with the FT and other transforms, a finite amount of coefficients (proportional to the input data size) will suffice.</p>
-
-<p><img src="/uploads/2023/chemaguerra-spherical-harmonics-ldr-progression.gif" alt="SH reconstruction progression" /></p>
-
-<p>Let’s try with a spherically-blurred version (not a regular image blur):</p>
-
-<p><img src="/uploads/2023/chemaguerra-spherical-harmonics-ldr-blurred-progression.gif" alt="SH reconstruction progression" /></p>
-
-<p>The most important takeaway here is:</p>
-
-<blockquote>
-  <p>With just a handful of floating-point coefficients we are able to reconstruct a decent low-frequency approximation to an arbitrarily large-resolution panoramic view of a scene. The encoding/decoding process is defined by a very compact and fairly efficient formulation.</p>
-</blockquote>
-
-<p>Now, how well-behaved an SH codec is? Does it also work well with more complicated data?</p>
-
-<h3 id="hdr-panorama">HDR panorama</h3>
-
-<p>Since an SH codec transforms data from its natural space domain to the frequency domain, one can reasonably expect that the type of frequencies found in the original data will greatly affect the amount of SH levels (coefficients) necessary to reconstruct data more or less faithfully.</p>
-
-<p>Meaning that data with higher frequencies will be encoded at a greater loss. This sounds intuitive. But there is other less obvious and more harmful implication. As soon as high frequencies appear in the data, artifacts (and not just a loss of detail) will start to appear. <em>Ringing</em> in particular.</p>
-
-<p>This is nothing but a manifestation of the well-known <a href="https://en.wikipedia.org/wiki/Gibbs_phenomenon">Gibbs phenomenon</a>.</p>
-
-<p><img src="/uploads/2023/chemaguerra-spherical-harmonics-hdr-1.gif" alt="SH reconstruction progression" /></p>
-
-<p>Higher frequencies in an image semantically mean more fine/sharp detail (<em>i.e.,</em> more average variation from one pixel to its neighbors). But another factor that amplifies the amount of variation is the dynamic range of the data. Having a high-dynamic range may or may not affect what frequencies are present, but will certainly affect the amplitudes (the magnitude) of the encoded coefficients. Since the harmonics are wave-like, ringing may occur.</p>
-
-<p>The only true solution to this problem would be to keep adding more and more levels/coefficients. But that is obviously not an option. So we may be forced to cheat a little:</p>
-
-<ul>
-  <li>Reduce or clamp the dynamic range (HDR-&gt;LDR).</li>
-  <li>Blur the input data to shave off the higher frequencies.</li>
-</ul>
-
-<p><img src="/uploads/2023/chemaguerra-spherical-harmonics-hdr-clamped.gif" alt="SH reconstruction progression" /></p>
-
-<p>Let’s try with another classic HDR panorama. High-frequencies and high-amplitudes together cause a wobbly disaster:</p>
-
-<p><img src="/uploads/2023/chemaguerra-spherical-harmonics-hdr-2.gif" alt="SH reconstruction progression" /></p>
-
-<p>And now let’s try with a spherically-blurred version of the same map. The particular blur I am using here is a cosine-weighted hemispherical blur:</p>
-
-<p><img src="/uploads/2023/chemaguerra-spherical-harmonics-hdr-blurred.gif" alt="SH reconstruction progression" /></p>
-
-<p>Because type of blur used is cosine-weighted over the hemisphere, this light probe exactly captures the irradiance that a <em>lambertian surface</em> would receive from the scene if illuminated with the unblurred HDR panorama.</p>
-
-<p>And this is precisely what SH encoding/decoding is good for:</p>
-
-<h2 id="valuable-resources">Valuable resources</h2>
-
-<p>These are “mandatory” resources with great in-depth explanations:</p>
-
-<ul>
-  <li><a href="http://www.ppsloan.org/publications/StupidSH36.pdf">Stupid Spherical Harmonics Tricks</a> by Peter-Pike Sloan.</li>
-  <li><a href="https://graphics.stanford.edu/papers/envmap/">An Efficient Representation for Irradiance Environment Maps</a> by Ramamoorthi and Hanrahan.</li>
-  <li><a href="http://www.cse.chalmers.se/~uffe/xjobb/Readings/GlobalIllumination/Spherical%20Harmonic%20Lighting%20-%20the%20gritty%20details.pdf">Spherical Harmonic Lighting: The Gritty Details</a> by Robin Green.</li>
-</ul>]]></content><author><name></name></author><summary type="html"><![CDATA[Note: This post was written nearly 2 years ago and never published. I’m posting it now as-is, with some sections incomplete but the core content intact. This post is a quick crash course on what Spherical Harmonics are and how they can be used to efficiently encode and decode incoming radiance (i.e., a spherical view of the scene) at a point. Motivation Radiance and irradiance In the context of rendering: Radiance (\(L\)) is the amount of light that flows through or is emitted from a point in space in a particular direction. Irradiance (\(E\)) is the total amount of light energy incident upon a surface at a specific point. \[E=\int_{\Omega}{L(\mathbf{\omega})cos(\theta)\mathrm{d}\mathbf{\omega}}\] Where: \(E\) is the irradiance at a point on the surface. \(L(\mathbf{\omega})\) is the radiance arriving from direction \(\mathbf{\omega}\). \(\theta\) is the angle between the surface normal and the direction \(\mathbf{\omega}\). \(d\mathbf{\omega}\) represents the differential solid angle in the hemisphere of incoming light directions. Light probes The definition above talks about surfaces (with a normal). That is, radiance arriving at the point from the positive side of the surface. However, in this post we are interested on the radiance arriving at a point from all directions: \[E=\int_{O}{L(\mathbf{\omega})\mathrm{d}\mathbf{\omega}}\] Under certain circumstances we may want to precompute-and-store the incoming radiance \(L\) at a point or a collection of points in the scene in order to approximate illumination dynamically in real-time (possibly making use of \(E\) somehow). \(L\) is a function defined on the sphere, and is called light probe… \(E\) shows up in the Rendering Equation but again, in this post we’re only interested in an efficient way to precompute-and-store \(L(\mathbf{\omega})\). In a real scenario, light probes can be placed either manually or automatically and they are meant to suffciently cover the scene. The goal of each individual light probe is to keep track of what illumination looks like in the volumetric neighborhood of the point they are centered at. Typically, nearby light probes are sampled and the samples obtained are interpolated to figure out the illumination arriving at any given 3D point. This can give a decent and fast-to-query approximation to Global Illumination and/or soft shadowing. The information stored by a light probe can be pictured of as a panoramic view of what the point sees around itself. So typical ways to initialize (or update) a light probe are to literally render/rasterize the scene around (maybe with 6 cubemap-arranged cameras) or ray-tracing the surroundings stochastically. Whichever the method, the resulting irradiance is a spherical collection of colors-and-their-magnitudes. Or, in better words, a function defined on the sphere which yields a color when evaluated at each unit direction. Which, in more humane terms, is a \(360\deg\) photograph of the scene from the point (a panorama or a cubemap if you prefer). Those are usually rather heavy, and since scenes typically require (many) thousands of light probes to sufficiently cover their volume, finding a highly efficient and performant (albeit lossless) way to encode such spherical color maps sounds ideal. It is important to note that such radiances-arriving-at-a-point maps can be very high-frequency as soon as we involve high-intensity point lights (such as the sun) and hard shadows. So in some engines all direct lighting coming from hard lights is calculated dynamically and light probes are used exclusively for indirect illumination and soft shadowing, which is much lower frequency. So let’s establish the goal of this post as: Find a highly efficient/performant way to encode (low-frequency) spherical color maps with as little loss as possible. Cubemaps Throughout this post I will display \(L(\mathbf{\omega})\) as cubemaps because cubemap projections exhibit little distortion compared to angular or latitude-longitude maps. It is important to note that in doing so, the integrals we will be calculating below need to account for distortion in their differential element. The rgb-coded cubemap represents all the unit directions in a sphere \(\mathbf{\omega}\). The grayscale cubemap represents the differential element conversion between the unit sphere and the unit cubemap \(\mathrm{d}\mathbf{\omega}\). The HDR map unfolded as a cubemap is an example of an incoming radiance map \(L(\mathbf{\omega})\). Sanity check: The sum of all the grayscale patches must be \(4\pi\) = the surface of the unit sphere. Spherical Harmonics SHs have no particular connection with rendering or radiance encoding. They are a generic mathematical contraption with which you can project some input data given in an input realm (usually space) onto another realm (usually frequency-related). This projection process is also reversible, which allows for encoding/decoding. This is all quite reminiscent of the Fourier Transform &amp; Co.. SH are particularly interesting in the context of Computer Graphics because their domain is the unit sphere, which makes them ideal to encode directional information, such as light probes as described above. Orthogonality and Key Properties Spherical Harmonics have several mathematical properties that make them ideal for encoding spherical functions: Orthogonality: The SH functions are orthogonal over the sphere. This property allows us to decompose any spherical function into independent components without interference between different harmonics. Completeness: Any square-integrable function on the sphere can be represented as a linear combination of spherical harmonics. For rendering, this means we can approximate any incoming radiance distribution to arbitrary precision by using enough SH coefficients. Rotation Invariance: The total power in each frequency band (each level \(l\)) is preserved under rotation. This makes SH coefficients stable when objects or light probes are rotated. Frequency Separation: Lower-order harmonics capture low-frequency (smooth) variations, while higher-order harmonics capture high-frequency (detailed) variations. This natural frequency ordering makes SH perfect for level-of-detail approximations. From Wikipedia: “Since the Spherical Harmonics form a complete set of orthogonal functions and thus an orthonormal basis, each function defined on the surface of a sphere can be written as a sum of these spherical harmonics.” What the SHs look like Laplace’s Spherical Harmonics are denoted \(Y_l^m(\omega)\) where: \(l\) is called the degree or order (ranging from 0 to infinity in theory, but we truncate for practical use). \(m\) is called the order within degree (ranging from \(-l\) to \(+l\)). For a given order \(l\), there are \(2l+1\) different harmonics, each identified by a different value of \(m\). This gives us: Level 0 (\(l=0\)): 1 harmonic Level 1 (\(l=1\)): 3 harmonics Level 2 (\(l=2\)): 5 harmonics Level 3 (\(l=3\)): 7 harmonics Total for \(L\) levels: \(L^2\) harmonics The harmonics are essentially different “shapes” or “patterns” on the sphere that form an orthogonal basis. Below is my implementation for the first 4 levels static constexpr T m_k01 = 0.2820947918; // sqrt( 1/pi)/2. static constexpr T m_k02 = 0.4886025119; // sqrt( 3/pi)/2. static constexpr T m_k03 = 1.0925484306; // sqrt( 15/pi)/2. static constexpr T m_k04 = 0.3153915652; // sqrt( 5/pi)/4. static constexpr T m_k05 = 0.5462742153; // sqrt( 15/pi)/4. static constexpr T m_k06 = 0.5900435860; // sqrt( 70/pi)/8. static constexpr T m_k07 = 2.8906114210; // sqrt(105/pi)/2. static constexpr T m_k08 = 0.4570214810; // sqrt( 42/pi)/8. static constexpr T m_k09 = 0.3731763300; // sqrt( 7/pi)/4. static constexpr T m_k10 = 1.4453057110; // sqrt(105/pi)/4. static T Y_0_0( const V3_t&amp; ) { return m_k01; } static T Y_1_0( const V3_t&amp; n ) { return ( -m_k02 * n.y ); } static T Y_1_1( const V3_t&amp; n ) { return ( m_k02 * n.z ); } static T Y_1_2( const V3_t&amp; n ) { return ( -m_k02 * n.x ); } static T Y_2_0( const V3_t&amp; n ) { return ( m_k03 * n.x*n.y ); } static T Y_2_1( const V3_t&amp; n ) { return ( -m_k03 * n.y*n.z ); } static T Y_2_2( const V3_t&amp; n ) { return ( m_k04 * (3*n.z*n.z-1) ); } static T Y_2_3( const V3_t&amp; n ) { return ( -m_k03 * n.x*n.z ); } static T Y_2_4( const V3_t&amp; n ) { return ( m_k05 * ( n.x*n.x-n.y*n.y) ); } static T Y_3_0( const V3_t&amp; n ) { return ( -m_k06 * n.y * ( ( 3 * n.x * n.x ) - ( n.y * n.y ) ) ); } static T Y_3_1( const V3_t&amp; n ) { return ( m_k07 * n.z * ( ( n.y * n.x ) ) ); } static T Y_3_2( const V3_t&amp; n ) { return ( -m_k08 * n.y * ( ( 5 * n.z * n.z ) - ( 1 ) ) ); } static T Y_3_3( const V3_t&amp; n ) { return ( m_k09 * n.z * ( ( 5 * n.z * n.z ) - ( 3 ) ) ); } static T Y_3_4( const V3_t&amp; n ) { return ( -m_k08 * n.x * ( ( 5 * n.z * n.z ) - ( 1 ) ) ); } static T Y_3_5( const V3_t&amp; n ) { return ( m_k10 * n.z * ( ( n.x * n.x ) - ( n.y * n.y ) ) ); } static T Y_3_6( const V3_t&amp; n ) { return ( -m_k06 * n.x * ( ( n.x * n.x ) - ( 3 * n.y * n.y ) ) ); } This spherical (i.e., polar in 3D) plot represents the SH basis for the first four levels (L0-L1-L2-L3). The SH magnitude is used for the radius at each spherical coord and the sign is used for the color. This is the same type of plot, but fixating \(r=1\) and using the magnitude/sign to interpolate between both colors. Note that I have thresholded the magnitude a bit so sign-flip boundaries more sharply distinct. This is again the same plot, but now each unit sphere is unfolded in a cubemap layout. The same color thresholding is used here. What the SHs will do for us Recap: The radiance arriving at a point from all directions is a fundamental building block in many real-time GI approximation algorithms. Let’s use the term light probe from now on. A light probe stores what a point in space sees if it looks around. In other words, a light probe is nothing but a render of the scene with a spherical cam centered at the point. The radiance arriving at a point from all directions is precisely a (color) function defined on the surface of a sphere centered at the point. Thus, we can encode arriving directional radiance with SHs. Encoding/Decoding Let’s define some terminology here: L: Number of SH levels we will use. Each level contributes \(L+1+L\) SHs. So, for example, if we choose \(L=4\), then the total number of SHs involved will be \(N_{SH}=1+3+5+7=16\). It can be easily proven that for any \(L\), the total number of SHs will be \(N_{SH}=L^2\). Encoding: The process of projecting the input panorama onto each of the \(N_{SH}\) harmonics. This process yields exactly \(N_{SH}\) real coefficients. Decoding: The process of restoring the input panorama with the linear combination of those \(N_{SH}\) real coefficients each multiplied by its corresponding harmonic. SH codec: This is the shortname with which we will refer to the process of encoding-and-decoding an input panorama. Naturally, the higher the number of levels \(L\) the lower the loss of information. But also the number of coefficients (storage and mathematical operations required) will grow quadratically. For light probes in real-time \(L=3\) or \(L=4\) are usual choices. Radiance arriving at a point is hoefully low-frequency, so few coefficients offer a good compromise between detail preservation and storage size. It goes without saying, but the SH codec is called once per color component (i.e., \(3\) times per component). This also means that the actual number of real coefficients for a color input panorama is \(3L^2\). LDR panorama Let’s start with this panorama taken from commons.wikimedia.org. The image is 8-bit, Low-Dynamic-Range, and not particularly high-frequency. i.e., a 360-degree panorama of a pretty exterior. Here’s what happens if we pass it through our SH codec with \(L=3\) (\(9 \times 3=27\) coefficients). Now with \(L=4\) (\(16 \times 3=48\) coefficients). And now with \(L=10\) (\(100 \times 3=300\) coefficients). You can right-click and download (or open in another tab) to view these images at 1:1 scale. The more the SHs (and coefficients) the more faithful and detailed the reconstruction becomes. While this is obvious, it is important to remark that the SH basis we’re using is “ordered by frequency”, meaning that the first ones encode lower-frequency bands, and adding more and more SHs adds more and more higher-frequency bands. In the continuous case, an infinite number of SHs and coefficients would be required to guarantee an ever lossless restoration. In the discrete case, as with the FT and other transforms, a finite amount of coefficients (proportional to the input data size) will suffice. Let’s try with a spherically-blurred version (not a regular image blur): The most important takeaway here is: With just a handful of floating-point coefficients we are able to reconstruct a decent low-frequency approximation to an arbitrarily large-resolution panoramic view of a scene. The encoding/decoding process is defined by a very compact and fairly efficient formulation. Now, how well-behaved an SH codec is? Does it also work well with more complicated data? HDR panorama Since an SH codec transforms data from its natural space domain to the frequency domain, one can reasonably expect that the type of frequencies found in the original data will greatly affect the amount of SH levels (coefficients) necessary to reconstruct data more or less faithfully. Meaning that data with higher frequencies will be encoded at a greater loss. This sounds intuitive. But there is other less obvious and more harmful implication. As soon as high frequencies appear in the data, artifacts (and not just a loss of detail) will start to appear. Ringing in particular. This is nothing but a manifestation of the well-known Gibbs phenomenon. Higher frequencies in an image semantically mean more fine/sharp detail (i.e., more average variation from one pixel to its neighbors). But another factor that amplifies the amount of variation is the dynamic range of the data. Having a high-dynamic range may or may not affect what frequencies are present, but will certainly affect the amplitudes (the magnitude) of the encoded coefficients. Since the harmonics are wave-like, ringing may occur. The only true solution to this problem would be to keep adding more and more levels/coefficients. But that is obviously not an option. So we may be forced to cheat a little: Reduce or clamp the dynamic range (HDR-&gt;LDR). Blur the input data to shave off the higher frequencies. Let’s try with another classic HDR panorama. High-frequencies and high-amplitudes together cause a wobbly disaster: And now let’s try with a spherically-blurred version of the same map. The particular blur I am using here is a cosine-weighted hemispherical blur: Because type of blur used is cosine-weighted over the hemisphere, this light probe exactly captures the irradiance that a lambertian surface would receive from the scene if illuminated with the unblurred HDR panorama. And this is precisely what SH encoding/decoding is good for: Valuable resources These are “mandatory” resources with great in-depth explanations: Stupid Spherical Harmonics Tricks by Peter-Pike Sloan. An Efficient Representation for Irradiance Environment Maps by Ramamoorthi and Hanrahan. Spherical Harmonic Lighting: The Gritty Details by Robin Green.]]></summary><media:thumbnail xmlns:media="http://search.yahoo.com/mrss/" url="https://brashandplucky.github.io/thumbnails/2023/chemaguerra-spherical-harmonics.png" /><media:content medium="image" url="https://brashandplucky.github.io/thumbnails/2023/chemaguerra-spherical-harmonics.png" xmlns:media="http://search.yahoo.com/mrss/" /></entry><entry><title type="html">Constrained Dynamics (IV)</title><link href="https://brashandplucky.github.io/2023/09/05/constrained-dynamics-iv.html" rel="alternate" type="text/html" title="Constrained Dynamics (IV)" /><published>2023-09-05T10:00:00+02:00</published><updated>2023-09-05T10:00:00+02:00</updated><id>https://brashandplucky.github.io/2023/09/05/constrained-dynamics-iv</id><content type="html" xml:base="https://brashandplucky.github.io/2023/09/05/constrained-dynamics-iv.html"><![CDATA[<p>This post is a direct continuation to the latest entry…</p>
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="4.3.2">Jekyll</generator><link href="https://brashandplucky.github.io/feed.xml" rel="self" type="application/atom+xml" /><link href="https://brashandplucky.github.io/" rel="alternate" type="text/html" /><updated>2025-08-26T04:01:45+02:00</updated><id>https://brashandplucky.github.io/feed.xml</id><title type="html">Chema Guerra</title><subtitle>This is a coding blog where I post about the various projects that I am currently working on, both at work, or as an independent researcher. Most content here revolves around computer graphics and physics simulation.</subtitle><entry><title type="html">Constrained Dynamics (IV)</title><link href="https://brashandplucky.github.io/2023/09/05/constrained-dynamics-iv.html" rel="alternate" type="text/html" title="Constrained Dynamics (IV)" /><published>2023-09-05T10:00:00+02:00</published><updated>2023-09-05T10:00:00+02:00</updated><id>https://brashandplucky.github.io/2023/09/05/constrained-dynamics-iv</id><content type="html" xml:base="https://brashandplucky.github.io/2023/09/05/constrained-dynamics-iv.html"><![CDATA[<p>This post is a direct continuation to the latest entry…</p>
 
 <ul>
   <li>Part III: <a href="https://brashandplucky.com/2023/08/14/constrained-dynamics-iii.html">Constrained Dynamics (III)</a> - <em>Force-based constraints</em>.</li>
@@ -1527,4 +1263,41 @@ that has the effect of reducing or preventing the oscillation. A damped spring i
   width: 100%;
   height: 100%;
 }
-</style>]]></content><author><name></name></author><summary type="html"><![CDATA[One major endeavour that I undertook this past summer was the creation of a novel displacement mapping system for Maverick Render. The main motivations behind this have been: Our customers were running out of GPU memory too often when using displacement. Our main goal is that Maverick is an exquisite-quality tool for model visualization. Hence displacement is very important to us. Open the door to some other geometry-generation features beyond displacement itself. So I undusted the old virtualized geometry solution I implemented for fryrender back in 2008 and re-engineered it for the Maverick core in the GPU. Say hi to: Micro-Patch Displacement Mapping Non-affine MPDM in arbitrarily-curved surfaces Affine MPDM in flat surfaces Some good properties of Maverick’s displacement: No requirements whatsoever on the base mesh or on the heightmap texture. It costs near 0 in warm-up time. It costs near 0 in memory (only a small payload is appended to the height map). 0 information is lost; every single texel in the heightmap is turned into a displaced micro-patch. Implemented as a custom primitive in Maverick’s OptiX ray-tracing backend. Used every trick in the book to optimize it as much as I could. MPDM vs. brute-force MPDM is meant to address some classic problems with the subdivide-and-displace-vertices (brute-force) approach. Using brute-force: There is some (often significant) wait time for warm-up. Memory usage goes through the roof, more than often blowing up all available memory. Height sampling happens at the vertices and not at the heightmap texels. Points 1-2 are very obvious. It becomes impossible to abuse displacement, or to recklessly use it for large surfaces. Some techniques such as back-face culling or camera culling can be used to work around these difficulties, but such techniques pose problems on their own. Expecting the user to be careful not to exceed his memory budget is always an ill-fated plan. Point 3 often means that the resulting displacement is smudgy, and not as crisp as it should be. i.e., information is lost, and/or geometry is produced in excess. Some techniques (that Maverick itself has featured in the past) such as autobump can be used to work around this problem by kind-of-restoring the information that is lost in the process. But then again, optimal configuration would become the responsibility of the user. None of these issues happen with MPDM. :-) Are there any benefits to the old brute-force approach? As usual, nothing really good comes without a price. This is often very true in the realm of algorithm optimization. MPDM unfolds virtualized geometry during ray-traversal. The displaced geometry never exists for real in memory (that is why it is said to be virtualized) and this is the reason why MPDM has a near 0-cost in memory usage. However, this virtualization comes at an algorithmic cost. Despite massively optimized, MPDM renders a bit more slowly than the same displaced geometry would if the vertices were pre-displaced during warm-up and entered the ray-tracing BVH as regular geometry. For MPDM, part of the optimization process relies on the fact that the input map is discretized in texels, (as in a regular bitmap). For brute-force displacement the only requirement is that the height map can be evaluated at each geometry vertex, which is true to bitmaps, procedurals, and all map types. So MPDM is a priori limited to filetex maps, but we have added to Maverick a new map type called bakemap so the user can bake any procedural map tree into a filetex to feed MPDM if necessary. How does MPDM work? Here’s a very broad explanation on how MPDM in Maverick works: A (rather classic) hierarchical partitioning scheme based in min-max mip-map levels is performed on the input heightmap. As depicted in the images below. Those voxels are efficiently ray-traceable… unless there is curvature in the base mesh. Hell breaks loose as soon as curvature is at play. Maverick does non-affine math here (visualized in a previous post on non-affine triangle sweeps). I’ve tried different approaches for this (non-affine, discretized, and hybrid), and the code allows to flag-switch each mode on and off. Because of the non-affine treatment, at the lowest hierarchy level you no longer have quads or triangles, but bilinear patches (hence the name: Micro-PATCH Displacement Mapping). Non-affine MPDM in arbitrarily-curved surfaces The input heightmap used Affine MPDM in flat surfaces (special optimization branch) The input heightmap used But the devil lies in the details. Efficient implementation of this all was a multi-week hell working with data structures, low-level optimizations, coordinating MPDM with OptiX and the rest of the Maverick core, and dealing with plenty of non-obvious fine-grain issues such as: Avoiding cracks across edges. Dealing with UV mapping projections. Transfer of shading normals. Real-time notifications from the UI. … Youtube 4K videos:]]></summary><media:thumbnail xmlns:media="http://search.yahoo.com/mrss/" url="https://brashandplucky.github.io/thumbnails/2022/chemaguerra-micropatch-displacement-mapping.png" /><media:content medium="image" url="https://brashandplucky.github.io/thumbnails/2022/chemaguerra-micropatch-displacement-mapping.png" xmlns:media="http://search.yahoo.com/mrss/" /></entry></feed>
+</style>]]></content><author><name></name></author><summary type="html"><![CDATA[One major endeavour that I undertook this past summer was the creation of a novel displacement mapping system for Maverick Render. The main motivations behind this have been: Our customers were running out of GPU memory too often when using displacement. Our main goal is that Maverick is an exquisite-quality tool for model visualization. Hence displacement is very important to us. Open the door to some other geometry-generation features beyond displacement itself. So I undusted the old virtualized geometry solution I implemented for fryrender back in 2008 and re-engineered it for the Maverick core in the GPU. Say hi to: Micro-Patch Displacement Mapping Non-affine MPDM in arbitrarily-curved surfaces Affine MPDM in flat surfaces Some good properties of Maverick’s displacement: No requirements whatsoever on the base mesh or on the heightmap texture. It costs near 0 in warm-up time. It costs near 0 in memory (only a small payload is appended to the height map). 0 information is lost; every single texel in the heightmap is turned into a displaced micro-patch. Implemented as a custom primitive in Maverick’s OptiX ray-tracing backend. Used every trick in the book to optimize it as much as I could. MPDM vs. brute-force MPDM is meant to address some classic problems with the subdivide-and-displace-vertices (brute-force) approach. Using brute-force: There is some (often significant) wait time for warm-up. Memory usage goes through the roof, more than often blowing up all available memory. Height sampling happens at the vertices and not at the heightmap texels. Points 1-2 are very obvious. It becomes impossible to abuse displacement, or to recklessly use it for large surfaces. Some techniques such as back-face culling or camera culling can be used to work around these difficulties, but such techniques pose problems on their own. Expecting the user to be careful not to exceed his memory budget is always an ill-fated plan. Point 3 often means that the resulting displacement is smudgy, and not as crisp as it should be. i.e., information is lost, and/or geometry is produced in excess. Some techniques (that Maverick itself has featured in the past) such as autobump can be used to work around this problem by kind-of-restoring the information that is lost in the process. But then again, optimal configuration would become the responsibility of the user. None of these issues happen with MPDM. :-) Are there any benefits to the old brute-force approach? As usual, nothing really good comes without a price. This is often very true in the realm of algorithm optimization. MPDM unfolds virtualized geometry during ray-traversal. The displaced geometry never exists for real in memory (that is why it is said to be virtualized) and this is the reason why MPDM has a near 0-cost in memory usage. However, this virtualization comes at an algorithmic cost. Despite massively optimized, MPDM renders a bit more slowly than the same displaced geometry would if the vertices were pre-displaced during warm-up and entered the ray-tracing BVH as regular geometry. For MPDM, part of the optimization process relies on the fact that the input map is discretized in texels, (as in a regular bitmap). For brute-force displacement the only requirement is that the height map can be evaluated at each geometry vertex, which is true to bitmaps, procedurals, and all map types. So MPDM is a priori limited to filetex maps, but we have added to Maverick a new map type called bakemap so the user can bake any procedural map tree into a filetex to feed MPDM if necessary. How does MPDM work? Here’s a very broad explanation on how MPDM in Maverick works: A (rather classic) hierarchical partitioning scheme based in min-max mip-map levels is performed on the input heightmap. As depicted in the images below. Those voxels are efficiently ray-traceable… unless there is curvature in the base mesh. Hell breaks loose as soon as curvature is at play. Maverick does non-affine math here (visualized in a previous post on non-affine triangle sweeps). I’ve tried different approaches for this (non-affine, discretized, and hybrid), and the code allows to flag-switch each mode on and off. Because of the non-affine treatment, at the lowest hierarchy level you no longer have quads or triangles, but bilinear patches (hence the name: Micro-PATCH Displacement Mapping). Non-affine MPDM in arbitrarily-curved surfaces The input heightmap used Affine MPDM in flat surfaces (special optimization branch) The input heightmap used But the devil lies in the details. Efficient implementation of this all was a multi-week hell working with data structures, low-level optimizations, coordinating MPDM with OptiX and the rest of the Maverick core, and dealing with plenty of non-obvious fine-grain issues such as: Avoiding cracks across edges. Dealing with UV mapping projections. Transfer of shading normals. Real-time notifications from the UI. … Youtube 4K videos:]]></summary><media:thumbnail xmlns:media="http://search.yahoo.com/mrss/" url="https://brashandplucky.github.io/thumbnails/2022/chemaguerra-micropatch-displacement-mapping.png" /><media:content medium="image" url="https://brashandplucky.github.io/thumbnails/2022/chemaguerra-micropatch-displacement-mapping.png" xmlns:media="http://search.yahoo.com/mrss/" /></entry><entry><title type="html">Diffraction vs. Multi-resolution</title><link href="https://brashandplucky.github.io/2022/09/29/diffraction-vs-multiresolution.html" rel="alternate" type="text/html" title="Diffraction vs. Multi-resolution" /><published>2022-09-29T00:00:00+02:00</published><updated>2022-09-29T00:00:00+02:00</updated><id>https://brashandplucky.github.io/2022/09/29/diffraction-vs-multiresolution</id><content type="html" xml:base="https://brashandplucky.github.io/2022/09/29/diffraction-vs-multiresolution.html"><![CDATA[<p>I’ve been working lately on glare/bloom/fringe and other post-processing effects in <a href="https://maverickrender.com">Maverick Render</a>. Some of these inherit from our lovely <a href="https://arionfx.com">ArionFX</a> Adobe Photoshop and AfterEffects plug-in.</p>
+
+<p>One complaint in ArionFX and also in Maverick is (was, because this post is about a successful fix) that Glare/Bloom diverge in <em>shape and power</em> when the input image is rendered at a different resolution, even if the Glare/Bloom parameters stay the same.</p>
+
+<p>There are some relatively unobvious reasons for this. Basically, the challenges are:</p>
+
+<ul>
+  <li><em>Hard challenge</em>: Diffraction is a frequency analysis effect. For a render, this happens in the discrete realm (pixels). The size (amount of pixels) of the images involved changes what frequencies and how they show up in the Fourier Transform.</li>
+  <li><em>Hard challenge</em>: Anti-Aliasing of neighboring pixels (more prevalent at low resolution) averages their power and dims the overall Glare/Bloom overlay. This can pose a real problem for thin geometries such as lightbulb filaments.</li>
+  <li><em>Easy challenge</em>: As illustrated in some of my previous posts, the FT itself has some properties that relate its scale and power to the scale and power of the aperture/obstacle of the lens iris. These of course must be compensated for.</li>
+  <li><em>Medium challenge</em>: Changes in aspect ratio, or in padding in the image buffers (such as the padding between the IPR size in the UI vs. the canvas size) must be taken into account as well.</li>
+</ul>
+
+<p>The upcoming release of Maverick will address these issues.</p>
+
+<p>Here’s a small video with a sequence of Maverick post-processing effects, all rendered alternating landscape and portrait aspect ratios between 512 and 2048. The video is cropped as landscape to be easier on the eyes. As can be seen, at lower resolutions there’s always some power divergence, and a little bit of blur. But those are unavoidable to some extent.</p>
+
+<div class="embed-container">
+  <iframe width="640" height="390" src="https://www.youtube.com/embed/4K8F8vP76Y0" frameborder="0" allowfullscreen=""></iframe>
+</div>
+<style>
+.embed-container {
+  position: relative;
+  padding-bottom: 56.25%;
+  height: 0;
+  overflow: hidden;
+  max-width: 100%;
+}
+.embed-container iframe,
+.embed-container object,
+.embed-container embed {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+</style>]]></content><author><name></name></author><summary type="html"><![CDATA[I’ve been working lately on glare/bloom/fringe and other post-processing effects in Maverick Render. Some of these inherit from our lovely ArionFX Adobe Photoshop and AfterEffects plug-in. One complaint in ArionFX and also in Maverick is (was, because this post is about a successful fix) that Glare/Bloom diverge in shape and power when the input image is rendered at a different resolution, even if the Glare/Bloom parameters stay the same. There are some relatively unobvious reasons for this. Basically, the challenges are: Hard challenge: Diffraction is a frequency analysis effect. For a render, this happens in the discrete realm (pixels). The size (amount of pixels) of the images involved changes what frequencies and how they show up in the Fourier Transform. Hard challenge: Anti-Aliasing of neighboring pixels (more prevalent at low resolution) averages their power and dims the overall Glare/Bloom overlay. This can pose a real problem for thin geometries such as lightbulb filaments. Easy challenge: As illustrated in some of my previous posts, the FT itself has some properties that relate its scale and power to the scale and power of the aperture/obstacle of the lens iris. These of course must be compensated for. Medium challenge: Changes in aspect ratio, or in padding in the image buffers (such as the padding between the IPR size in the UI vs. the canvas size) must be taken into account as well. The upcoming release of Maverick will address these issues. Here’s a small video with a sequence of Maverick post-processing effects, all rendered alternating landscape and portrait aspect ratios between 512 and 2048. The video is cropped as landscape to be easier on the eyes. As can be seen, at lower resolutions there’s always some power divergence, and a little bit of blur. But those are unavoidable to some extent.]]></summary><media:thumbnail xmlns:media="http://search.yahoo.com/mrss/" url="https://brashandplucky.github.io/thumbnails/2022/chemaguerra-diffraction-vs-multiresolution.png" /><media:content medium="image" url="https://brashandplucky.github.io/thumbnails/2022/chemaguerra-diffraction-vs-multiresolution.png" xmlns:media="http://search.yahoo.com/mrss/" /></entry></feed>
