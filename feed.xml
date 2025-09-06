@@ -1,4 +1,208 @@
-<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="4.3.2">Jekyll</generator><link href="https://brashandplucky.com/feed.xml" rel="self" type="application/atom+xml" /><link href="https://brashandplucky.com/" rel="alternate" type="text/html" /><updated>2025-09-03T05:39:48+02:00</updated><id>https://brashandplucky.com/feed.xml</id><title type="html">Chema Guerra</title><subtitle>This is a coding blog where I post about the various projects that I am currently working on, both at work, or as an independent researcher. Most content here revolves around computer graphics and physics simulation.</subtitle><entry><title type="html">Spherical Harmonics</title><link href="https://brashandplucky.com/2025/08/25/spherical-harmonics.html" rel="alternate" type="text/html" title="Spherical Harmonics" /><published>2025-08-25T10:00:00+02:00</published><updated>2025-08-25T10:00:00+02:00</updated><id>https://brashandplucky.com/2025/08/25/spherical-harmonics</id><content type="html" xml:base="https://brashandplucky.com/2025/08/25/spherical-harmonics.html"><![CDATA[<blockquote>
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="4.3.2">Jekyll</generator><link href="https://brashandplucky.com/feed.xml" rel="self" type="application/atom+xml" /><link href="https://brashandplucky.com/" rel="alternate" type="text/html" /><updated>2025-09-06T07:27:16+02:00</updated><id>https://brashandplucky.com/feed.xml</id><title type="html">Chema Guerra</title><subtitle>This is a coding blog where I post about the various projects that I am currently working on, both at work, or as an independent researcher. Most content here revolves around computer graphics and physics simulation.</subtitle><entry><title type="html">Procedural Island Generation (I)</title><link href="https://brashandplucky.com/2025/09/07/procedural-island-generation-i.html" rel="alternate" type="text/html" title="Procedural Island Generation (I)" /><published>2025-09-07T00:00:00+02:00</published><updated>2025-09-07T00:00:00+02:00</updated><id>https://brashandplucky.com/2025/09/07/procedural-island-generation-i</id><content type="html" xml:base="https://brashandplucky.com/2025/09/07/procedural-island-generation-i.html"><![CDATA[<p><img src="/uploads/2025/chemaguerra-procedural-island-generation-terrain-mesh.png" alt="Terrain mesh visualization" /></p>
+
+<p>This post marks the beginning of a series on procedural island generation. I recently fell in love with <a href="https://twitter.com/redblobgames">Amit Patel’s</a> brilliant <a href="http://www-cs-students.stanford.edu/~amitp/game-programming/polygon-map-generation/">polygon map generation</a> articles, and this series will be my own exploration and interpretation of those techniques.</p>
+
+<p>This series assumes familiarity with computational geometry and procedural generation concepts such as Delaunay triangulation, Voronoi diagrams, Simplex noise, etc…</p>
+
+<p>To challenge myself (I’m usually a C/C++ person), I decided to implement this in Rust. But I will barely delve into implementation details though. This series will focus on the algorithm itself, with neat (hopefully!) visualisations of the intermediate calculations.</p>
+
+<h2 id="motivation">Motivation</h2>
+
+<p>The main reason why I am tinkering with terrain generation now is <strong>Strike Back</strong>, the <a href="https://x.com/topotoylabs/status/1750315804170612745">flight sim I’ve been developing on and off</a>. I will be using this algorithm as a foundation to create battle arenas, but plan to extend it eventually.</p>
+
+<h3 id="working-domain">Working Domain</h3>
+
+<p>Procedural terrain generation offers infinite variety from finite code. But islands make particularly interesting subjects because they’re self-contained worlds with natural boundaries. The polygon-based approach we’ll explore provides a nice balance between organic appearance and computational tractability.</p>
+
+<p>We’ll work in a <em>regular grid</em> within a <em>unit square domain</em>. While regular grids are the classic approach for terrain generation (much simpler implementation, no topological headaches), irregular grids produce far more organic-looking geometry. That’s what we’re after.</p>
+
+<p>Irregular grids have been having a moment lately, BTW. Especially since <a href="https://store.steampowered.com/app/1291340/Townscaper/">Townscaper</a> captured everyone’s imagination.</p>
+
+<h2 id="seed-point-generation">Seed Point Generation</h2>
+
+<p>The foundation of an organic-looking terrain mesh is the distribution of its vertices. Random point placement leads to ugly, irregular triangulation. We need something better. Ideally, we need points that are random yet evenly spaced. This is where blue noise comes in.</p>
+
+<h3 id="blue-noise-and-poisson-disk-sampling">Blue Noise and Poisson Disk Sampling</h3>
+
+<p>Blue noise distributions have a specific property: points maintain a minimum distance from each other whilst filling space uniformly. No clumping, no voids. The spectrum of blue noise is weighted toward higher frequencies, which translates visually to pleasant, nature-resembling distributions.</p>
+
+<p>Bridson’s algorithm for Poisson disk sampling is elegantly simple:</p>
+
+<ol>
+  <li>Start with a random initial point</li>
+  <li>Generate candidate points in an annulus around existing points</li>
+  <li>Accept candidates that are far enough from all existing points</li>
+  <li>Repeat until no valid candidates remain</li>
+</ol>
+
+<p>The key parameters are:</p>
+<ul>
+  <li>\(r\): minimum distance acceptable between points</li>
+  <li>\(k\): number of candidates to try before rejection (typically 30)</li>
+</ul>
+
+<p>The algorithm maintains an “active list” of points that might still have valid neighbours. When a point fails to produce valid candidates after \(k\) attempts, it’s removed from the active list.</p>
+
+<p>Spatial indexing is crucial for efficient nearest-neighbor queries in Bridson’s algorithm. A simple grid works well: divide space into cells of size \(r/\sqrt{2}\), ensuring at most one point per cell for \(O(1)\) lookups.</p>
+
+<p>Below is an auxiliary visualization animation I wrote in Python:</p>
+
+<p><img src="/uploads/2025/chemaguerra-bridson-algorithm.gif" alt="Bridson's algorithm in action" /></p>
+
+<h3 id="lloyds-relaxation">Lloyd’s Relaxation</h3>
+
+<p>There are different families of algorithms for blue noise generation. Dart-throwing methods, void-and-cluster, Fourier-based methods, relaxation methods, …</p>
+
+<p>While we will be using Bridson’s algorithm as described above, I am fond of LLoyd’s relaxation (also known as Voronoi iteration). Since we will be working with the Voronoi diagram later I thought it would be worth mentioning.</p>
+
+<p>The process is beautifully simple:</p>
+<ol>
+  <li>Start with any set of random points.</li>
+  <li>Compute the Voronoi diagram for current points</li>
+  <li>Move each point to the centroid of its Voronoi cell</li>
+  <li>Repeat until convergence</li>
+</ol>
+
+<p>This iterative process naturally evolves toward a hexagonal-dominant grid; the most efficient packing in 2D. But unlike a perfect hex grid, it retains organic irregularity that makes terrain look natural.</p>
+
+<p>Below is another animation made in Python:</p>
+
+<p><img src="/uploads/2025/chemaguerra-lloyd-relaxation.gif" alt="Lloyd's relaxation with Voronoi cells visible" /></p>
+
+<p>Lloyd’s relaxation is computationally expensive and produces overly regular distributions that can look artificial for terrain. Bridson strikes a better balance: it’s fast and maintains the organic irregularity we want.</p>
+
+<h2 id="boundary-treatment">Boundary Treatment</h2>
+
+<p>Instead of letting Poisson disk sampling run across the entire domain, I restrict it to a shrunk area, leaving a gap of radius \(r\) around the edges. Then I add two rings of evenly-spaced points: one at the boundary itself (green), and another ring \(r\) units outside the domain (red).</p>
+
+<p>This approach ensures full coverage with well-behaved triangles at the edges for Delaunay triangulation and simplifies handling of unbounded Voronoi regions.</p>
+
+<p><img src="/uploads/2025/chemaguerra-bridson-separation.gif" alt="Point separation constraint during generation" /></p>
+
+<p>In the image above, working with a unit square domain and \(r = \frac{1}{200}\), we’d theoretically fit up to \(\left(\frac{1}{r}\right)^2 = 200^2 = 40000\) points in a perfect grid. But Poisson disk sampling produces a looser packing. With the annulus radius range \([r, 2r]\) and rejection sampling, we get approximately 27000 points in practice, about 68% of the theoretical maximum.</p>
+
+<h2 id="delaunay-triangulation">Delaunay Triangulation</h2>
+
+<p>With our well-distributed seed points, we need to create a mesh. Delaunay triangulation is the go-to choice for terrain generation because it maximises the minimum angle of all triangles, avoiding skinny, degenerate triangles that cause numerical and visual issues.</p>
+
+<p>In the visualizations throughout this post, red dots will represent seed points (Delaunay vertices), while blue dots will represent Voronoi vertices (corresponding to Delaunay triangle centers).</p>
+
+<p><img src="/uploads/2025/chemaguerra-delaunay-static.png" alt="Delaunay triangulation static view" /></p>
+
+<p><img src="/uploads/2025/chemaguerra-delaunay-tile.png" alt="Delaunay triangulation detail view" /></p>
+
+<p><img src="/uploads/2025/chemaguerra-delaunay-mesh.gif" alt="Delaunay triangulation mesh" /></p>
+
+<p>For the implementation, I went with Rust’s <code class="language-plaintext highlighter-rouge">delaunator</code> crate. It’s a robust, battle-tested port of the JavaScript library of the same name, implementing a fast sweep-line algorithm that runs in \(O(n \log n)\) time. The cyclic animation is just the same code but decreasing/increasing \(r\) (more/fewer points).</p>
+
+<h2 id="voronoi-diagram">Voronoi Diagram</h2>
+
+<p>The Voronoi diagram is the dual of the Delaunay triangulation. Each Delaunay triangle vertex becomes a Voronoi cell, and each Delaunay edge corresponds to a Voronoi edge. For terrain generation, Voronoi cells are a staple: they define convex-shaped regions around each seed point, perfect for assigning terrain properties like elevation, moisture, and biome types.</p>
+
+<p><img src="/uploads/2025/chemaguerra-voronoi-full.png" alt="Voronoi cells full view" /></p>
+
+<p><img src="/uploads/2025/chemaguerra-voronoi-circumcenters-tile.png" alt="Voronoi with circumcenters detail view" /></p>
+
+<p><img src="/uploads/2025/chemaguerra-voronoi-cells.gif" alt="Voronoi cells diagram" /></p>
+
+<p>Rather than using an off-the-shelf solution, I built the dual construction using my topology library <strong>Topokit</strong>, recently ported to Rust. The half-edge (DCEL) data structure I have there makes it trivial to traverse neighbours, and maintain the topological relationships we need for terrain generation. Topokit also handles serialization, relaxation, LOD subdivision, and other features I’ll tap into later.</p>
+
+<h2 id="circumcenters-vs-centroids">Circumcenters vs. Centroids</h2>
+
+<p>The classical Voronoi diagram uses triangle circumcenters as Voronoi vertices. The circumcenter is equidistant from all three triangle vertices, making it the natural meeting point of three Voronoi cells. However the circumcenter potentially lies outside its triangle if it is obtuse enough. For very flat triangles near boundaries, circumcenters can be far from their triangles, sometimes even outside the domain entirely.</p>
+
+<p>A clever trick I learned from <a href="https://twitter.com/redblobgames">@redblobgames</a> is using triangle centroids instead of circumcenters for Voronoi vertices. This simple change produces smoother, more bubble-like regions with gentler transitions between cells. These softer angles are ideal for terrain generation, and the computation is actually simpler.</p>
+
+<p><img src="/uploads/2025/chemaguerra-voronoi-centroids.png" alt="Voronoi diagram using centroids" /></p>
+
+<p>Here’s the main takeaway (a side-by-side comparison):</p>
+
+<p><img src="/uploads/2025/chemaguerra-voronoi-circumcenters-tile.png" alt="Voronoi with circumcenters detail view" /></p>
+
+<p><img src="/uploads/2025/chemaguerra-voronoi-centroids-tile.png" alt="Voronoi with centroids detail view" /></p>
+
+<p><img src="/uploads/2025/chemaguerra-voronoi-comparison.gif" alt="Voronoi comparison animation" /></p>
+
+<p>We will go with centroids (instead of circumcenters) all the way through.</p>
+
+<h2 id="quad-mesh-construction">Quad Mesh Construction</h2>
+
+<p>So now we have:</p>
+<ul>
+  <li><strong>Red vertices</strong>: Original seed points (Delaunay vertices)</li>
+  <li><strong>Blue vertices</strong>: Voronoi vertices (triangle centers)</li>
+</ul>
+
+<p>Both vertex sets contribute to the final terrain mesh. Throughout this series, we’ll compute attributes like elevation for both red and blue vertices, then triangulate the combined point set to generate the final terrain geometry.</p>
+
+<h3 id="the-red-blue-pattern">The Red-Blue Pattern</h3>
+
+<p>A natural way to combine both the Delaunay and Voronoi meshes is to form quads by each red-blue-red-blue cycle, traversing around shared edges:</p>
+
+<ol>
+  <li>Start with a Delaunay edge connecting two red vertices</li>
+  <li>This edge is dual to a Voronoi edge connecting two blue vertices</li>
+  <li>The four vertices form a natural quad: red-blue-red-blue</li>
+</ol>
+
+<p><img src="/uploads/2025/chemaguerra-quads-static.png" alt="Quad mesh static view" /></p>
+
+<p><img src="/uploads/2025/chemaguerra-quads-tile.png" alt="Quad mesh detail view" /></p>
+
+<p><img src="/uploads/2025/chemaguerra-quad-mesh.gif" alt="Quad mesh with red-blue vertex pattern" /></p>
+
+<p>In the resulting quad mesh:</p>
+<ul>
+  <li>Red vertices have high valence (many incident edges)</li>
+  <li>Blue vertices typically have valence 3 (from triangle origins)</li>
+  <li>Edge flow follows a characteristic diamond pattern</li>
+</ul>
+
+<h2 id="mountain-peak-seed-points">Mountain Peak Seed Points</h2>
+
+<p>To generate realistic terrain with well-placed mountain peaks, we must flag a special subset of seed points that will become elevation maxima. This two-scale approach ensures mountains maintain natural spacing while aligning perfectly with our existing mesh vertices.</p>
+
+<p>The process leverages a second Bridson’s algorithm run with a much larger radius, typically 4-16 times the original \(r\). This coarse distribution determines where mountain peaks should roughly appear, ensuring they maintain natural spacing across the terrain.</p>
+
+<p>Here’s the algorithm:</p>
+<ol>
+  <li>Build a kD-tree from the fine-grain seed points for efficient nearest-neighbour queries</li>
+  <li>Run Bridson’s algorithm with radius \(R \gg r\) to get coarse peak candidates</li>
+  <li>For each coarse candidate, find its nearest neighbour in the fine distribution</li>
+  <li>Flag these nearest neighbours as mountain peak seeds</li>
+</ol>
+
+<p>Spacial hashing (the kD-tree in my case) is crucial here for performance. With thousands of seed points, nearest-neighbour search would be prohibitively slow otherwise.</p>
+
+<p>This approach has several advantages:</p>
+<ul>
+  <li>Natural spacing: Mountains won’t cluster unnaturally or leave large empty regions</li>
+  <li>Mesh alignment: Peak points are actual mesh vertices, not interpolated positions</li>
+  <li>Controllable density: Adjusting \(R_{peaks}\) directly controls mountain frequency</li>
+  <li>Reproducible: Given the same random seed, peak placement is deterministic</li>
+</ul>
+
+<p>These flagged mountain peaks will later serve as local maxima during elevation assignment, with height falloff based on distance. But that’s a topic for Part II.</p>
+
+<p><img src="/uploads/2025/chemaguerra-mountain-peak-separation.gif" alt="Mountain peak points with varying separation radius" /></p>
+
+<h2 id="next-steps">Next Steps</h2>
+
+<p>This is the distribution we will be using throughout the rest of the series.</p>
+
+<p><img src="/uploads/2025/chemaguerra-mountain-seed-points.png" alt="Mountain peak seed points visualization" /></p>
+
+<p><img src="/uploads/2025/chemaguerra-seed-points-tile.png" alt="Mountain peak seed points detail view" /></p>
+
+<p>With our mesh structures in place we have the skeletal framework for our island. Part II will dive into elevation assignment using noise functions, creating realistic height maps that produce convincing mountains, valleys, and coastlines.</p>
+
+<h2 id="resources">Resources</h2>
+
+<ul>
+  <li><a href="http://www-cs-students.stanford.edu/~amitp/game-programming/polygon-map-generation/">Amit Patel’s Polygon Map Generation</a> - The inspiration for this series</li>
+  <li><a href="https://www.cs.ubc.ca/~rbridson/docs/bridson-siggraph07-poissondisk.pdf">Bridson’s Original Paper</a> - Fast Poisson disk sampling</li>
+  <li><a href="https://en.wikipedia.org/wiki/Lloyd%27s_algorithm">Lloyd’s Algorithm</a> - The mathematical foundation</li>
+</ul>]]></content><author><name>Chema Guerra</name></author><category term="graphics" /><category term="procedural" /><category term="procedural" /><category term="terrain" /><category term="voronoi" /><category term="delaunay" /><category term="rust" /><category term="computationalgeometry" /><category term="bluenoise" /><summary type="html"><![CDATA[This post marks the beginning of a series on procedural island generation. I recently fell in love with Amit Patel’s brilliant polygon map generation articles, and this series will be my own exploration and interpretation of those techniques. This series assumes familiarity with computational geometry and procedural generation concepts such as Delaunay triangulation, Voronoi diagrams, Simplex noise, etc… To challenge myself (I’m usually a C/C++ person), I decided to implement this in Rust. But I will barely delve into implementation details though. This series will focus on the algorithm itself, with neat (hopefully!) visualisations of the intermediate calculations. Motivation The main reason why I am tinkering with terrain generation now is Strike Back, the flight sim I’ve been developing on and off. I will be using this algorithm as a foundation to create battle arenas, but plan to extend it eventually. Working Domain Procedural terrain generation offers infinite variety from finite code. But islands make particularly interesting subjects because they’re self-contained worlds with natural boundaries. The polygon-based approach we’ll explore provides a nice balance between organic appearance and computational tractability. We’ll work in a regular grid within a unit square domain. While regular grids are the classic approach for terrain generation (much simpler implementation, no topological headaches), irregular grids produce far more organic-looking geometry. That’s what we’re after. Irregular grids have been having a moment lately, BTW. Especially since Townscaper captured everyone’s imagination. Seed Point Generation The foundation of an organic-looking terrain mesh is the distribution of its vertices. Random point placement leads to ugly, irregular triangulation. We need something better. Ideally, we need points that are random yet evenly spaced. This is where blue noise comes in. Blue Noise and Poisson Disk Sampling Blue noise distributions have a specific property: points maintain a minimum distance from each other whilst filling space uniformly. No clumping, no voids. The spectrum of blue noise is weighted toward higher frequencies, which translates visually to pleasant, nature-resembling distributions. Bridson’s algorithm for Poisson disk sampling is elegantly simple: Start with a random initial point Generate candidate points in an annulus around existing points Accept candidates that are far enough from all existing points Repeat until no valid candidates remain The key parameters are: \(r\): minimum distance acceptable between points \(k\): number of candidates to try before rejection (typically 30) The algorithm maintains an “active list” of points that might still have valid neighbours. When a point fails to produce valid candidates after \(k\) attempts, it’s removed from the active list. Spatial indexing is crucial for efficient nearest-neighbor queries in Bridson’s algorithm. A simple grid works well: divide space into cells of size \(r/\sqrt{2}\), ensuring at most one point per cell for \(O(1)\) lookups. Below is an auxiliary visualization animation I wrote in Python: Lloyd’s Relaxation There are different families of algorithms for blue noise generation. Dart-throwing methods, void-and-cluster, Fourier-based methods, relaxation methods, … While we will be using Bridson’s algorithm as described above, I am fond of LLoyd’s relaxation (also known as Voronoi iteration). Since we will be working with the Voronoi diagram later I thought it would be worth mentioning. The process is beautifully simple: Start with any set of random points. Compute the Voronoi diagram for current points Move each point to the centroid of its Voronoi cell Repeat until convergence This iterative process naturally evolves toward a hexagonal-dominant grid; the most efficient packing in 2D. But unlike a perfect hex grid, it retains organic irregularity that makes terrain look natural. Below is another animation made in Python: Lloyd’s relaxation is computationally expensive and produces overly regular distributions that can look artificial for terrain. Bridson strikes a better balance: it’s fast and maintains the organic irregularity we want. Boundary Treatment Instead of letting Poisson disk sampling run across the entire domain, I restrict it to a shrunk area, leaving a gap of radius \(r\) around the edges. Then I add two rings of evenly-spaced points: one at the boundary itself (green), and another ring \(r\) units outside the domain (red). This approach ensures full coverage with well-behaved triangles at the edges for Delaunay triangulation and simplifies handling of unbounded Voronoi regions. In the image above, working with a unit square domain and \(r = \frac{1}{200}\), we’d theoretically fit up to \(\left(\frac{1}{r}\right)^2 = 200^2 = 40000\) points in a perfect grid. But Poisson disk sampling produces a looser packing. With the annulus radius range \([r, 2r]\) and rejection sampling, we get approximately 27000 points in practice, about 68% of the theoretical maximum. Delaunay Triangulation With our well-distributed seed points, we need to create a mesh. Delaunay triangulation is the go-to choice for terrain generation because it maximises the minimum angle of all triangles, avoiding skinny, degenerate triangles that cause numerical and visual issues. In the visualizations throughout this post, red dots will represent seed points (Delaunay vertices), while blue dots will represent Voronoi vertices (corresponding to Delaunay triangle centers). For the implementation, I went with Rust’s delaunator crate. It’s a robust, battle-tested port of the JavaScript library of the same name, implementing a fast sweep-line algorithm that runs in \(O(n \log n)\) time. The cyclic animation is just the same code but decreasing/increasing \(r\) (more/fewer points). Voronoi Diagram The Voronoi diagram is the dual of the Delaunay triangulation. Each Delaunay triangle vertex becomes a Voronoi cell, and each Delaunay edge corresponds to a Voronoi edge. For terrain generation, Voronoi cells are a staple: they define convex-shaped regions around each seed point, perfect for assigning terrain properties like elevation, moisture, and biome types. Rather than using an off-the-shelf solution, I built the dual construction using my topology library Topokit, recently ported to Rust. The half-edge (DCEL) data structure I have there makes it trivial to traverse neighbours, and maintain the topological relationships we need for terrain generation. Topokit also handles serialization, relaxation, LOD subdivision, and other features I’ll tap into later. Circumcenters vs. Centroids The classical Voronoi diagram uses triangle circumcenters as Voronoi vertices. The circumcenter is equidistant from all three triangle vertices, making it the natural meeting point of three Voronoi cells. However the circumcenter potentially lies outside its triangle if it is obtuse enough. For very flat triangles near boundaries, circumcenters can be far from their triangles, sometimes even outside the domain entirely. A clever trick I learned from @redblobgames is using triangle centroids instead of circumcenters for Voronoi vertices. This simple change produces smoother, more bubble-like regions with gentler transitions between cells. These softer angles are ideal for terrain generation, and the computation is actually simpler. Here’s the main takeaway (a side-by-side comparison): We will go with centroids (instead of circumcenters) all the way through. Quad Mesh Construction So now we have: Red vertices: Original seed points (Delaunay vertices) Blue vertices: Voronoi vertices (triangle centers) Both vertex sets contribute to the final terrain mesh. Throughout this series, we’ll compute attributes like elevation for both red and blue vertices, then triangulate the combined point set to generate the final terrain geometry. The Red-Blue Pattern A natural way to combine both the Delaunay and Voronoi meshes is to form quads by each red-blue-red-blue cycle, traversing around shared edges: Start with a Delaunay edge connecting two red vertices This edge is dual to a Voronoi edge connecting two blue vertices The four vertices form a natural quad: red-blue-red-blue In the resulting quad mesh: Red vertices have high valence (many incident edges) Blue vertices typically have valence 3 (from triangle origins) Edge flow follows a characteristic diamond pattern Mountain Peak Seed Points To generate realistic terrain with well-placed mountain peaks, we must flag a special subset of seed points that will become elevation maxima. This two-scale approach ensures mountains maintain natural spacing while aligning perfectly with our existing mesh vertices. The process leverages a second Bridson’s algorithm run with a much larger radius, typically 4-16 times the original \(r\). This coarse distribution determines where mountain peaks should roughly appear, ensuring they maintain natural spacing across the terrain. Here’s the algorithm: Build a kD-tree from the fine-grain seed points for efficient nearest-neighbour queries Run Bridson’s algorithm with radius \(R \gg r\) to get coarse peak candidates For each coarse candidate, find its nearest neighbour in the fine distribution Flag these nearest neighbours as mountain peak seeds Spacial hashing (the kD-tree in my case) is crucial here for performance. With thousands of seed points, nearest-neighbour search would be prohibitively slow otherwise. This approach has several advantages: Natural spacing: Mountains won’t cluster unnaturally or leave large empty regions Mesh alignment: Peak points are actual mesh vertices, not interpolated positions Controllable density: Adjusting \(R_{peaks}\) directly controls mountain frequency Reproducible: Given the same random seed, peak placement is deterministic These flagged mountain peaks will later serve as local maxima during elevation assignment, with height falloff based on distance. But that’s a topic for Part II. Next Steps This is the distribution we will be using throughout the rest of the series. With our mesh structures in place we have the skeletal framework for our island. Part II will dive into elevation assignment using noise functions, creating realistic height maps that produce convincing mountains, valleys, and coastlines. Resources Amit Patel’s Polygon Map Generation - The inspiration for this series Bridson’s Original Paper - Fast Poisson disk sampling Lloyd’s Algorithm - The mathematical foundation]]></summary><media:thumbnail xmlns:media="http://search.yahoo.com/mrss/" url="https://brashandplucky.com/thumbnails/2025/chemaguerra-procedural-island-generation-i.png" /><media:content medium="image" url="https://brashandplucky.com/thumbnails/2025/chemaguerra-procedural-island-generation-i.png" xmlns:media="http://search.yahoo.com/mrss/" /></entry><entry><title type="html">Spherical Harmonics</title><link href="https://brashandplucky.com/2025/08/25/spherical-harmonics.html" rel="alternate" type="text/html" title="Spherical Harmonics" /><published>2025-08-25T10:00:00+02:00</published><updated>2025-08-25T10:00:00+02:00</updated><id>https://brashandplucky.com/2025/08/25/spherical-harmonics</id><content type="html" xml:base="https://brashandplucky.com/2025/08/25/spherical-harmonics.html"><![CDATA[<blockquote>
   <p><strong>Note:</strong> This post was written nearly 2 years ago and never published. I’m posting it now as-is, with some sections incomplete but the core content intact.</p>
 </blockquote>
 
@@ -1339,192 +1543,4 @@ that has the effect of reducing or preventing the oscillation. A damped spring i
 <p><em>e.g.,</em> wind, vibrations, etc…</p>
 
 <p><img src="/uploads/2023/chemaguerra-vibrating-fiber-1.gif" alt="Vibrating fiber #1" />
-<img src="/uploads/2023/chemaguerra-vibrating-fiber-2.gif" alt="Vibrating fiber #2" /></p>]]></content><author><name></name></author><summary type="html"><![CDATA[Searching for a proper formulation for flyaways in wool and fabric in general. These are some simulations of growth from the root being randomly affected. From top to bottom, using different seeds. From left to right, the resulting B-Spline being evaluated using few or many control points. Everything happens in 3D, but this image is just the X-Z projection. Force-field dynamics e.g., wind, vibrations, etc…]]></summary><media:thumbnail xmlns:media="http://search.yahoo.com/mrss/" url="https://brashandplucky.com/thumbnails/2023/chemaguerra-wool-flyaways.png" /><media:content medium="image" url="https://brashandplucky.com/thumbnails/2023/chemaguerra-wool-flyaways.png" xmlns:media="http://search.yahoo.com/mrss/" /></entry><entry><title type="html">Micro-Patch Displacement Mapping</title><link href="https://brashandplucky.com/2022/09/30/micropatch-displacement-mapping.html" rel="alternate" type="text/html" title="Micro-Patch Displacement Mapping" /><published>2022-09-30T00:00:00+02:00</published><updated>2022-09-30T00:00:00+02:00</updated><id>https://brashandplucky.com/2022/09/30/micropatch-displacement-mapping</id><content type="html" xml:base="https://brashandplucky.com/2022/09/30/micropatch-displacement-mapping.html"><![CDATA[<p>One major endeavour that I undertook this past summer was the creation of a novel displacement mapping system for <a href="https://maverickrender.com/">Maverick Render</a>.</p>
-
-<p>The main motivations behind this have been:</p>
-
-<ul>
-  <li>Our customers were running out of GPU memory too often when using displacement.</li>
-  <li>Our main goal is that <strong>Maverick is an exquisite-quality tool for model visualization</strong>. Hence displacement is very important to us.</li>
-  <li>Open the door to some other geometry-generation features beyond displacement itself.</li>
-</ul>
-
-<p>So I undusted the old <em>virtualized geometry</em> solution I implemented for <a href="https://randomcontrol.com">fryrender</a> back in 2008 and re-engineered it for the Maverick core in the GPU.</p>
-
-<h2 id="say-hi-to-micro-patch-displacement-mapping">Say hi to: Micro-Patch Displacement Mapping</h2>
-
-<p><em>Non-affine MPDM in arbitrarily-curved surfaces</em></p>
-
-<video controls="controls" playsinline="playsinline" loop="" src="/uploads/2022/chemaguerra-micropatch-displacement-mapping-1.mp4" width="600" height="600" poster="/uploads/2022/chemaguerra-micropatch-displacement-mapping-poster-1.png" alt="" preload="none"></video>
-
-<p><em>Affine MPDM in flat surfaces</em></p>
-
-<video controls="controls" playsinline="playsinline" loop="" src="/uploads/2022/chemaguerra-micropatch-displacement-mapping-2.mp4" width="600" height="600" poster="/uploads/2022/chemaguerra-micropatch-displacement-mapping-poster-2.png" alt="" preload="none"></video>
-
-<p>Some good properties of Maverick’s displacement:</p>
-
-<ul>
-  <li>No requirements <em>whatsoever</em> on the base mesh or on the heightmap texture.</li>
-  <li>It costs near 0 in warm-up time.</li>
-  <li>It costs near 0 in memory (only a small payload is appended to the height map).</li>
-  <li>0 information is lost; every single texel in the heightmap is turned into a displaced <em>micro-patch</em>.</li>
-  <li>Implemented as a custom primitive in Maverick’s OptiX ray-tracing backend.</li>
-  <li>Used every trick in the book to optimize it as much as I could.</li>
-</ul>
-
-<h2 id="mpdm-vs-brute-force">MPDM vs. brute-force</h2>
-
-<p>MPDM is meant to address some classic problems with the <em>subdivide-and-displace-vertices</em> (brute-force) approach. Using brute-force:</p>
-
-<ul>
-  <li>There is some (often significant) wait time for warm-up.</li>
-  <li>Memory usage goes through the roof, more than often blowing up all available memory.</li>
-  <li>Height sampling happens at the vertices and not at the heightmap texels.</li>
-</ul>
-
-<p>Points 1-2 are very obvious. It becomes impossible to abuse displacement, or to recklessly use it for large surfaces. Some techniques such as back-face culling or camera culling can be used to work around these difficulties, but such techniques pose problems on their own. Expecting the user to be careful not to exceed his memory budget is always an ill-fated plan.</p>
-
-<p>Point 3 often means that the resulting displacement is smudgy, and not as crisp as it should be. <em>i.e.,</em> information is lost, and/or geometry is produced in excess. Some techniques (that Maverick itself has featured in the past) such as <em>autobump</em> can be used to work around this problem by kind-of-restoring the information that is lost in the process. But then again, optimal configuration would become the responsibility of the user.</p>
-
-<p>None of these issues happen with MPDM. :-)</p>
-
-<h2 id="are-there-any-benefits-to-the-old-brute-force-approach">Are there any benefits to the old brute-force approach?</h2>
-
-<p>As usual, nothing really good comes without a price. This is often very true in the realm of algorithm optimization.</p>
-
-<ul>
-  <li>MPDM unfolds virtualized geometry during ray-traversal. The displaced geometry <em>never</em> exists for real in memory (that is why it is said to be <em>virtualized</em>) and this is the reason why MPDM has a near 0-cost in memory usage. However, this virtualization comes at an algorithmic cost. Despite massively optimized, MPDM renders a bit more slowly than the same displaced geometry would if the vertices were pre-displaced during warm-up and entered the ray-tracing BVH as regular geometry.</li>
-  <li>For MPDM, part of the optimization process relies on the fact that the input map is discretized in <em>texels</em>, (as in a regular bitmap). For brute-force displacement the only requirement is that the height map can be evaluated at each geometry vertex, which is true to bitmaps, procedurals, and all map types. So MPDM is a priori limited to <code class="language-plaintext highlighter-rouge">filetex</code> maps, but we have added to Maverick a new map type called <code class="language-plaintext highlighter-rouge">bakemap</code> so the user can bake any procedural map tree into a <code class="language-plaintext highlighter-rouge">filetex</code> to feed MPDM if necessary.</li>
-</ul>
-
-<h2 id="how-does-mpdm-work">How does MPDM work?</h2>
-
-<p>Here’s a very broad explanation on how MPDM in Maverick works:</p>
-
-<ul>
-  <li>A (rather classic) hierarchical partitioning scheme based in min-max mip-map levels is performed on the input heightmap. As depicted in the images below.</li>
-  <li>Those voxels are efficiently ray-traceable… unless there is curvature in the base mesh. Hell breaks loose as soon as curvature is at play. Maverick does non-affine math here (visualized in a previous post on non-affine <a href="/2022/07/07/barycentric-coords-in.html">triangle sweeps</a>). I’ve tried different approaches for this (non-affine, discretized, and hybrid), and the code allows to flag-switch each mode on and off.</li>
-  <li>Because of the non-affine treatment, at the lowest hierarchy level you no longer have quads or triangles, but bilinear patches (hence the name: <em>Micro-PATCH Displacement Mapping</em>).</li>
-</ul>
-
-<p><em>Non-affine MPDM in arbitrarily-curved surfaces</em></p>
-
-<p><img src="/uploads/2022/chemaguerra-micropatch-displacement-mapping-3.png" alt="Non-affine MPDM in arbitrarily-curved surfaces" /></p>
-
-<p><em>The input heightmap used</em></p>
-
-<p><img src="/uploads/2022/chemaguerra-micropatch-displacement-mapping-4.jpg" alt="The input heightmap used" /></p>
-
-<p><em>Affine MPDM in flat surfaces (special optimization branch)</em></p>
-
-<p><img src="/uploads/2022/chemaguerra-micropatch-displacement-mapping-5.png" alt="Affine MPDM in flat surfaces" /></p>
-
-<p><em>The input heightmap used</em></p>
-
-<p><img src="/uploads/2022/chemaguerra-micropatch-displacement-mapping-6.jpg" alt="The input heightmap used" /></p>
-
-<p>But the devil lies in the details. Efficient implementation of this all was a multi-week hell working with data structures, low-level optimizations, coordinating MPDM with OptiX and the rest of the Maverick core, and dealing with plenty of non-obvious fine-grain issues such as:</p>
-
-<ul>
-  <li>Avoiding cracks across edges.</li>
-  <li>Dealing with UV mapping projections.</li>
-  <li>Transfer of shading normals.</li>
-  <li>Real-time notifications from the UI.</li>
-  <li>…</li>
-</ul>
-
-<p>Youtube 4K videos:</p>
-
-<div class="embed-container">
-  <iframe width="640" height="390" src="https://www.youtube.com/embed/2PdRx0sALgg" frameborder="0" allowfullscreen=""></iframe>
-</div>
-<style>
-.embed-container {
-  position: relative;
-  padding-bottom: 56.25%;
-  height: 0;
-  overflow: hidden;
-  max-width: 100%;
-}
-.embed-container iframe,
-.embed-container object,
-.embed-container embed {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-}
-</style>
-
-<p><br /></p>
-
-<div class="embed-container">
-  <iframe width="640" height="390" src="https://www.youtube.com/embed/O9qUCZTxkTQ" frameborder="0" allowfullscreen=""></iframe>
-</div>
-<style>
-.embed-container {
-  position: relative;
-  padding-bottom: 56.25%;
-  height: 0;
-  overflow: hidden;
-  max-width: 100%;
-}
-.embed-container iframe,
-.embed-container object,
-.embed-container embed {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-}
-</style>
-
-<p><br /></p>
-
-<div class="embed-container">
-  <iframe width="640" height="390" src="https://www.youtube.com/embed/ZKcLPQkhFWc" frameborder="0" allowfullscreen=""></iframe>
-</div>
-<style>
-.embed-container {
-  position: relative;
-  padding-bottom: 56.25%;
-  height: 0;
-  overflow: hidden;
-  max-width: 100%;
-}
-.embed-container iframe,
-.embed-container object,
-.embed-container embed {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-}
-</style>
-
-<p><br /></p>
-
-<div class="embed-container">
-  <iframe width="640" height="390" src="https://www.youtube.com/embed/Y9DFtEo5Hgo" frameborder="0" allowfullscreen=""></iframe>
-</div>
-<style>
-.embed-container {
-  position: relative;
-  padding-bottom: 56.25%;
-  height: 0;
-  overflow: hidden;
-  max-width: 100%;
-}
-.embed-container iframe,
-.embed-container object,
-.embed-container embed {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-}
-</style>]]></content><author><name></name></author><summary type="html"><![CDATA[One major endeavour that I undertook this past summer was the creation of a novel displacement mapping system for Maverick Render. The main motivations behind this have been: Our customers were running out of GPU memory too often when using displacement. Our main goal is that Maverick is an exquisite-quality tool for model visualization. Hence displacement is very important to us. Open the door to some other geometry-generation features beyond displacement itself. So I undusted the old virtualized geometry solution I implemented for fryrender back in 2008 and re-engineered it for the Maverick core in the GPU. Say hi to: Micro-Patch Displacement Mapping Non-affine MPDM in arbitrarily-curved surfaces Affine MPDM in flat surfaces Some good properties of Maverick’s displacement: No requirements whatsoever on the base mesh or on the heightmap texture. It costs near 0 in warm-up time. It costs near 0 in memory (only a small payload is appended to the height map). 0 information is lost; every single texel in the heightmap is turned into a displaced micro-patch. Implemented as a custom primitive in Maverick’s OptiX ray-tracing backend. Used every trick in the book to optimize it as much as I could. MPDM vs. brute-force MPDM is meant to address some classic problems with the subdivide-and-displace-vertices (brute-force) approach. Using brute-force: There is some (often significant) wait time for warm-up. Memory usage goes through the roof, more than often blowing up all available memory. Height sampling happens at the vertices and not at the heightmap texels. Points 1-2 are very obvious. It becomes impossible to abuse displacement, or to recklessly use it for large surfaces. Some techniques such as back-face culling or camera culling can be used to work around these difficulties, but such techniques pose problems on their own. Expecting the user to be careful not to exceed his memory budget is always an ill-fated plan. Point 3 often means that the resulting displacement is smudgy, and not as crisp as it should be. i.e., information is lost, and/or geometry is produced in excess. Some techniques (that Maverick itself has featured in the past) such as autobump can be used to work around this problem by kind-of-restoring the information that is lost in the process. But then again, optimal configuration would become the responsibility of the user. None of these issues happen with MPDM. :-) Are there any benefits to the old brute-force approach? As usual, nothing really good comes without a price. This is often very true in the realm of algorithm optimization. MPDM unfolds virtualized geometry during ray-traversal. The displaced geometry never exists for real in memory (that is why it is said to be virtualized) and this is the reason why MPDM has a near 0-cost in memory usage. However, this virtualization comes at an algorithmic cost. Despite massively optimized, MPDM renders a bit more slowly than the same displaced geometry would if the vertices were pre-displaced during warm-up and entered the ray-tracing BVH as regular geometry. For MPDM, part of the optimization process relies on the fact that the input map is discretized in texels, (as in a regular bitmap). For brute-force displacement the only requirement is that the height map can be evaluated at each geometry vertex, which is true to bitmaps, procedurals, and all map types. So MPDM is a priori limited to filetex maps, but we have added to Maverick a new map type called bakemap so the user can bake any procedural map tree into a filetex to feed MPDM if necessary. How does MPDM work? Here’s a very broad explanation on how MPDM in Maverick works: A (rather classic) hierarchical partitioning scheme based in min-max mip-map levels is performed on the input heightmap. As depicted in the images below. Those voxels are efficiently ray-traceable… unless there is curvature in the base mesh. Hell breaks loose as soon as curvature is at play. Maverick does non-affine math here (visualized in a previous post on non-affine triangle sweeps). I’ve tried different approaches for this (non-affine, discretized, and hybrid), and the code allows to flag-switch each mode on and off. Because of the non-affine treatment, at the lowest hierarchy level you no longer have quads or triangles, but bilinear patches (hence the name: Micro-PATCH Displacement Mapping). Non-affine MPDM in arbitrarily-curved surfaces The input heightmap used Affine MPDM in flat surfaces (special optimization branch) The input heightmap used But the devil lies in the details. Efficient implementation of this all was a multi-week hell working with data structures, low-level optimizations, coordinating MPDM with OptiX and the rest of the Maverick core, and dealing with plenty of non-obvious fine-grain issues such as: Avoiding cracks across edges. Dealing with UV mapping projections. Transfer of shading normals. Real-time notifications from the UI. … Youtube 4K videos:]]></summary><media:thumbnail xmlns:media="http://search.yahoo.com/mrss/" url="https://brashandplucky.com/thumbnails/2022/chemaguerra-micropatch-displacement-mapping.png" /><media:content medium="image" url="https://brashandplucky.com/thumbnails/2022/chemaguerra-micropatch-displacement-mapping.png" xmlns:media="http://search.yahoo.com/mrss/" /></entry></feed>
+<img src="/uploads/2023/chemaguerra-vibrating-fiber-2.gif" alt="Vibrating fiber #2" /></p>]]></content><author><name></name></author><summary type="html"><![CDATA[Searching for a proper formulation for flyaways in wool and fabric in general. These are some simulations of growth from the root being randomly affected. From top to bottom, using different seeds. From left to right, the resulting B-Spline being evaluated using few or many control points. Everything happens in 3D, but this image is just the X-Z projection. Force-field dynamics e.g., wind, vibrations, etc…]]></summary><media:thumbnail xmlns:media="http://search.yahoo.com/mrss/" url="https://brashandplucky.com/thumbnails/2023/chemaguerra-wool-flyaways.png" /><media:content medium="image" url="https://brashandplucky.com/thumbnails/2023/chemaguerra-wool-flyaways.png" xmlns:media="http://search.yahoo.com/mrss/" /></entry></feed>

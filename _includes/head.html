@@ -27,4 +27,30 @@
     <meta name="twitter:description" content="{% if page.summary %}{{ page.summary }}{% else %}{{ site.description }}{% endif %}">
     <meta name="twitter:image" content="{% if page.image %}{{ site.url }}{{ page.image }}{% else %}{{ site.title_image }}{% endif %}">
     <meta name="twitter:image:src" content="{% if page.image %}{{ site.url }}{{ page.image }}{% else %}{{ site.title_image }}{% endif %}">
+    
+    <!-- Make post images clickable to enlarge -->
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      // Find all images in post content.
+      var images = document.querySelectorAll('.post-content img');
+      
+      images.forEach(function(img) {
+        // Skip if already wrapped in a link.
+        if (img.parentElement.tagName === 'A') return;
+        
+        // Create link wrapper.
+        var link = document.createElement('a');
+        link.href = img.src;
+        link.target = '_blank';
+        link.title = 'Click to enlarge';
+        
+        // Wrap image with link.
+        img.parentNode.insertBefore(link, img);
+        link.appendChild(img);
+        
+        // Add cursor style.
+        img.style.cursor = 'zoom-in';
+      });
+    });
+    </script>
 </head>

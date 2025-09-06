@@ -21,6 +21,32 @@
     <meta name="twitter:description" content="An encounter with cubic equations when doing raytracing in swept triangles.">
     <meta name="twitter:image" content="https://brashandplucky.com/thumbnails/2022/chemaguerra-barycentric-coords-in-triangle-sweeps.png">
     <meta name="twitter:image:src" content="https://brashandplucky.com/thumbnails/2022/chemaguerra-barycentric-coords-in-triangle-sweeps.png">
+    
+    <!-- Make post images clickable to enlarge -->
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      // Find all images in post content.
+      var images = document.querySelectorAll('.post-content img');
+      
+      images.forEach(function(img) {
+        // Skip if already wrapped in a link.
+        if (img.parentElement.tagName === 'A') return;
+        
+        // Create link wrapper.
+        var link = document.createElement('a');
+        link.href = img.src;
+        link.target = '_blank';
+        link.title = 'Click to enlarge';
+        
+        // Wrap image with link.
+        img.parentNode.insertBefore(link, img);
+        link.appendChild(img);
+        
+        // Add cursor style.
+        img.style.cursor = 'zoom-in';
+      });
+    });
+    </script>
 </head>
 <body><header class="site-header" role="banner">
 

@@ -21,6 +21,32 @@
     <meta name="twitter:description" content="This is a coding blog where I post about the various projects that I am currently working on, both at work, or as an independent researcher. Most content here revolves around computer graphics and physics simulation.">
     <meta name="twitter:image" content="thumbnails/chemaguerra-title.png">
     <meta name="twitter:image:src" content="thumbnails/chemaguerra-title.png">
+    
+    <!-- Make post images clickable to enlarge -->
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      // Find all images in post content.
+      var images = document.querySelectorAll('.post-content img');
+      
+      images.forEach(function(img) {
+        // Skip if already wrapped in a link.
+        if (img.parentElement.tagName === 'A') return;
+        
+        // Create link wrapper.
+        var link = document.createElement('a');
+        link.href = img.src;
+        link.target = '_blank';
+        link.title = 'Click to enlarge';
+        
+        // Wrap image with link.
+        img.parentNode.insertBefore(link, img);
+        link.appendChild(img);
+        
+        // Add cursor style.
+        img.style.cursor = 'zoom-in';
+      });
+    });
+    </script>
 </head>
 <body><header class="site-header" role="banner">
 
@@ -40,6 +66,21 @@
 <main class="page-content" aria-label="Content">
       <div class="wrapper">
         
+<hr class="style-one" />
+
+<div class="row">
+  <div class="span2">
+    
+	<a href="/2025/09/07/procedural-island-generation-i.html"><img src="/thumbnails/2025/chemaguerra-procedural-island-generation-i.png" align="center" width="150px" height="150px" /></a>
+	
+  </div>
+  <div class="span10">
+	<p><a href="/2025/09/07/procedural-island-generation-i.html"><h3>Procedural Island Generation (I)</h3></a></p>
+	<p>Sep 7, 2025</p>
+	<p></p>
+  </div>
+</div>
+
 <hr class="style-one" />
 
 <div class="row">
@@ -382,21 +423,6 @@
 	<p><a href="/2022/04/20/fake-viewport-pbr.html"><h3>Viewport baked PBR materials</h3></a></p>
 	<p>Apr 20, 2022</p>
 	<p>An easy and super-efficient method to fake PBR materials on a 3D viewport.</p>
-  </div>
-</div>
-
-<hr class="style-one" />
-
-<div class="row">
-  <div class="span2">
-    
-	<a href="/2022/04/16/trimmed-nurbs.html"><img src="/thumbnails/2022/chemaguerra-trimmed-nurbs.png" align="center" width="150px" height="150px" /></a>
-	
-  </div>
-  <div class="span10">
-	<p><a href="/2022/04/16/trimmed-nurbs.html"><h3>Trimmed NURBS</h3></a></p>
-	<p>Apr 16, 2022</p>
-	<p>Beginnings of my own NURBS tessellation system.</p>
   </div>
 </div>
 
