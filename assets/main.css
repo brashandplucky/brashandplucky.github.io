@@ -803,9 +803,4 @@ img {
   height: auto;
 }
 
-img[width][height] {
-  width: auto;
-  max-width: none;
-}
-
 /*# sourceMappingURL=main.css.map */
