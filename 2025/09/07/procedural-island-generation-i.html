@@ -81,7 +81,7 @@
 
 <p>This series assumes familiarity with computational geometry and procedural generation concepts such as Delaunay triangulation, Voronoi diagrams, Simplex noise, etc…</p>
 
-<p>To challenge myself (I’m usually a C/C++ person), I decided to implement this in Rust. But I will barely delve into implementation details though. This series will focus on the algorithm itself, with neat (hopefully!) visualisations of the intermediate calculations.</p>
+<p>To challenge myself (I’m usually a C/C++ person), I decided to implement this in Rust. But I will barely delve into implementation details though. This series will focus on the algorithm itself, with neat (hopefully!) visualizations of the intermediate calculations.</p>
 
 <h2 id="motivation">Motivation</h2>
 
@@ -118,7 +118,7 @@
   <li>\(k\): number of candidates to try before rejection (typically 30)</li>
 </ul>
 
-<p>The algorithm maintains an “active list” of points that might still have valid neighbours. When a point fails to produce valid candidates after \(k\) attempts, it’s removed from the active list.</p>
+<p>The algorithm maintains an “active list” of points that might still have valid neighbors. When a point fails to produce valid candidates after \(k\) attempts, it’s removed from the active list.</p>
 
 <p>Spatial indexing is crucial for efficient nearest-neighbor queries in Bridson’s algorithm. A simple grid works well: divide space into cells of size \(r/\sqrt{2}\), ensuring at most one point per cell for \(O(1)\) lookups.</p>
 
@@ -160,7 +160,7 @@
 
 <h2 id="delaunay-triangulation">Delaunay Triangulation</h2>
 
-<p>With our well-distributed seed points, we need to create a mesh. Delaunay triangulation is the go-to choice for terrain generation because it maximises the minimum angle of all triangles, avoiding skinny, degenerate triangles that cause numerical and visual issues.</p>
+<p>With our well-distributed seed points, we need to create a mesh. Delaunay triangulation is the go-to choice for terrain generation because it maximizes the minimum angle of all triangles, avoiding skinny, degenerate triangles that cause numerical and visual issues.</p>
 
 <p>In the visualizations throughout this post, red dots will represent seed points (Delaunay vertices), while blue dots will represent Voronoi vertices (corresponding to Delaunay triangle centers).</p>
 
@@ -182,7 +182,7 @@
 
 <p><img src="/uploads/2025/chemaguerra-voronoi-cells.gif" alt="Voronoi cells diagram" /></p>
 
-<p>Rather than using an off-the-shelf solution, I built the dual construction using my topology library <strong>Topokit</strong>, recently ported to Rust. The half-edge (DCEL) data structure I have there makes it trivial to traverse neighbours, and maintain the topological relationships we need for terrain generation. Topokit also handles serialization, relaxation, LOD subdivision, and other features I’ll tap into later.</p>
+<p>Rather than using an off-the-shelf solution, I built the dual construction using my topology library <strong>Topokit</strong>, recently ported to Rust. The half-edge (DCEL) data structure I have there makes it trivial to traverse neighbors, and maintain the topological relationships we need for terrain generation. Topokit also handles serialization, relaxation, LOD subdivision, and other features I’ll tap into later.</p>
 
 <h2 id="circumcenters-vs-centroids">Circumcenters vs. Centroids</h2>
 
@@ -239,13 +239,13 @@
 
 <p>Here’s the algorithm:</p>
 <ol>
-  <li>Build a kD-tree from the fine-grain seed points for efficient nearest-neighbour queries</li>
+  <li>Build a kD-tree from the fine-grain seed points for efficient nearest-neighbor queries</li>
   <li>Run Bridson’s algorithm with radius \(R \gg r\) to get coarse peak candidates</li>
-  <li>For each coarse candidate, find its nearest neighbour in the fine distribution</li>
-  <li>Flag these nearest neighbours as mountain peak seeds</li>
+  <li>For each coarse candidate, find its nearest neighbor in the fine distribution</li>
+  <li>Flag these nearest neighbors as mountain peak seeds</li>
 </ol>
 
-<p>Spacial hashing (the kD-tree in my case) is crucial here for performance. With thousands of seed points, nearest-neighbour search would be prohibitively slow otherwise.</p>
+<p>Spacial hashing (the kD-tree in my case) is crucial here for performance. With thousands of seed points, nearest-neighbor search would be prohibitively slow otherwise.</p>
 
 <p>This approach has several advantages:</p>
 <ul>
