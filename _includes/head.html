@@ -51,6 +51,16 @@
         // Add cursor style.
         img.style.cursor = 'zoom-in';
       });
+      
+      // Make all external links open in new tab.
+      var links = document.querySelectorAll('.post-content a, .page-content a');
+      links.forEach(function(link) {
+        // Check if link is external (not same domain).
+        if (link.hostname && link.hostname !== window.location.hostname) {
+          link.target = '_blank';
+          link.rel = 'noopener noreferrer';
+        }
+      });
     });
     </script>
 </head>
