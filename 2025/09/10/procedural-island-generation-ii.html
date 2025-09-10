@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="https://brashandplucky.com/feed.xml" title="Chema Guerra" /><!-- favicon -->
+    <link rel="shortcut icon" type="image/png" href="/favicon.png">
+    <!-- MathJax -->
+    <script type="text/javascript" id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <!-- Open Graph cards -->
+    <meta property="og:url" content="https://brashandplucky.com/2025/09/10/procedural-island-generation-ii.html">
+    <meta property="og:title" content="Procedural Island Generation (II)">
+    <meta property="og:description" content="This is a coding blog where I post about the various projects that I am currently working on, both at work, or as an independent researcher. Most content here revolves around computer graphics and physics simulation.">
+    <meta property="og:image" content="https://brashandplucky.com/thumbnails/2025/chemaguerra-procedural-island-generation-ii.png">
+    <meta property="og:type" content="article">
+    <!-- Twitter cards -->
+    <meta name="twitter:site" content="@chemaguerra">
+    <meta name="twitter:creator" content="@Chema Guerra">
+    <meta name="twitter:title" content="Procedural Island Generation (II)">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:description" content="This is a coding blog where I post about the various projects that I am currently working on, both at work, or as an independent researcher. Most content here revolves around computer graphics and physics simulation.">
+    <meta name="twitter:image" content="https://brashandplucky.com/thumbnails/2025/chemaguerra-procedural-island-generation-ii.png">
+    <meta name="twitter:image:src" content="https://brashandplucky.com/thumbnails/2025/chemaguerra-procedural-island-generation-ii.png">
+    
+    <!-- Make post images clickable to enlarge -->
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      // Find all images in post content.
+      var images = document.querySelectorAll('.post-content img');
+      
+      images.forEach(function(img) {
+        // Skip if already wrapped in a link.
+        if (img.parentElement.tagName === 'A') return;
+        
+        // Create link wrapper.
+        var link = document.createElement('a');
+        link.href = img.src;
+        link.target = '_blank';
+        link.title = 'Click to enlarge';
+        
+        // Wrap image with link.
+        img.parentNode.insertBefore(link, img);
+        link.appendChild(img);
+        
+        // Add cursor style.
+        img.style.cursor = 'zoom-in';
+      });
+      
+      // Make all external links open in new tab.
+      var links = document.querySelectorAll('.post-content a, .page-content a');
+      links.forEach(function(link) {
+        // Check if link is external (not same domain).
+        if (link.hostname && link.hostname !== window.location.hostname) {
+          link.target = '_blank';
+          link.rel = 'noopener noreferrer';
+        }
+      });
+    });
+    </script>
+</head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">Chema Guerra</a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/archive/">Archive</a><a class="page-link" href="/about/">About</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">Procedural Island Generation (II)</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2025-09-10T00:00:00+02:00" itemprop="datePublished">Sep 10, 2025
+      </time>• <span itemprop="author" itemscope itemtype="http://schema.org/Person"><span class="p-author h-card" itemprop="name">Chema Guerra</span></span></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <p><img src="/uploads/2025/procedural-island-generation-ii/chemaguerra-paintmap-hero-pixelated.png" alt="Paint map terrain elevation" /></p>
+
+<p>This post is a direct continuation to <a href="/2025/09/07/procedural-island-generation-i.html">Part I</a>, where we established the terrain mesh foundation using Poisson disk sampling and Delaunay/Voronoi structures. Now we’ll breathe life into that skeletal framework by assigning elevations to create realistic terrain.</p>
+
+<p>But how do we go from a flat mesh to believable mountains, valleys, and coastlines? The answer lies in carefully layered noise functions, distance fields, and a clever paint map system that ties everything together.</p>
+
+<h2 id="elevation-color-gradients">Elevation Color Gradients</h2>
+
+<p>Before we delve into elevation itself, we will pick a color gradient to map height values to natural-looking terrain colors. For example, the <a href="https://github.com/redblobgames/mapgen4">mapgen4</a> project this series is a retelling of, uses this color gradient:</p>
+
+<p><img src="/uploads/2025/procedural-island-generation-ii/chemaguerra-gradient-elevation-classic.png" alt="Classic elevation gradient" /></p>
+
+<p><em>Palette used by mapgen4 - Note the double keypoint around 0.5 to differenciate water/ground</em></p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Threshold</th>
+      <th>Color (Hex)</th>
+      <th>Terrain Type</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">0.0</code></td>
+      <td><code class="language-plaintext highlighter-rouge">#1A4D99</code></td>
+      <td>Deep ocean</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">0.495</code></td>
+      <td><code class="language-plaintext highlighter-rouge">#80B3E6</code></td>
+      <td>Shallow water</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">0.5</code></td>
+      <td><code class="language-plaintext highlighter-rouge">#E6E6E6</code></td>
+      <td>Beach sand</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">0.505</code></td>
+      <td><code class="language-plaintext highlighter-rouge">#80CC66</code></td>
+      <td>Lowland grass</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">1.0</code></td>
+      <td><code class="language-plaintext highlighter-rouge">#FFFFFF</code></td>
+      <td>Snow peaks</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>I will be using this more military-looking palette, though.</p>
+
+<p><img src="/uploads/2025/procedural-island-generation-ii/chemaguerra-gradient-elevation-muted.png" alt="Muted elevation gradient" /></p>
+
+<p>For proper color blending, the elevation gradients interpolate in linear space rather than directly in sRGB, ensuring smooth transitions without washed out intermediate colors. Not that it matters that much in this particular case, though.</p>
+
+<p>These elevation gradients are used consistently across all elevation-based visualizations in this series: paint maps, triangle elevation, region elevation, and carved terrain. Compared to raw grayscale heightmaps, they provide better visual separation between land and ocean, making the island’s boundaries and topography immediately clear.</p>
+
+<h2 id="the-paint-map-foundation">The Paint Map Foundation</h2>
+
+<p>Let’s start with the foundation: a low resolution <em>paint map</em> that defines the overall island shape. Think of this as the artist’s initial sketch before adding detail. The term “paint map” comes from mapgen4’s interactive feature where users can literally paint elevation changes to sculpt valleys, mountains, and other terrain features.</p>
+
+<p>Whether or not interactive painting is supported, the paint map needs to be initialized with a procedurally generated island shape. This initialization process is our focus in this post.</p>
+
+<p><img src="/uploads/2025/procedural-island-generation-ii/chemaguerra-final-paint-map.png" alt="Paint map showing island shape" /></p>
+
+<p>The paint map uses a simple elevation encoding:</p>
+<ul>
+  <li><strong>-1</strong>: Deep ocean (dark blue)</li>
+  <li><strong>0</strong>: Sea level (the coastline)</li>
+  <li><strong>+1</strong>: Mountain peaks (white)</li>
+</ul>
+
+<p><a href="https://github.com/redblobgames/mapgen4">@redblobgames</a> uses a 128x128 grid in mapgen4, but the actual resolution is not relevant. The idea is to have a coarse approximation to what the island elevation will look like all around. For continent-sized terrains for example you might want to use a larger grid and many more seed points. But for islands like the ones covered in this series, 128x128 will do.</p>
+
+<h3 id="base-terrain-generation">Base Terrain Generation</h3>
+
+<p>The foundation of our terrain starts with just two components: a distance-based shape, and fractal Brownian motion (fBm) for organic variation.</p>
+
+<p><img src="/uploads/2025/procedural-island-generation-ii/chemaguerra-distance-field.png" alt="Distance field" /></p>
+
+<p><em>Distance field (d) - Chebyshev distance from center, creating a square falloff</em></p>
+
+<p><img src="/uploads/2025/procedural-island-generation-ii/chemaguerra-fbm-noise.png" alt="fBm noise" /></p>
+
+<p><em>Fractal Brownian motion (fBm) - Simplex noise (octaves=5, persistence=0.5) for organic terrain variation</em></p>
+
+<p>These two components combine according to this base elevation formula:</p>
+
+\[e = \frac{k_{fBm} \cdot \text{fBm} + k_d \cdot (0.75 - 2 \cdot d^2)}{2}\]
+
+<p>This formula creates a pyramid shape (highest at center, lowest at edges) and then adds noise to roughen its surface. Values above zero become land, while values below zero become water.</p>
+
+<p>The specific coefficients and noise functions aren’t critical. Any combination of a distance field and noise will produce island-resembling terrain.</p>
+
+<h3 id="interactive-parameter-exploration">Interactive Parameter Exploration</h3>
+
+<p>To understand how the base parameters affect terrain generation, here are animations varying each component:</p>
+
+<p><img src="/uploads/2025/procedural-island-generation-ii/chemaguerra-animation_fbm_amplitude.gif" alt="fBm amplitude animation" /></p>
+
+<p><em>k_fBm varying from 0 to 1 - Controls the influence of fractal noise</em></p>
+
+<p><img src="/uploads/2025/procedural-island-generation-ii/chemaguerra-animation_island_influence.gif" alt="Island influence animation" /></p>
+
+<p><em>k_d varying from 0 to 1 - Controls the influence of the distance falloff</em></p>
+
+<p>\(k_{fBm} = 1.0\) and \(k_d = 0.7\) are reasonable defaults.</p>
+
+<h2 id="mountain-ridges">Mountain Ridges</h2>
+
+<p>While fBm and distance create the base terrain, mountain ridges add dramatic peaks and valleys to land areas.</p>
+
+<h3 id="ridge-pattern-decomposition">Ridge Pattern Decomposition</h3>
+
+<p><img src="/uploads/2025/procedural-island-generation-ii/chemaguerra-ridge-pattern.png" alt="Ridge pattern" /></p>
+
+<p><em>Ridge pattern (r) - The underlying ridge noise pattern computed globally</em></p>
+
+<p><img src="/uploads/2025/procedural-island-generation-ii/chemaguerra-land-mask.png" alt="Land mask" /></p>
+
+<p><em>Land mask (e&gt;0) - Binary mask distinguishing land (white) from water (black)</em></p>
+
+<p><img src="/uploads/2025/procedural-island-generation-ii/chemaguerra-land-strength.png" alt="Land strength" /></p>
+
+<p><em>Land strength (s) - Elevation-based multiplier (0 for water, up to 1 for peaks)</em></p>
+
+<p><img src="/uploads/2025/procedural-island-generation-ii/chemaguerra-mountain-ridges.png" alt="Mountain ridges result" /></p>
+
+<p><em>Mountain ridges (m) - Final result: land strength × ridge pattern</em></p>
+
+<p>The ridge system in mapgen4 works as follows:</p>
+
+\[R = \text{noise}_1 + \text{noise}_2, \quad R \in [-2, 2]\]
+
+\[r = \max(0, 1 - \lvert R \rvert)\]
+
+\[s = \text{saturate}(5e)\]
+
+\[m = s \cdot r\]
+
+\[e_{final} = \max(e, \min(3e, m))\]
+
+<p>The ridge pattern combines two octaves from differently-seeded noise functions. The \(1 - \lvert R \rvert\) transformation creates the characteristic worm-like ridge appearance - any similar function that emphasizes values near zero would work equally well.</p>
+
+<p>The strength multiplier \(s\) ensures ridges fade naturally at coastlines and intensify at higher elevations, confining mountain formation to land areas while scaling with terrain height.</p>
+
+<h3 id="ridge-influence-animation">Ridge Influence Animation</h3>
+
+<p><img src="/uploads/2025/procedural-island-generation-ii/chemaguerra-animation_ridge_influence.gif" alt="Ridge influence animation" /></p>
+
+<p><em>Ridge influence varying from 0 to 1: controls how strongly ridges modify the base terrain</em></p>
+
+<h2 id="final-composite">Final Composite</h2>
+
+<p><img src="/uploads/2025/procedural-island-generation-ii/chemaguerra-final-paint-map.png" alt="Final composite" /></p>
+
+<p><em>128×128 paint map - raw visualization</em></p>
+
+\[e_{final} = e + r_{final}\]
+
+<p>Although the paint map operates at low resolution (128×128), the implementation supports sampling at any floating-point coordinate within the unit square through bilinear interpolation, providing smooth transitions between grid points.</p>
+
+<p><img src="/uploads/2025/procedural-island-generation-ii/chemaguerra-final-paint-map-512.png" alt="Final bilinear sampled" /></p>
+
+<p><em>128×128 paint map - bilinearly sampled in the unit square domain</em></p>
+
+<h2 id="next-steps">Next Steps</h2>
+
+<p>We’ve established the paint map foundation with fBm noise, island shape constraints, and mountain ridge patterns. This 128×128 grid provides the broad strokes of our terrain. Part III will add the fine details: multi-scale noise layers, distance-based mountain peaks, and sophisticated elevation blending that brings the terrain to life.</p>
+
+<h2 id="valuable-resources">Valuable Resources</h2>
+
+<ul>
+  <li><a href="https://thebookofshaders.com/13/">Fractal Brownian Motion</a> - The Book of Shaders FBM tutorial</li>
+  <li><a href="https://www.redblobgames.com/maps/terrain-from-noise/">Terrain from Noise</a> - Red Blob Games elevation techniques</li>
+  <li><a href="https://www.redblobgames.com/maps/terrain-from-noise/#elevation">Amit Patel’s Map Generation</a> - Paint map concepts</li>
+</ul>
+
+  </div><a class="u-url" href="/2025/09/10/procedural-island-generation-ii.html" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading">Chema Guerra</h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name">Chema Guerra</li><li><a class="u-email" href="mailto:brashandplucky@gmail.com">brashandplucky@gmail.com</a></li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"><li><a href="https://github.com/chemaguerra"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#github"></use></svg> <span class="username">chemaguerra</span></a></li><li><a href="https://www.twitter.com/chemaguerra"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#twitter"></use></svg> <span class="username">chemaguerra</span></a></li></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p>This is a coding blog where I post about the various projects that I am currently working on, both at work, or as an independent researcher. Most content here revolves around computer graphics and physics simulation.</p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>

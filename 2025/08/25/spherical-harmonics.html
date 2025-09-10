@@ -146,7 +146,7 @@
 
 <p>It is important to note that in doing so, the integrals we will be calculating below need to account for distortion in their differential element.</p>
 
-<p><img src="/uploads/2023/chemaguerra-spherical-harmonics-differential.png" alt="Directions and differentials" /></p>
+<p><img src="/uploads/2025/spherical-harmonics/chemaguerra-spherical-harmonics-differential.png" alt="Directions and differentials" /></p>
 
 <p>The rgb-coded cubemap represents all the unit directions in a sphere \(\mathbf{\omega}\). The grayscale cubemap represents the differential element conversion between the unit sphere and the unit cubemap \(\mathrm{d}\mathbf{\omega}\). The HDR map unfolded as a cubemap is an example of an incoming radiance map \(L(\mathbf{\omega})\).</p>
 
@@ -230,15 +230,15 @@
 
 <p>This spherical (<em>i.e.,</em> polar in 3D) plot represents the SH basis for the first four levels (L0-L1-L2-L3). The SH magnitude is used for the radius at each spherical coord and the sign is used for the color.</p>
 
-<p><img src="/uploads/2023/chemaguerra-spherical-harmonics.jpg" alt="L0-L1-L2-L3 Spherical Harmonics" /></p>
+<p><img src="/uploads/2025/spherical-harmonics/chemaguerra-spherical-harmonics.jpg" alt="L0-L1-L2-L3 Spherical Harmonics" /></p>
 
 <p>This is the same type of plot, but fixating \(r=1\) and using the magnitude/sign to interpolate between both colors. Note that I have thresholded the magnitude a bit so sign-flip boundaries more sharply distinct.</p>
 
-<p><img src="/uploads/2023/chemaguerra-spherical-harmonics-unit.jpg" alt="Trajectory constraint" /></p>
+<p><img src="/uploads/2025/spherical-harmonics/chemaguerra-spherical-harmonics-unit.jpg" alt="Trajectory constraint" /></p>
 
 <p>This is again the same plot, but now each unit sphere is unfolded in a cubemap layout. The same color thresholding is used here.</p>
 
-<p><img src="/uploads/2023/chemaguerra-spherical-harmonics-cubemap.jpg" alt="Trajectory constraint" /></p>
+<p><img src="/uploads/2025/spherical-harmonics/chemaguerra-spherical-harmonics-cubemap.jpg" alt="Trajectory constraint" /></p>
 
 <h3 id="what-the-shs-will-do-for-us">What the SHs will do for us</h3>
 
@@ -274,19 +274,19 @@
 
 <p>Let’s start with this panorama taken from <a href="https://commons.wikimedia.org/wiki/File:Harderwijk_harbour_2018_-_360_panorama.jpg">commons.wikimedia.org</a>. The image is 8-bit, Low-Dynamic-Range, and not particularly high-frequency. <em>i.e.,</em> a 360-degree panorama of a pretty exterior.</p>
 
-<p><img src="/uploads/2023/chemaguerra-spherical-harmonics-ldr.png" alt="LDR panorama" /></p>
+<p><img src="/uploads/2025/spherical-harmonics/chemaguerra-spherical-harmonics-ldr.png" alt="LDR panorama" /></p>
 
 <p>Here’s what happens if we pass it through our SH codec with \(L=3\) (\(9 \times 3=27\) coefficients).</p>
 
-<p><img src="/uploads/2023/chemaguerra-spherical-harmonics-ldr-9x3.png" alt="SH reconstruction LDR 27" /></p>
+<p><img src="/uploads/2025/spherical-harmonics/chemaguerra-spherical-harmonics-ldr-9x3.png" alt="SH reconstruction LDR 27" /></p>
 
 <p>Now with \(L=4\) (\(16 \times 3=48\) coefficients).</p>
 
-<p><img src="/uploads/2023/chemaguerra-spherical-harmonics-ldr-16x3.png" alt="SH reconstruction LDR 48" /></p>
+<p><img src="/uploads/2025/spherical-harmonics/chemaguerra-spherical-harmonics-ldr-16x3.png" alt="SH reconstruction LDR 48" /></p>
 
 <p>And now with \(L=10\) (\(100 \times 3=300\) coefficients).</p>
 
-<p><img src="/uploads/2023/chemaguerra-spherical-harmonics-ldr-100x3.png" alt="SH reconstruction LDR 300" /></p>
+<p><img src="/uploads/2025/spherical-harmonics/chemaguerra-spherical-harmonics-ldr-100x3.png" alt="SH reconstruction LDR 300" /></p>
 
 <blockquote>
   <p>You can right-click and download (or open in another tab) to view these images at 1:1 scale.</p>
@@ -294,11 +294,11 @@
 
 <p>The more the SHs (and coefficients) the more faithful and detailed the reconstruction becomes. While this is obvious, it is important to remark that the SH basis we’re using is “ordered by frequency”, meaning that the first ones encode lower-frequency bands, and adding more and more SHs adds more and more higher-frequency bands. In the continuous case, an infinite number of SHs and coefficients would be required to guarantee an ever lossless restoration. In the discrete case, as with the FT and other transforms, a finite amount of coefficients (proportional to the input data size) will suffice.</p>
 
-<p><img src="/uploads/2023/chemaguerra-spherical-harmonics-ldr-progression.gif" alt="SH reconstruction progression" /></p>
+<p><img src="/uploads/2025/spherical-harmonics/chemaguerra-spherical-harmonics-ldr-progression.gif" alt="SH reconstruction progression" /></p>
 
 <p>Let’s try with a spherically-blurred version (not a regular image blur):</p>
 
-<p><img src="/uploads/2023/chemaguerra-spherical-harmonics-ldr-blurred-progression.gif" alt="SH reconstruction progression" /></p>
+<p><img src="/uploads/2025/spherical-harmonics/chemaguerra-spherical-harmonics-ldr-blurred-progression.gif" alt="SH reconstruction progression" /></p>
 
 <p>The most important takeaway here is:</p>
 
@@ -316,7 +316,7 @@
 
 <p>This is nothing but a manifestation of the well-known <a href="https://en.wikipedia.org/wiki/Gibbs_phenomenon">Gibbs phenomenon</a>.</p>
 
-<p><img src="/uploads/2023/chemaguerra-spherical-harmonics-hdr-1.gif" alt="SH reconstruction progression" /></p>
+<p><img src="/uploads/2025/spherical-harmonics/chemaguerra-spherical-harmonics-hdr-1.gif" alt="SH reconstruction progression" /></p>
 
 <p>Higher frequencies in an image semantically mean more fine/sharp detail (<em>i.e.,</em> more average variation from one pixel to its neighbors). But another factor that amplifies the amount of variation is the dynamic range of the data. Having a high-dynamic range may or may not affect what frequencies are present, but will certainly affect the amplitudes (the magnitude) of the encoded coefficients. Since the harmonics are wave-like, ringing may occur.</p>
 
@@ -327,15 +327,15 @@
   <li>Blur the input data to shave off the higher frequencies.</li>
 </ul>
 
-<p><img src="/uploads/2023/chemaguerra-spherical-harmonics-hdr-clamped.gif" alt="SH reconstruction progression" /></p>
+<p><img src="/uploads/2025/spherical-harmonics/chemaguerra-spherical-harmonics-hdr-clamped.gif" alt="SH reconstruction progression" /></p>
 
 <p>Let’s try with another classic HDR panorama. High-frequencies and high-amplitudes together cause a wobbly disaster:</p>
 
-<p><img src="/uploads/2023/chemaguerra-spherical-harmonics-hdr-2.gif" alt="SH reconstruction progression" /></p>
+<p><img src="/uploads/2025/spherical-harmonics/chemaguerra-spherical-harmonics-hdr-2.gif" alt="SH reconstruction progression" /></p>
 
 <p>And now let’s try with a spherically-blurred version of the same map. The particular blur I am using here is a cosine-weighted hemispherical blur:</p>
 
-<p><img src="/uploads/2023/chemaguerra-spherical-harmonics-hdr-blurred.gif" alt="SH reconstruction progression" /></p>
+<p><img src="/uploads/2025/spherical-harmonics/chemaguerra-spherical-harmonics-hdr-blurred.gif" alt="SH reconstruction progression" /></p>
 
 <p>Because type of blur used is cosine-weighted over the hemisphere, this light probe exactly captures the irradiance that a <em>lambertian surface</em> would receive from the scene if illuminated with the unblurred HDR panorama.</p>
 

@@ -127,53 +127,53 @@ scales linearly with respect to said length increment:</p>
 
 <p>The source code below extends the previous post in order to incorporate a spring connecting the particle to the origin alongside the force of gravity.</p>
 
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>struct spring_mass_t
-{
-  explicit spring_mass_t
+<div class="language-cpp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">struct</span> <span class="nc">spring_mass_t</span>
+<span class="p">{</span>
+  <span class="k">explicit</span> <span class="n">spring_mass_t</span>
   
-      ( const f64_t rest_length = .5,
-        const f64_t stiffness   = 1e3,
-        const f64_t damping     = 1e3 )
+      <span class="p">(</span> <span class="k">const</span> <span class="n">f64_t</span> <span class="n">rest_length</span> <span class="o">=</span> <span class="mf">.5</span><span class="p">,</span>
+        <span class="k">const</span> <span class="n">f64_t</span> <span class="n">stiffness</span>   <span class="o">=</span> <span class="mf">1e3</span><span class="p">,</span>
+        <span class="k">const</span> <span class="n">f64_t</span> <span class="n">damping</span>     <span class="o">=</span> <span class="mf">1e3</span> <span class="p">)</span>
 
-      : m( 100 ), p( rest_length, 0 ), v( 0 ),
+      <span class="o">:</span> <span class="n">m</span><span class="p">(</span> <span class="mi">100</span> <span class="p">),</span> <span class="n">p</span><span class="p">(</span> <span class="n">rest_length</span><span class="p">,</span> <span class="mi">0</span> <span class="p">),</span> <span class="n">v</span><span class="p">(</span> <span class="mi">0</span> <span class="p">),</span>
 
-        L( rest_length ), ks( stiffness ), kd( damping ) {}
+        <span class="n">L</span><span class="p">(</span> <span class="n">rest_length</span> <span class="p">),</span> <span class="n">ks</span><span class="p">(</span> <span class="n">stiffness</span> <span class="p">),</span> <span class="n">kd</span><span class="p">(</span> <span class="n">damping</span> <span class="p">)</span> <span class="p">{}</span>
 
-  void step( const f64_t dt, const vec2d_c&amp; gravity )
-  {
-    // Current spring state.
+  <span class="kt">void</span> <span class="nf">step</span><span class="p">(</span> <span class="k">const</span> <span class="n">f64_t</span> <span class="n">dt</span><span class="p">,</span> <span class="k">const</span> <span class="n">vec2d_c</span><span class="o">&amp;</span> <span class="n">gravity</span> <span class="p">)</span>
+  <span class="p">{</span>
+    <span class="c1">// Current spring state.</span>
 
-    const vec2d_c s_D  =   p;             // Spring dir. Anchored at (0,0).
+    <span class="k">const</span> <span class="n">vec2d_c</span> <span class="n">s_D</span>  <span class="o">=</span>   <span class="n">p</span><span class="p">;</span>             <span class="c1">// Spring dir. Anchored at (0,0).</span>
 
-    const   f64_t s_L  =   s_D.length();  // Spring len.
+    <span class="k">const</span>   <span class="n">f64_t</span> <span class="n">s_L</span>  <span class="o">=</span>   <span class="n">s_D</span><span class="p">.</span><span class="n">length</span><span class="p">();</span>  <span class="c1">// Spring len.</span>
 
-    const vec2d_c s_d  = ( s_D / s_L );   // Spring dir (normalized).
+    <span class="k">const</span> <span class="n">vec2d_c</span> <span class="n">s_d</span>  <span class="o">=</span> <span class="p">(</span> <span class="n">s_D</span> <span class="o">/</span> <span class="n">s_L</span> <span class="p">);</span>   <span class="c1">// Spring dir (normalized).</span>
 
-    const vec2d_c s_Fs = ( s_d * ( ( L - s_L ) * ks ) );  // Hooke's Law.
-    const vec2d_c s_Fd = ( s_d * ( ( v * s_d ) * kd ) );  // Damping.
+    <span class="k">const</span> <span class="n">vec2d_c</span> <span class="n">s_Fs</span> <span class="o">=</span> <span class="p">(</span> <span class="n">s_d</span> <span class="o">*</span> <span class="p">(</span> <span class="p">(</span> <span class="n">L</span> <span class="o">-</span> <span class="n">s_L</span> <span class="p">)</span> <span class="o">*</span> <span class="n">ks</span> <span class="p">)</span> <span class="p">);</span>  <span class="c1">// Hooke's Law.</span>
+    <span class="k">const</span> <span class="n">vec2d_c</span> <span class="n">s_Fd</span> <span class="o">=</span> <span class="p">(</span> <span class="n">s_d</span> <span class="o">*</span> <span class="p">(</span> <span class="p">(</span> <span class="n">v</span> <span class="o">*</span> <span class="n">s_d</span> <span class="p">)</span> <span class="o">*</span> <span class="n">kd</span> <span class="p">)</span> <span class="p">);</span>  <span class="c1">// Damping.</span>
 
-    // Forces sum =&gt; Acceleration.
+    <span class="c1">// Forces sum =&gt; Acceleration.</span>
 
-    const vec2d_c a = ( gravity + ( ( s_Fs - s_Fd ) / m ) );
+    <span class="k">const</span> <span class="n">vec2d_c</span> <span class="n">a</span> <span class="o">=</span> <span class="p">(</span> <span class="n">gravity</span> <span class="o">+</span> <span class="p">(</span> <span class="p">(</span> <span class="n">s_Fs</span> <span class="o">-</span> <span class="n">s_Fd</span> <span class="p">)</span> <span class="o">/</span> <span class="n">m</span> <span class="p">)</span> <span class="p">);</span>
 
-    // Semi-implicit Euler.
+    <span class="c1">// Semi-implicit Euler.</span>
 
-    v += ( a * dt );
-    p += ( v * dt );
-  }
+    <span class="n">v</span> <span class="o">+=</span> <span class="p">(</span> <span class="n">a</span> <span class="o">*</span> <span class="n">dt</span> <span class="p">);</span>
+    <span class="n">p</span> <span class="o">+=</span> <span class="p">(</span> <span class="n">v</span> <span class="o">*</span> <span class="n">dt</span> <span class="p">);</span>
+  <span class="p">}</span>
 
-  // Particle state.
+  <span class="c1">// Particle state.</span>
 
-    f64_t m;
-  vec2d_c p;
-  vec2d_c v;
+    <span class="n">f64_t</span> <span class="n">m</span><span class="p">;</span>
+  <span class="n">vec2d_c</span> <span class="n">p</span><span class="p">;</span>
+  <span class="n">vec2d_c</span> <span class="n">v</span><span class="p">;</span>
 
-  // Spring.
+  <span class="c1">// Spring.</span>
 
-    f64_t L;   // Rest length.
-    f64_t ks;  // Stiffness.
-    f64_t kd;  // Damping.
-};
+    <span class="n">f64_t</span> <span class="n">L</span><span class="p">;</span>   <span class="c1">// Rest length.</span>
+    <span class="n">f64_t</span> <span class="n">ks</span><span class="p">;</span>  <span class="c1">// Stiffness.</span>
+    <span class="n">f64_t</span> <span class="n">kd</span><span class="p">;</span>  <span class="c1">// Damping.</span>
+<span class="p">};</span>
 </code></pre></div></div>
 
 <p>Here’s a goopy spring (\(k_s=1e3\)):</p>
@@ -236,65 +236,65 @@ that has the effect of reducing or preventing the oscillation. A damped spring i
 
 <p><img src="/uploads/2023/chemaguerra-damped-stiff-double-spring-512.gif" alt="Damped Stiff double spring" /></p>
 
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>struct double_spring_mass_t
-{
-  explicit double_spring_mass_t
+<div class="language-cpp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">struct</span> <span class="nc">double_spring_mass_t</span>
+<span class="p">{</span>
+  <span class="k">explicit</span> <span class="n">double_spring_mass_t</span>
   
-      ( const f64_t rest_length =  .5,
-        const f64_t stiffness   = 1e3,
-        const f64_t damping     = 1e3 )
+      <span class="p">(</span> <span class="k">const</span> <span class="n">f64_t</span> <span class="n">rest_length</span> <span class="o">=</span>  <span class="mf">.5</span><span class="p">,</span>
+        <span class="k">const</span> <span class="n">f64_t</span> <span class="n">stiffness</span>   <span class="o">=</span> <span class="mf">1e3</span><span class="p">,</span>
+        <span class="k">const</span> <span class="n">f64_t</span> <span class="n">damping</span>     <span class="o">=</span> <span class="mf">1e3</span> <span class="p">)</span>
 
-      : m( 100 ), p1( ( rest_length * 1 ), 0 ), v1( 0 ),
-                  p2( ( rest_length * 2 ), 0 ), v2( 0 ),
+      <span class="o">:</span> <span class="n">m</span><span class="p">(</span> <span class="mi">100</span> <span class="p">),</span> <span class="n">p1</span><span class="p">(</span> <span class="p">(</span> <span class="n">rest_length</span> <span class="o">*</span> <span class="mi">1</span> <span class="p">),</span> <span class="mi">0</span> <span class="p">),</span> <span class="n">v1</span><span class="p">(</span> <span class="mi">0</span> <span class="p">),</span>
+                  <span class="n">p2</span><span class="p">(</span> <span class="p">(</span> <span class="n">rest_length</span> <span class="o">*</span> <span class="mi">2</span> <span class="p">),</span> <span class="mi">0</span> <span class="p">),</span> <span class="n">v2</span><span class="p">(</span> <span class="mi">0</span> <span class="p">),</span>
 
-        L( rest_length ), ks( stiffness ), kd( damping ) {}
+        <span class="n">L</span><span class="p">(</span> <span class="n">rest_length</span> <span class="p">),</span> <span class="n">ks</span><span class="p">(</span> <span class="n">stiffness</span> <span class="p">),</span> <span class="n">kd</span><span class="p">(</span> <span class="n">damping</span> <span class="p">)</span> <span class="p">{}</span>
 
-  void step( const f64_t dt, const vec2d_c&amp; gravity )
-  {
-    // Current spring states.
+  <span class="kt">void</span> <span class="nf">step</span><span class="p">(</span> <span class="k">const</span> <span class="n">f64_t</span> <span class="n">dt</span><span class="p">,</span> <span class="k">const</span> <span class="n">vec2d_c</span><span class="o">&amp;</span> <span class="n">gravity</span> <span class="p">)</span>
+  <span class="p">{</span>
+    <span class="c1">// Current spring states.</span>
 
-    const vec2d_c s1_D  = ( p1      );      // Spring dir.
-    const vec2d_c s2_D  = ( p2 - p1 );      //
+    <span class="k">const</span> <span class="n">vec2d_c</span> <span class="n">s1_D</span>  <span class="o">=</span> <span class="p">(</span> <span class="n">p1</span>      <span class="p">);</span>      <span class="c1">// Spring dir.</span>
+    <span class="k">const</span> <span class="n">vec2d_c</span> <span class="n">s2_D</span>  <span class="o">=</span> <span class="p">(</span> <span class="n">p2</span> <span class="o">-</span> <span class="n">p1</span> <span class="p">);</span>      <span class="c1">//</span>
 
-    const   f64_t s1_L  =   s1_D.length();  // Spring len.
-    const   f64_t s2_L  =   s2_D.length();  //
+    <span class="k">const</span>   <span class="n">f64_t</span> <span class="n">s1_L</span>  <span class="o">=</span>   <span class="n">s1_D</span><span class="p">.</span><span class="n">length</span><span class="p">();</span>  <span class="c1">// Spring len.</span>
+    <span class="k">const</span>   <span class="n">f64_t</span> <span class="n">s2_L</span>  <span class="o">=</span>   <span class="n">s2_D</span><span class="p">.</span><span class="n">length</span><span class="p">();</span>  <span class="c1">//</span>
 
-    const vec2d_c s1_d  = ( s1_D / s1_L );  // Spring dir (normalized).
-    const vec2d_c s2_d  = ( s2_D / s2_L );  //
+    <span class="k">const</span> <span class="n">vec2d_c</span> <span class="n">s1_d</span>  <span class="o">=</span> <span class="p">(</span> <span class="n">s1_D</span> <span class="o">/</span> <span class="n">s1_L</span> <span class="p">);</span>  <span class="c1">// Spring dir (normalized).</span>
+    <span class="k">const</span> <span class="n">vec2d_c</span> <span class="n">s2_d</span>  <span class="o">=</span> <span class="p">(</span> <span class="n">s2_D</span> <span class="o">/</span> <span class="n">s2_L</span> <span class="p">);</span>  <span class="c1">//</span>
 
-    const vec2d_c s1_Fs = ( s1_d * ( ( L  - s1_L ) * ks ) );  // Hooke's Law.
-    const vec2d_c s2_Fs = ( s2_d * ( ( L  - s2_L ) * ks ) );  //
+    <span class="k">const</span> <span class="n">vec2d_c</span> <span class="n">s1_Fs</span> <span class="o">=</span> <span class="p">(</span> <span class="n">s1_d</span> <span class="o">*</span> <span class="p">(</span> <span class="p">(</span> <span class="n">L</span>  <span class="o">-</span> <span class="n">s1_L</span> <span class="p">)</span> <span class="o">*</span> <span class="n">ks</span> <span class="p">)</span> <span class="p">);</span>  <span class="c1">// Hooke's Law.</span>
+    <span class="k">const</span> <span class="n">vec2d_c</span> <span class="n">s2_Fs</span> <span class="o">=</span> <span class="p">(</span> <span class="n">s2_d</span> <span class="o">*</span> <span class="p">(</span> <span class="p">(</span> <span class="n">L</span>  <span class="o">-</span> <span class="n">s2_L</span> <span class="p">)</span> <span class="o">*</span> <span class="n">ks</span> <span class="p">)</span> <span class="p">);</span>  <span class="c1">//</span>
 
-    const vec2d_c s1_Fd = ( s1_d * ( ( v1 * s1_d ) * kd ) );  // Damping.
-    const vec2d_c s2_Fd = ( s2_d * ( ( v2 * s2_d ) * kd ) );  //
+    <span class="k">const</span> <span class="n">vec2d_c</span> <span class="n">s1_Fd</span> <span class="o">=</span> <span class="p">(</span> <span class="n">s1_d</span> <span class="o">*</span> <span class="p">(</span> <span class="p">(</span> <span class="n">v1</span> <span class="o">*</span> <span class="n">s1_d</span> <span class="p">)</span> <span class="o">*</span> <span class="n">kd</span> <span class="p">)</span> <span class="p">);</span>  <span class="c1">// Damping.</span>
+    <span class="k">const</span> <span class="n">vec2d_c</span> <span class="n">s2_Fd</span> <span class="o">=</span> <span class="p">(</span> <span class="n">s2_d</span> <span class="o">*</span> <span class="p">(</span> <span class="p">(</span> <span class="n">v2</span> <span class="o">*</span> <span class="n">s2_d</span> <span class="p">)</span> <span class="o">*</span> <span class="n">kd</span> <span class="p">)</span> <span class="p">);</span>  <span class="c1">//</span>
 
-    const vec2d_c s1_F  = ( s1_Fs - s1_Fd );
-    const vec2d_c s2_F  = ( s2_Fs - s2_Fd );
+    <span class="k">const</span> <span class="n">vec2d_c</span> <span class="n">s1_F</span>  <span class="o">=</span> <span class="p">(</span> <span class="n">s1_Fs</span> <span class="o">-</span> <span class="n">s1_Fd</span> <span class="p">);</span>
+    <span class="k">const</span> <span class="n">vec2d_c</span> <span class="n">s2_F</span>  <span class="o">=</span> <span class="p">(</span> <span class="n">s2_Fs</span> <span class="o">-</span> <span class="n">s2_Fd</span> <span class="p">);</span>
 
-    // Forces sum =&gt; Acceleration.
+    <span class="c1">// Forces sum =&gt; Acceleration.</span>
 
-    const vec2d_c a1 = ( gravity + ( ( s1_F - s2_F ) / m ) );
-    const vec2d_c a2 = ( gravity + ( ( s2_F        ) / m ) );
+    <span class="k">const</span> <span class="n">vec2d_c</span> <span class="n">a1</span> <span class="o">=</span> <span class="p">(</span> <span class="n">gravity</span> <span class="o">+</span> <span class="p">(</span> <span class="p">(</span> <span class="n">s1_F</span> <span class="o">-</span> <span class="n">s2_F</span> <span class="p">)</span> <span class="o">/</span> <span class="n">m</span> <span class="p">)</span> <span class="p">);</span>
+    <span class="k">const</span> <span class="n">vec2d_c</span> <span class="n">a2</span> <span class="o">=</span> <span class="p">(</span> <span class="n">gravity</span> <span class="o">+</span> <span class="p">(</span> <span class="p">(</span> <span class="n">s2_F</span>        <span class="p">)</span> <span class="o">/</span> <span class="n">m</span> <span class="p">)</span> <span class="p">);</span>
 
-    // Semi-implicit Euler.
+    <span class="c1">// Semi-implicit Euler.</span>
 
-    v1 += ( a1 * dt ); p1 += ( v1 * dt );
-    v2 += ( a2 * dt ); p2 += ( v2 * dt );
-  }
+    <span class="n">v1</span> <span class="o">+=</span> <span class="p">(</span> <span class="n">a1</span> <span class="o">*</span> <span class="n">dt</span> <span class="p">);</span> <span class="n">p1</span> <span class="o">+=</span> <span class="p">(</span> <span class="n">v1</span> <span class="o">*</span> <span class="n">dt</span> <span class="p">);</span>
+    <span class="n">v2</span> <span class="o">+=</span> <span class="p">(</span> <span class="n">a2</span> <span class="o">*</span> <span class="n">dt</span> <span class="p">);</span> <span class="n">p2</span> <span class="o">+=</span> <span class="p">(</span> <span class="n">v2</span> <span class="o">*</span> <span class="n">dt</span> <span class="p">);</span>
+  <span class="p">}</span>
 
-  // Particle state.
+  <span class="c1">// Particle state.</span>
 
-    f64_t m;   // m=m1=m2.
+    <span class="n">f64_t</span> <span class="n">m</span><span class="p">;</span>   <span class="c1">// m=m1=m2.</span>
 
-  vec2d_c p1, v1;
-  vec2d_c p2, v2;
+  <span class="n">vec2d_c</span> <span class="n">p1</span><span class="p">,</span> <span class="n">v1</span><span class="p">;</span>
+  <span class="n">vec2d_c</span> <span class="n">p2</span><span class="p">,</span> <span class="n">v2</span><span class="p">;</span>
 
-  // Both springs.
+  <span class="c1">// Both springs.</span>
 
-    f64_t L;   // Rest length.
-    f64_t ks;  // Stiffness.
-    f64_t kd;  // Damping.
-};
+    <span class="n">f64_t</span> <span class="n">L</span><span class="p">;</span>   <span class="c1">// Rest length.</span>
+    <span class="n">f64_t</span> <span class="n">ks</span><span class="p">;</span>  <span class="c1">// Stiffness.</span>
+    <span class="n">f64_t</span> <span class="n">kd</span><span class="p">;</span>  <span class="c1">// Damping.</span>
+<span class="p">};</span>
 </code></pre></div></div>
 
 <h2 id="representing-constraints-properly">Representing constraints properly</h2>

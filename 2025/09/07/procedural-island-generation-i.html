@@ -85,17 +85,17 @@
   </header>
 
   <div class="post-content e-content" itemprop="articleBody">
-    <p><img src="/uploads/2025/chemaguerra-procedural-island-generation-terrain-mesh.png" alt="Terrain mesh visualization" /></p>
+    <p><img src="/uploads/2025/procedural-island-generation-i/chemaguerra-procedural-island-generation-terrain-mesh.png" alt="Terrain mesh visualization" /></p>
 
 <p>This post marks the beginning of a series on procedural island generation. I recently fell in love with <a href="https://twitter.com/redblobgames">Amit Patel’s</a> brilliant <a href="http://www-cs-students.stanford.edu/~amitp/game-programming/polygon-map-generation/">polygon map generation</a> articles, and this series will be my own exploration and interpretation of those techniques.</p>
 
-<p>This series assumes familiarity with computational geometry and procedural generation concepts such as Delaunay triangulation, Voronoi diagrams, Simplex noise, etc…</p>
+<p>This series assumes familiarity with computational geometry and procedural generation concepts such as Delaunay triangulation, Voronoi diagrams, FBM, etc…</p>
 
 <p>To challenge myself (I’m usually a C/C++ person), I decided to implement this in Rust. But I will barely delve into implementation details though. This series will focus on the algorithm itself, with neat (hopefully!) visualizations of the intermediate calculations.</p>
 
 <h2 id="motivation">Motivation</h2>
 
-<p>The main reason why I am tinkering with terrain generation now is <strong>Strike Back</strong>, the <a href="https://x.com/topotoylabs/status/1750315804170612745">flight sim I’ve been developing on and off</a>. I will be using this algorithm as a foundation to create battle arenas, and plan to extend it eventually.</p>
+<p>The main reason why I am tinkering with terrain generation now is <strong>Strike Back</strong>, the <a href="https://x.com/topotoylabs/status/1750315804170612745">flight sim I’ve been developing on and off</a>. I will be using this algorithm as a foundation to create battle arenas which I plan to extend eventually.</p>
 
 <h3 id="working-domain">Working Domain</h3>
 
@@ -128,13 +128,13 @@
   <li>\(k\): number of candidates to try before rejection (typically 30)</li>
 </ul>
 
-<p>The algorithm maintains an “active list” of points that might still have valid neighbors. When a point fails to produce valid candidates after \(k\) attempts, it’s removed from the active list.</p>
+<p>The algorithm maintains an “active list” of points that might still have valid neighbors. When a point fails to produce valid candidates after \(k\) attempts, it is removed from the active list.</p>
 
 <p>Spatial indexing is crucial for efficient nearest-neighbor queries in Bridson’s algorithm. A simple grid works well: divide space into cells of size \(r/\sqrt{2}\), ensuring at most one point per cell for \(O(1)\) lookups.</p>
 
 <p>Below is an auxiliary visualization animation I wrote in Python:</p>
 
-<p><img src="/uploads/2025/chemaguerra-bridson-algorithm.gif" alt="Bridson's algorithm in action" /></p>
+<p><img src="/uploads/2025/procedural-island-generation-i/chemaguerra-bridson-algorithm.gif" alt="Bridson's algorithm in action" /></p>
 
 <h3 id="lloyds-relaxation">Lloyd’s Relaxation</h3>
 
@@ -154,7 +154,7 @@
 
 <p>Below is another animation I made in Python:</p>
 
-<p><img src="/uploads/2025/chemaguerra-lloyd-relaxation.gif" alt="Lloyd's relaxation with Voronoi cells visible" /></p>
+<p><img src="/uploads/2025/procedural-island-generation-i/chemaguerra-lloyd-relaxation.gif" alt="Lloyd's relaxation with Voronoi cells visible" /></p>
 
 <p>Lloyd’s relaxation is computationally expensive and produces overly regular distributions that can look artificial for terrain. Bridson strikes a better balance: it’s fast and maintains the organic irregularity we want.</p>
 
@@ -164,7 +164,7 @@
 
 <p>This approach ensures full coverage with well-behaved triangles at the edges for Delaunay triangulation and simplifies handling of unbounded Voronoi regions.</p>
 
-<p><img src="/uploads/2025/chemaguerra-bridson-separation.gif" alt="Point separation constraint during generation" /></p>
+<p><img src="/uploads/2025/procedural-island-generation-i/chemaguerra-bridson-separation.gif" alt="Point separation constraint during generation" /></p>
 
 <p>In the animation above, working with a unit square domain and \(r = \frac{1}{200}\), we’d theoretically fit up to \(\left(\frac{1}{r}\right)^2 = 200^2 = 40000\) points in a perfect grid. But Poisson disk sampling produces a looser packing. With the annulus radius range \([r, 2r]\) and rejection sampling, we get ~27000 points in practice, about 68% of the theoretical maximum.</p>
 
@@ -174,11 +174,11 @@
 
 <p>In the visualizations throughout this post, red dots will represent seed points (Delaunay vertices), while blue dots will represent Voronoi vertices (corresponding to Delaunay triangle centers).</p>
 
-<p><img src="/uploads/2025/chemaguerra-delaunay-static.png" alt="Delaunay triangulation static view" /></p>
+<p><img src="/uploads/2025/procedural-island-generation-i/chemaguerra-delaunay-static.png" alt="Delaunay triangulation static view" /></p>
 
-<p><img src="/uploads/2025/chemaguerra-delaunay-tile.png" alt="Delaunay triangulation detail view" /></p>
+<p><img src="/uploads/2025/procedural-island-generation-i/chemaguerra-delaunay-tile.png" alt="Delaunay triangulation detail view" /></p>
 
-<p><img src="/uploads/2025/chemaguerra-delaunay-mesh.gif" alt="Delaunay triangulation mesh" /></p>
+<p><img src="/uploads/2025/procedural-island-generation-i/chemaguerra-delaunay-mesh.gif" alt="Delaunay triangulation mesh" /></p>
 
 <p>For the implementation, I went with Rust’s <code class="language-plaintext highlighter-rouge">delaunator</code> crate. It’s a robust, battle-tested port of the JavaScript library of the same name, implementing a fast sweep-line algorithm that runs in \(O(n \log n)\) time. The cyclic animation is just the same code but decreasing/increasing \(r\) (more/fewer points).</p>
 
@@ -186,13 +186,13 @@
 
 <p>The Voronoi diagram is the dual of the Delaunay triangulation. Each Delaunay triangle vertex becomes a Voronoi cell, and each Delaunay edge corresponds to a Voronoi edge. For terrain generation, Voronoi cells are a staple: they define convex-shaped regions around each seed point, perfect for assigning terrain properties like elevation, moisture, and biome types.</p>
 
-<p><img src="/uploads/2025/chemaguerra-voronoi-full.png" alt="Voronoi cells full view" /></p>
+<p><img src="/uploads/2025/procedural-island-generation-i/chemaguerra-voronoi-full.png" alt="Voronoi cells full view" /></p>
 
-<p><img src="/uploads/2025/chemaguerra-voronoi-circumcenters-tile.png" alt="Voronoi with circumcenters detail view" /></p>
+<p><img src="/uploads/2025/procedural-island-generation-i/chemaguerra-voronoi-circumcenters-tile.png" alt="Voronoi with circumcenters detail view" /></p>
 
-<p><img src="/uploads/2025/chemaguerra-voronoi-cells.gif" alt="Voronoi cells diagram" /></p>
+<p><img src="/uploads/2025/procedural-island-generation-i/chemaguerra-voronoi-cells.gif" alt="Voronoi cells diagram" /></p>
 
-<p>Rather than using an off-the-shelf solution, I built the dual construction using my topology library <strong>Topokit</strong>, recently ported to Rust. The half-edge (DCEL) data structure I have there makes it trivial to traverse neighbors, and maintain the topological relationships we need for terrain generation. Topokit also handles serialization, relaxation, LOD subdivision, and other features I’ll tap into later.</p>
+<p>Rather than using an off-the-shelf solution, I built the dual construction using my topology library <strong>TopoKit</strong>, recently ported to Rust. The half-edge (DCEL) data structure I have there makes it trivial to traverse neighbors, and maintain the topological relationships we need for terrain generation. TopoKit also handles serialization, relaxation, LOD subdivision, and other features I’ll tap into later.</p>
 
 <h2 id="circumcenters-vs-centroids">Circumcenters vs. Centroids</h2>
 
@@ -200,13 +200,13 @@
 
 <p>A clever trick I learned from <a href="https://twitter.com/redblobgames">@redblobgames</a> is using triangle centroids instead of circumcenters for Voronoi vertices. This simple change produces smoother, more bubble-like regions with gentler transitions between cells. These softer angles are ideal for terrain generation, and the computation is actually simpler.</p>
 
-<p><img src="/uploads/2025/chemaguerra-voronoi-centroids.png" alt="Voronoi diagram using centroids" /></p>
+<p><img src="/uploads/2025/procedural-island-generation-i/chemaguerra-voronoi-centroids.png" alt="Voronoi diagram using centroids" /></p>
 
 <p>Here’s the main takeaway (an animated comparison):</p>
 
-<p><img src="/uploads/2025/voronoi-comparison.gif" alt="Voronoi comparison: circumcenters vs centroids" /></p>
+<p><img src="/uploads/2025/procedural-island-generation-i/chemaguerra-voronoi-comparison.gif" alt="Voronoi comparison: circumcenters vs centroids" /></p>
 
-<p>We will go with centroids (instead of circumcenters) all the way through.</p>
+<p>We will go with centroids (instead of circumcenters) for the rest of the series.</p>
 
 <h2 id="quad-mesh-construction">Quad Mesh Construction</h2>
 
@@ -228,11 +228,11 @@
   <li>The four vertices form a natural quad: red-blue-red-blue</li>
 </ol>
 
-<p><img src="/uploads/2025/chemaguerra-quads-static.png" alt="Quad mesh static view" /></p>
+<p><img src="/uploads/2025/procedural-island-generation-i/chemaguerra-quads-static.png" alt="Quad mesh static view" /></p>
 
-<p><img src="/uploads/2025/chemaguerra-quads-tile.png" alt="Quad mesh detail view" /></p>
+<p><img src="/uploads/2025/procedural-island-generation-i/chemaguerra-quads-tile.png" alt="Quad mesh detail view" /></p>
 
-<p><img src="/uploads/2025/chemaguerra-quad-mesh.gif" alt="Quad mesh with red-blue vertex pattern" /></p>
+<p><img src="/uploads/2025/procedural-island-generation-i/chemaguerra-quad-mesh.gif" alt="Quad mesh with red-blue vertex pattern" /></p>
 
 <p>In the resulting quad mesh:</p>
 <ul>
@@ -267,17 +267,17 @@
 
 <p>These flagged mountain peaks will later serve as local maxima during elevation assignment, with height falloff based on distance. But that’s a topic for Part II.</p>
 
-<p><img src="/uploads/2025/chemaguerra-mountain-peak-separation.gif" alt="Mountain peak points with varying separation radius" /></p>
+<p><img src="/uploads/2025/procedural-island-generation-i/chemaguerra-mountain-peak-separation.gif" alt="Mountain peak points with varying separation radius" /></p>
 
 <p>Above is an animation with varying mountain separation \(R\) over the same set of regular seed points.</p>
 
 <h2 id="next-steps">Next Steps</h2>
 
-<p>This is the distribution (~27000 points) we will be using throughout the rest of the series.</p>
+<p>This is the type of distribution (~27000 points) we will be using throughout the rest of the series.</p>
 
-<p><img src="/uploads/2025/chemaguerra-mountain-seed-points.png" alt="Mountain peak seed points visualization" /></p>
+<p><img src="/uploads/2025/procedural-island-generation-i/chemaguerra-mountain-seed-points.png" alt="Mountain peak seed points visualization" /></p>
 
-<p><img src="/uploads/2025/chemaguerra-seed-points-tile.png" alt="Mountain peak seed points detail view" /></p>
+<p><img src="/uploads/2025/procedural-island-generation-i/chemaguerra-seed-points-tile.png" alt="Mountain peak seed points detail view" /></p>
 
 <p>With our mesh structures in place we have the skeletal framework for our island. Part II will dive into elevation assignment using noise functions, creating realistic height maps that produce convincing mountains, valleys, and coastlines.</p>
 

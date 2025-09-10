@@ -199,22 +199,22 @@
 
 <p>Here’s a simple implementation for the particle state and the simulation step:</p>
 
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>struct particle_t
-{
-  explicit particle_t() : m( 1 ), p( 0 ), v( 0 ) {}
+<div class="language-cpp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">struct</span> <span class="nc">particle_t</span>
+<span class="p">{</span>
+  <span class="k">explicit</span> <span class="n">particle_t</span><span class="p">()</span> <span class="o">:</span> <span class="n">m</span><span class="p">(</span> <span class="mi">1</span> <span class="p">),</span> <span class="n">p</span><span class="p">(</span> <span class="mi">0</span> <span class="p">),</span> <span class="n">v</span><span class="p">(</span> <span class="mi">0</span> <span class="p">)</span> <span class="p">{}</span>
 
-  void step( const f64_t dt, const vec2d_c&amp; F )
-  {
-    const vec2d_c a = ( F / m );
+  <span class="kt">void</span> <span class="nf">step</span><span class="p">(</span> <span class="k">const</span> <span class="n">f64_t</span> <span class="n">dt</span><span class="p">,</span> <span class="k">const</span> <span class="n">vec2d_c</span><span class="o">&amp;</span> <span class="n">F</span> <span class="p">)</span>
+  <span class="p">{</span>
+    <span class="k">const</span> <span class="n">vec2d_c</span> <span class="n">a</span> <span class="o">=</span> <span class="p">(</span> <span class="n">F</span> <span class="o">/</span> <span class="n">m</span> <span class="p">);</span>
 
-    v += ( a * dt );
-    p += ( v * dt );
-  }
+    <span class="n">v</span> <span class="o">+=</span> <span class="p">(</span> <span class="n">a</span> <span class="o">*</span> <span class="n">dt</span> <span class="p">);</span>
+    <span class="n">p</span> <span class="o">+=</span> <span class="p">(</span> <span class="n">v</span> <span class="o">*</span> <span class="n">dt</span> <span class="p">);</span>
+  <span class="p">}</span>
 
-    f64_t m;  // Mass.
-  vec2d_c p;  // Position.
-  vec2d_c v;  // Velocity.
-};
+    <span class="n">f64_t</span> <span class="n">m</span><span class="p">;</span>  <span class="c1">// Mass.</span>
+  <span class="n">vec2d_c</span> <span class="n">p</span><span class="p">;</span>  <span class="c1">// Position.</span>
+  <span class="n">vec2d_c</span> <span class="n">v</span><span class="p">;</span>  <span class="c1">// Velocity.</span>
+<span class="p">};</span>
 </code></pre></div></div>
 
 <p>Here’s a humble animation of the particle in free-fall:</p>

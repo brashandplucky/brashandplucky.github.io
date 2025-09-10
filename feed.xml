@@ -1,14 +1,192 @@
-<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="4.3.2">Jekyll</generator><link href="https://brashandplucky.com/feed.xml" rel="self" type="application/atom+xml" /><link href="https://brashandplucky.com/" rel="alternate" type="text/html" /><updated>2025-09-06T21:27:05+02:00</updated><id>https://brashandplucky.com/feed.xml</id><title type="html">Chema Guerra</title><subtitle>This is a coding blog where I post about the various projects that I am currently working on, both at work, or as an independent researcher. Most content here revolves around computer graphics and physics simulation.</subtitle><entry><title type="html">Procedural Island Generation (I)</title><link href="https://brashandplucky.com/2025/09/07/procedural-island-generation-i.html" rel="alternate" type="text/html" title="Procedural Island Generation (I)" /><published>2025-09-07T00:00:00+02:00</published><updated>2025-09-07T00:00:00+02:00</updated><id>https://brashandplucky.com/2025/09/07/procedural-island-generation-i</id><content type="html" xml:base="https://brashandplucky.com/2025/09/07/procedural-island-generation-i.html"><![CDATA[<p><img src="/uploads/2025/chemaguerra-procedural-island-generation-terrain-mesh.png" alt="Terrain mesh visualization" /></p>
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="4.3.2">Jekyll</generator><link href="https://brashandplucky.com/feed.xml" rel="self" type="application/atom+xml" /><link href="https://brashandplucky.com/" rel="alternate" type="text/html" /><updated>2025-09-10T02:55:31+02:00</updated><id>https://brashandplucky.com/feed.xml</id><title type="html">Chema Guerra</title><subtitle>This is a coding blog where I post about the various projects that I am currently working on, both at work, or as an independent researcher. Most content here revolves around computer graphics and physics simulation.</subtitle><entry><title type="html">Procedural Island Generation (II)</title><link href="https://brashandplucky.com/2025/09/10/procedural-island-generation-ii.html" rel="alternate" type="text/html" title="Procedural Island Generation (II)" /><published>2025-09-10T00:00:00+02:00</published><updated>2025-09-10T00:00:00+02:00</updated><id>https://brashandplucky.com/2025/09/10/procedural-island-generation-ii</id><content type="html" xml:base="https://brashandplucky.com/2025/09/10/procedural-island-generation-ii.html"><![CDATA[<p><img src="/uploads/2025/procedural-island-generation-ii/chemaguerra-paintmap-hero-pixelated.png" alt="Paint map terrain elevation" /></p>
+
+<p>This post is a direct continuation to <a href="/2025/09/07/procedural-island-generation-i.html">Part I</a>, where we established the terrain mesh foundation using Poisson disk sampling and Delaunay/Voronoi structures. Now we’ll breathe life into that skeletal framework by assigning elevations to create realistic terrain.</p>
+
+<p>But how do we go from a flat mesh to believable mountains, valleys, and coastlines? The answer lies in carefully layered noise functions, distance fields, and a clever paint map system that ties everything together.</p>
+
+<h2 id="elevation-color-gradients">Elevation Color Gradients</h2>
+
+<p>Before we delve into elevation itself, we will pick a color gradient to map height values to natural-looking terrain colors. For example, the <a href="https://github.com/redblobgames/mapgen4">mapgen4</a> project this series is a retelling of, uses this color gradient:</p>
+
+<p><img src="/uploads/2025/procedural-island-generation-ii/chemaguerra-gradient-elevation-classic.png" alt="Classic elevation gradient" /></p>
+
+<p><em>Palette used by mapgen4 - Note the double keypoint around 0.5 to differenciate water/ground</em></p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Threshold</th>
+      <th>Color (Hex)</th>
+      <th>Terrain Type</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">0.0</code></td>
+      <td><code class="language-plaintext highlighter-rouge">#1A4D99</code></td>
+      <td>Deep ocean</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">0.495</code></td>
+      <td><code class="language-plaintext highlighter-rouge">#80B3E6</code></td>
+      <td>Shallow water</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">0.5</code></td>
+      <td><code class="language-plaintext highlighter-rouge">#E6E6E6</code></td>
+      <td>Beach sand</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">0.505</code></td>
+      <td><code class="language-plaintext highlighter-rouge">#80CC66</code></td>
+      <td>Lowland grass</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">1.0</code></td>
+      <td><code class="language-plaintext highlighter-rouge">#FFFFFF</code></td>
+      <td>Snow peaks</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>I will be using this more military-looking palette, though.</p>
+
+<p><img src="/uploads/2025/procedural-island-generation-ii/chemaguerra-gradient-elevation-muted.png" alt="Muted elevation gradient" /></p>
+
+<p>For proper color blending, the elevation gradients interpolate in linear space rather than directly in sRGB, ensuring smooth transitions without washed out intermediate colors. Not that it matters that much in this particular case, though.</p>
+
+<p>These elevation gradients are used consistently across all elevation-based visualizations in this series: paint maps, triangle elevation, region elevation, and carved terrain. Compared to raw grayscale heightmaps, they provide better visual separation between land and ocean, making the island’s boundaries and topography immediately clear.</p>
+
+<h2 id="the-paint-map-foundation">The Paint Map Foundation</h2>
+
+<p>Let’s start with the foundation: a low resolution <em>paint map</em> that defines the overall island shape. Think of this as the artist’s initial sketch before adding detail. The term “paint map” comes from mapgen4’s interactive feature where users can literally paint elevation changes to sculpt valleys, mountains, and other terrain features.</p>
+
+<p>Whether or not interactive painting is supported, the paint map needs to be initialized with a procedurally generated island shape. This initialization process is our focus in this post.</p>
+
+<p><img src="/uploads/2025/procedural-island-generation-ii/chemaguerra-final-paint-map.png" alt="Paint map showing island shape" /></p>
+
+<p>The paint map uses a simple elevation encoding:</p>
+<ul>
+  <li><strong>-1</strong>: Deep ocean (dark blue)</li>
+  <li><strong>0</strong>: Sea level (the coastline)</li>
+  <li><strong>+1</strong>: Mountain peaks (white)</li>
+</ul>
+
+<p><a href="https://github.com/redblobgames/mapgen4">@redblobgames</a> uses a 128x128 grid in mapgen4, but the actual resolution is not relevant. The idea is to have a coarse approximation to what the island elevation will look like all around. For continent-sized terrains for example you might want to use a larger grid and many more seed points. But for islands like the ones covered in this series, 128x128 will do.</p>
+
+<h3 id="base-terrain-generation">Base Terrain Generation</h3>
+
+<p>The foundation of our terrain starts with just two components: a distance-based shape, and fractal Brownian motion (fBm) for organic variation.</p>
+
+<p><img src="/uploads/2025/procedural-island-generation-ii/chemaguerra-distance-field.png" alt="Distance field" /></p>
+
+<p><em>Distance field (d) - Chebyshev distance from center, creating a square falloff</em></p>
+
+<p><img src="/uploads/2025/procedural-island-generation-ii/chemaguerra-fbm-noise.png" alt="fBm noise" /></p>
+
+<p><em>Fractal Brownian motion (fBm) - Simplex noise (octaves=5, persistence=0.5) for organic terrain variation</em></p>
+
+<p>These two components combine according to this base elevation formula:</p>
+
+\[e = \frac{k_{fBm} \cdot \text{fBm} + k_d \cdot (0.75 - 2 \cdot d^2)}{2}\]
+
+<p>This formula creates a pyramid shape (highest at center, lowest at edges) and then adds noise to roughen its surface. Values above zero become land, while values below zero become water.</p>
+
+<p>The specific coefficients and noise functions aren’t critical. Any combination of a distance field and noise will produce island-resembling terrain.</p>
+
+<h3 id="interactive-parameter-exploration">Interactive Parameter Exploration</h3>
+
+<p>To understand how the base parameters affect terrain generation, here are animations varying each component:</p>
+
+<p><img src="/uploads/2025/procedural-island-generation-ii/chemaguerra-animation_fbm_amplitude.gif" alt="fBm amplitude animation" /></p>
+
+<p><em>k_fBm varying from 0 to 1 - Controls the influence of fractal noise</em></p>
+
+<p><img src="/uploads/2025/procedural-island-generation-ii/chemaguerra-animation_island_influence.gif" alt="Island influence animation" /></p>
+
+<p><em>k_d varying from 0 to 1 - Controls the influence of the distance falloff</em></p>
+
+<p>\(k_{fBm} = 1.0\) and \(k_d = 0.7\) are reasonable defaults.</p>
+
+<h2 id="mountain-ridges">Mountain Ridges</h2>
+
+<p>While fBm and distance create the base terrain, mountain ridges add dramatic peaks and valleys to land areas.</p>
+
+<h3 id="ridge-pattern-decomposition">Ridge Pattern Decomposition</h3>
+
+<p><img src="/uploads/2025/procedural-island-generation-ii/chemaguerra-ridge-pattern.png" alt="Ridge pattern" /></p>
+
+<p><em>Ridge pattern (r) - The underlying ridge noise pattern computed globally</em></p>
+
+<p><img src="/uploads/2025/procedural-island-generation-ii/chemaguerra-land-mask.png" alt="Land mask" /></p>
+
+<p><em>Land mask (e&gt;0) - Binary mask distinguishing land (white) from water (black)</em></p>
+
+<p><img src="/uploads/2025/procedural-island-generation-ii/chemaguerra-land-strength.png" alt="Land strength" /></p>
+
+<p><em>Land strength (s) - Elevation-based multiplier (0 for water, up to 1 for peaks)</em></p>
+
+<p><img src="/uploads/2025/procedural-island-generation-ii/chemaguerra-mountain-ridges.png" alt="Mountain ridges result" /></p>
+
+<p><em>Mountain ridges (m) - Final result: land strength × ridge pattern</em></p>
+
+<p>The ridge system in mapgen4 works as follows:</p>
+
+\[R = \text{noise}_1 + \text{noise}_2, \quad R \in [-2, 2]\]
+
+\[r = \max(0, 1 - \lvert R \rvert)\]
+
+\[s = \text{saturate}(5e)\]
+
+\[m = s \cdot r\]
+
+\[e_{final} = \max(e, \min(3e, m))\]
+
+<p>The ridge pattern combines two octaves from differently-seeded noise functions. The \(1 - \lvert R \rvert\) transformation creates the characteristic worm-like ridge appearance - any similar function that emphasizes values near zero would work equally well.</p>
+
+<p>The strength multiplier \(s\) ensures ridges fade naturally at coastlines and intensify at higher elevations, confining mountain formation to land areas while scaling with terrain height.</p>
+
+<h3 id="ridge-influence-animation">Ridge Influence Animation</h3>
+
+<p><img src="/uploads/2025/procedural-island-generation-ii/chemaguerra-animation_ridge_influence.gif" alt="Ridge influence animation" /></p>
+
+<p><em>Ridge influence varying from 0 to 1: controls how strongly ridges modify the base terrain</em></p>
+
+<h2 id="final-composite">Final Composite</h2>
+
+<p><img src="/uploads/2025/procedural-island-generation-ii/chemaguerra-final-paint-map.png" alt="Final composite" /></p>
+
+<p><em>128×128 paint map - raw visualization</em></p>
+
+\[e_{final} = e + r_{final}\]
+
+<p>Although the paint map operates at low resolution (128×128), the implementation supports sampling at any floating-point coordinate within the unit square through bilinear interpolation, providing smooth transitions between grid points.</p>
+
+<p><img src="/uploads/2025/procedural-island-generation-ii/chemaguerra-final-paint-map-512.png" alt="Final bilinear sampled" /></p>
+
+<p><em>128×128 paint map - bilinearly sampled in the unit square domain</em></p>
+
+<h2 id="next-steps">Next Steps</h2>
+
+<p>We’ve established the paint map foundation with fBm noise, island shape constraints, and mountain ridge patterns. This 128×128 grid provides the broad strokes of our terrain. Part III will add the fine details: multi-scale noise layers, distance-based mountain peaks, and sophisticated elevation blending that brings the terrain to life.</p>
+
+<h2 id="valuable-resources">Valuable Resources</h2>
+
+<ul>
+  <li><a href="https://thebookofshaders.com/13/">Fractal Brownian Motion</a> - The Book of Shaders FBM tutorial</li>
+  <li><a href="https://www.redblobgames.com/maps/terrain-from-noise/">Terrain from Noise</a> - Red Blob Games elevation techniques</li>
+  <li><a href="https://www.redblobgames.com/maps/terrain-from-noise/#elevation">Amit Patel’s Map Generation</a> - Paint map concepts</li>
+</ul>]]></content><author><name>Chema Guerra</name></author><category term="graphics" /><category term="procedural" /><category term="procedural" /><category term="terrain" /><category term="elevation" /><category term="noise" /><category term="paintmap" /><category term="fBm" /><summary type="html"><![CDATA[]]></summary><media:thumbnail xmlns:media="http://search.yahoo.com/mrss/" url="https://brashandplucky.com/thumbnails/2025/chemaguerra-procedural-island-generation-ii.png" /><media:content medium="image" url="https://brashandplucky.com/thumbnails/2025/chemaguerra-procedural-island-generation-ii.png" xmlns:media="http://search.yahoo.com/mrss/" /></entry><entry><title type="html">Procedural Island Generation (I)</title><link href="https://brashandplucky.com/2025/09/07/procedural-island-generation-i.html" rel="alternate" type="text/html" title="Procedural Island Generation (I)" /><published>2025-09-07T00:00:00+02:00</published><updated>2025-09-07T00:00:00+02:00</updated><id>https://brashandplucky.com/2025/09/07/procedural-island-generation-i</id><content type="html" xml:base="https://brashandplucky.com/2025/09/07/procedural-island-generation-i.html"><![CDATA[<p><img src="/uploads/2025/procedural-island-generation-i/chemaguerra-procedural-island-generation-terrain-mesh.png" alt="Terrain mesh visualization" /></p>
 
 <p>This post marks the beginning of a series on procedural island generation. I recently fell in love with <a href="https://twitter.com/redblobgames">Amit Patel’s</a> brilliant <a href="http://www-cs-students.stanford.edu/~amitp/game-programming/polygon-map-generation/">polygon map generation</a> articles, and this series will be my own exploration and interpretation of those techniques.</p>
 
-<p>This series assumes familiarity with computational geometry and procedural generation concepts such as Delaunay triangulation, Voronoi diagrams, Simplex noise, etc…</p>
+<p>This series assumes familiarity with computational geometry and procedural generation concepts such as Delaunay triangulation, Voronoi diagrams, FBM, etc…</p>
 
 <p>To challenge myself (I’m usually a C/C++ person), I decided to implement this in Rust. But I will barely delve into implementation details though. This series will focus on the algorithm itself, with neat (hopefully!) visualizations of the intermediate calculations.</p>
 
 <h2 id="motivation">Motivation</h2>
 
-<p>The main reason why I am tinkering with terrain generation now is <strong>Strike Back</strong>, the <a href="https://x.com/topotoylabs/status/1750315804170612745">flight sim I’ve been developing on and off</a>. I will be using this algorithm as a foundation to create battle arenas, and plan to extend it eventually.</p>
+<p>The main reason why I am tinkering with terrain generation now is <strong>Strike Back</strong>, the <a href="https://x.com/topotoylabs/status/1750315804170612745">flight sim I’ve been developing on and off</a>. I will be using this algorithm as a foundation to create battle arenas which I plan to extend eventually.</p>
 
 <h3 id="working-domain">Working Domain</h3>
 
@@ -41,13 +219,13 @@
   <li>\(k\): number of candidates to try before rejection (typically 30)</li>
 </ul>
 
-<p>The algorithm maintains an “active list” of points that might still have valid neighbors. When a point fails to produce valid candidates after \(k\) attempts, it’s removed from the active list.</p>
+<p>The algorithm maintains an “active list” of points that might still have valid neighbors. When a point fails to produce valid candidates after \(k\) attempts, it is removed from the active list.</p>
 
 <p>Spatial indexing is crucial for efficient nearest-neighbor queries in Bridson’s algorithm. A simple grid works well: divide space into cells of size \(r/\sqrt{2}\), ensuring at most one point per cell for \(O(1)\) lookups.</p>
 
 <p>Below is an auxiliary visualization animation I wrote in Python:</p>
 
-<p><img src="/uploads/2025/chemaguerra-bridson-algorithm.gif" alt="Bridson's algorithm in action" /></p>
+<p><img src="/uploads/2025/procedural-island-generation-i/chemaguerra-bridson-algorithm.gif" alt="Bridson's algorithm in action" /></p>
 
 <h3 id="lloyds-relaxation">Lloyd’s Relaxation</h3>
 
@@ -67,7 +245,7 @@
 
 <p>Below is another animation I made in Python:</p>
 
-<p><img src="/uploads/2025/chemaguerra-lloyd-relaxation.gif" alt="Lloyd's relaxation with Voronoi cells visible" /></p>
+<p><img src="/uploads/2025/procedural-island-generation-i/chemaguerra-lloyd-relaxation.gif" alt="Lloyd's relaxation with Voronoi cells visible" /></p>
 
 <p>Lloyd’s relaxation is computationally expensive and produces overly regular distributions that can look artificial for terrain. Bridson strikes a better balance: it’s fast and maintains the organic irregularity we want.</p>
 
@@ -77,7 +255,7 @@
 
 <p>This approach ensures full coverage with well-behaved triangles at the edges for Delaunay triangulation and simplifies handling of unbounded Voronoi regions.</p>
 
-<p><img src="/uploads/2025/chemaguerra-bridson-separation.gif" alt="Point separation constraint during generation" /></p>
+<p><img src="/uploads/2025/procedural-island-generation-i/chemaguerra-bridson-separation.gif" alt="Point separation constraint during generation" /></p>
 
 <p>In the animation above, working with a unit square domain and \(r = \frac{1}{200}\), we’d theoretically fit up to \(\left(\frac{1}{r}\right)^2 = 200^2 = 40000\) points in a perfect grid. But Poisson disk sampling produces a looser packing. With the annulus radius range \([r, 2r]\) and rejection sampling, we get ~27000 points in practice, about 68% of the theoretical maximum.</p>
 
@@ -87,11 +265,11 @@
 
 <p>In the visualizations throughout this post, red dots will represent seed points (Delaunay vertices), while blue dots will represent Voronoi vertices (corresponding to Delaunay triangle centers).</p>
 
-<p><img src="/uploads/2025/chemaguerra-delaunay-static.png" alt="Delaunay triangulation static view" /></p>
+<p><img src="/uploads/2025/procedural-island-generation-i/chemaguerra-delaunay-static.png" alt="Delaunay triangulation static view" /></p>
 
-<p><img src="/uploads/2025/chemaguerra-delaunay-tile.png" alt="Delaunay triangulation detail view" /></p>
+<p><img src="/uploads/2025/procedural-island-generation-i/chemaguerra-delaunay-tile.png" alt="Delaunay triangulation detail view" /></p>
 
-<p><img src="/uploads/2025/chemaguerra-delaunay-mesh.gif" alt="Delaunay triangulation mesh" /></p>
+<p><img src="/uploads/2025/procedural-island-generation-i/chemaguerra-delaunay-mesh.gif" alt="Delaunay triangulation mesh" /></p>
 
 <p>For the implementation, I went with Rust’s <code class="language-plaintext highlighter-rouge">delaunator</code> crate. It’s a robust, battle-tested port of the JavaScript library of the same name, implementing a fast sweep-line algorithm that runs in \(O(n \log n)\) time. The cyclic animation is just the same code but decreasing/increasing \(r\) (more/fewer points).</p>
 
@@ -99,13 +277,13 @@
 
 <p>The Voronoi diagram is the dual of the Delaunay triangulation. Each Delaunay triangle vertex becomes a Voronoi cell, and each Delaunay edge corresponds to a Voronoi edge. For terrain generation, Voronoi cells are a staple: they define convex-shaped regions around each seed point, perfect for assigning terrain properties like elevation, moisture, and biome types.</p>
 
-<p><img src="/uploads/2025/chemaguerra-voronoi-full.png" alt="Voronoi cells full view" /></p>
+<p><img src="/uploads/2025/procedural-island-generation-i/chemaguerra-voronoi-full.png" alt="Voronoi cells full view" /></p>
 
-<p><img src="/uploads/2025/chemaguerra-voronoi-circumcenters-tile.png" alt="Voronoi with circumcenters detail view" /></p>
+<p><img src="/uploads/2025/procedural-island-generation-i/chemaguerra-voronoi-circumcenters-tile.png" alt="Voronoi with circumcenters detail view" /></p>
 
-<p><img src="/uploads/2025/chemaguerra-voronoi-cells.gif" alt="Voronoi cells diagram" /></p>
+<p><img src="/uploads/2025/procedural-island-generation-i/chemaguerra-voronoi-cells.gif" alt="Voronoi cells diagram" /></p>
 
-<p>Rather than using an off-the-shelf solution, I built the dual construction using my topology library <strong>Topokit</strong>, recently ported to Rust. The half-edge (DCEL) data structure I have there makes it trivial to traverse neighbors, and maintain the topological relationships we need for terrain generation. Topokit also handles serialization, relaxation, LOD subdivision, and other features I’ll tap into later.</p>
+<p>Rather than using an off-the-shelf solution, I built the dual construction using my topology library <strong>TopoKit</strong>, recently ported to Rust. The half-edge (DCEL) data structure I have there makes it trivial to traverse neighbors, and maintain the topological relationships we need for terrain generation. TopoKit also handles serialization, relaxation, LOD subdivision, and other features I’ll tap into later.</p>
 
 <h2 id="circumcenters-vs-centroids">Circumcenters vs. Centroids</h2>
 
@@ -113,13 +291,13 @@
 
 <p>A clever trick I learned from <a href="https://twitter.com/redblobgames">@redblobgames</a> is using triangle centroids instead of circumcenters for Voronoi vertices. This simple change produces smoother, more bubble-like regions with gentler transitions between cells. These softer angles are ideal for terrain generation, and the computation is actually simpler.</p>
 
-<p><img src="/uploads/2025/chemaguerra-voronoi-centroids.png" alt="Voronoi diagram using centroids" /></p>
+<p><img src="/uploads/2025/procedural-island-generation-i/chemaguerra-voronoi-centroids.png" alt="Voronoi diagram using centroids" /></p>
 
 <p>Here’s the main takeaway (an animated comparison):</p>
 
-<p><img src="/uploads/2025/voronoi-comparison.gif" alt="Voronoi comparison: circumcenters vs centroids" /></p>
+<p><img src="/uploads/2025/procedural-island-generation-i/chemaguerra-voronoi-comparison.gif" alt="Voronoi comparison: circumcenters vs centroids" /></p>
 
-<p>We will go with centroids (instead of circumcenters) all the way through.</p>
+<p>We will go with centroids (instead of circumcenters) for the rest of the series.</p>
 
 <h2 id="quad-mesh-construction">Quad Mesh Construction</h2>
 
@@ -141,11 +319,11 @@
   <li>The four vertices form a natural quad: red-blue-red-blue</li>
 </ol>
 
-<p><img src="/uploads/2025/chemaguerra-quads-static.png" alt="Quad mesh static view" /></p>
+<p><img src="/uploads/2025/procedural-island-generation-i/chemaguerra-quads-static.png" alt="Quad mesh static view" /></p>
 
-<p><img src="/uploads/2025/chemaguerra-quads-tile.png" alt="Quad mesh detail view" /></p>
+<p><img src="/uploads/2025/procedural-island-generation-i/chemaguerra-quads-tile.png" alt="Quad mesh detail view" /></p>
 
-<p><img src="/uploads/2025/chemaguerra-quad-mesh.gif" alt="Quad mesh with red-blue vertex pattern" /></p>
+<p><img src="/uploads/2025/procedural-island-generation-i/chemaguerra-quad-mesh.gif" alt="Quad mesh with red-blue vertex pattern" /></p>
 
 <p>In the resulting quad mesh:</p>
 <ul>
@@ -180,17 +358,17 @@
 
 <p>These flagged mountain peaks will later serve as local maxima during elevation assignment, with height falloff based on distance. But that’s a topic for Part II.</p>
 
-<p><img src="/uploads/2025/chemaguerra-mountain-peak-separation.gif" alt="Mountain peak points with varying separation radius" /></p>
+<p><img src="/uploads/2025/procedural-island-generation-i/chemaguerra-mountain-peak-separation.gif" alt="Mountain peak points with varying separation radius" /></p>
 
 <p>Above is an animation with varying mountain separation \(R\) over the same set of regular seed points.</p>
 
 <h2 id="next-steps">Next Steps</h2>
 
-<p>This is the distribution (~27000 points) we will be using throughout the rest of the series.</p>
+<p>This is the type of distribution (~27000 points) we will be using throughout the rest of the series.</p>
 
-<p><img src="/uploads/2025/chemaguerra-mountain-seed-points.png" alt="Mountain peak seed points visualization" /></p>
+<p><img src="/uploads/2025/procedural-island-generation-i/chemaguerra-mountain-seed-points.png" alt="Mountain peak seed points visualization" /></p>
 
-<p><img src="/uploads/2025/chemaguerra-seed-points-tile.png" alt="Mountain peak seed points detail view" /></p>
+<p><img src="/uploads/2025/procedural-island-generation-i/chemaguerra-seed-points-tile.png" alt="Mountain peak seed points detail view" /></p>
 
 <p>With our mesh structures in place we have the skeletal framework for our island. Part II will dive into elevation assignment using noise functions, creating realistic height maps that produce convincing mountains, valleys, and coastlines.</p>
 
@@ -200,7 +378,7 @@
   <li><a href="http://www-cs-students.stanford.edu/~amitp/game-programming/polygon-map-generation/">Amit Patel’s Polygon Map Generation</a> - The inspiration for this series</li>
   <li><a href="https://www.cs.ubc.ca/~rbridson/docs/bridson-siggraph07-poissondisk.pdf">Bridson’s Original Paper</a> - Fast Poisson disk sampling</li>
   <li><a href="https://en.wikipedia.org/wiki/Lloyd%27s_algorithm">Lloyd’s Algorithm</a> - The mathematical foundation</li>
-</ul>]]></content><author><name>Chema Guerra</name></author><category term="graphics" /><category term="procedural" /><category term="procedural" /><category term="terrain" /><category term="voronoi" /><category term="delaunay" /><category term="rust" /><category term="computationalgeometry" /><category term="bluenoise" /><summary type="html"><![CDATA[This post marks the beginning of a series on procedural island generation. I recently fell in love with Amit Patel’s brilliant polygon map generation articles, and this series will be my own exploration and interpretation of those techniques. This series assumes familiarity with computational geometry and procedural generation concepts such as Delaunay triangulation, Voronoi diagrams, Simplex noise, etc… To challenge myself (I’m usually a C/C++ person), I decided to implement this in Rust. But I will barely delve into implementation details though. This series will focus on the algorithm itself, with neat (hopefully!) visualizations of the intermediate calculations. Motivation The main reason why I am tinkering with terrain generation now is Strike Back, the flight sim I’ve been developing on and off. I will be using this algorithm as a foundation to create battle arenas, and plan to extend it eventually. Working Domain Procedural terrain generation offers infinite variety from finite code. But islands make particularly interesting subjects because they’re self-contained worlds with natural boundaries. The polygon-based approach we’ll explore provides a nice balance between organic appearance and computational tractability. We’ll work in a regular grid within a unit square domain. While regular grids are the classic approach for terrain generation (much simpler implementation, no topological headaches), irregular grids produce far more organic-looking geometry. That’s what we’re after. Irregular grids have been having a moment lately, BTW. Especially since Townscaper captured everyone’s imagination. Seed Point Generation The foundation of an organic-looking terrain mesh is the distribution of its vertices. Random point placement leads to ugly, irregular triangulation. We need something better. Ideally, we need points that are random yet evenly spaced. This is where blue noise comes in. Blue Noise and Poisson Disk Sampling Blue noise distributions have a specific property: points maintain a minimum distance from each other whilst filling space uniformly. No clumping, no voids. The spectrum of blue noise is weighted toward higher frequencies, which translates visually to pleasant, nature-resembling distributions. Bridson’s algorithm for Poisson disk sampling is elegantly simple: Start with a random initial point Generate candidate points in an annulus around existing points Accept candidates that are far enough from all existing points Repeat until no valid candidates remain The key parameters are: \(r\): minimum distance acceptable between points \(k\): number of candidates to try before rejection (typically 30) The algorithm maintains an “active list” of points that might still have valid neighbors. When a point fails to produce valid candidates after \(k\) attempts, it’s removed from the active list. Spatial indexing is crucial for efficient nearest-neighbor queries in Bridson’s algorithm. A simple grid works well: divide space into cells of size \(r/\sqrt{2}\), ensuring at most one point per cell for \(O(1)\) lookups. Below is an auxiliary visualization animation I wrote in Python: Lloyd’s Relaxation There are different families of algorithms for blue noise generation. Dart-throwing methods, void-and-cluster, Fourier-based methods, relaxation methods, … While we will stick to Bridson’s algorithm as described above, I am fond of Lloyd’s relaxation (also known as Voronoi iteration). And because we will be working with the Voronoi diagram later I thought it would be worth mentioning. The process is beautifully simple: Start with any set of random points. Compute the Voronoi diagram for current points Move each point to the centroid of its Voronoi cell Repeat until convergence This iterative process naturally evolves toward a hexagonal-dominant grid; the most efficient packing in 2D. Below is another animation I made in Python: Lloyd’s relaxation is computationally expensive and produces overly regular distributions that can look artificial for terrain. Bridson strikes a better balance: it’s fast and maintains the organic irregularity we want. Boundary Treatment Instead of letting Poisson disk sampling run across the entire domain, I restrict it to a shrunk area, leaving a gap of radius \(r\) around the edges. Then I add two rings of evenly-spaced points: one at the boundary itself (green), and another ring \(r\) units outside the domain (red). This approach ensures full coverage with well-behaved triangles at the edges for Delaunay triangulation and simplifies handling of unbounded Voronoi regions. In the animation above, working with a unit square domain and \(r = \frac{1}{200}\), we’d theoretically fit up to \(\left(\frac{1}{r}\right)^2 = 200^2 = 40000\) points in a perfect grid. But Poisson disk sampling produces a looser packing. With the annulus radius range \([r, 2r]\) and rejection sampling, we get ~27000 points in practice, about 68% of the theoretical maximum. Delaunay Triangulation With our well-distributed seed points, we need to create a mesh. Delaunay triangulation is the go-to choice for terrain generation because it maximizes the minimum angle of all triangles, avoiding skinny, degenerate triangles that cause numerical and visual issues. In the visualizations throughout this post, red dots will represent seed points (Delaunay vertices), while blue dots will represent Voronoi vertices (corresponding to Delaunay triangle centers). For the implementation, I went with Rust’s delaunator crate. It’s a robust, battle-tested port of the JavaScript library of the same name, implementing a fast sweep-line algorithm that runs in \(O(n \log n)\) time. The cyclic animation is just the same code but decreasing/increasing \(r\) (more/fewer points). Voronoi Diagram The Voronoi diagram is the dual of the Delaunay triangulation. Each Delaunay triangle vertex becomes a Voronoi cell, and each Delaunay edge corresponds to a Voronoi edge. For terrain generation, Voronoi cells are a staple: they define convex-shaped regions around each seed point, perfect for assigning terrain properties like elevation, moisture, and biome types. Rather than using an off-the-shelf solution, I built the dual construction using my topology library Topokit, recently ported to Rust. The half-edge (DCEL) data structure I have there makes it trivial to traverse neighbors, and maintain the topological relationships we need for terrain generation. Topokit also handles serialization, relaxation, LOD subdivision, and other features I’ll tap into later. Circumcenters vs. Centroids The classical Voronoi diagram uses triangle circumcenters as Voronoi vertices. The circumcenter is equidistant from all three triangle vertices, making it the natural meeting point of three Voronoi cells. However the circumcenter potentially lies outside its triangle if it is obtuse enough. For very flat triangles near boundaries, circumcenters can be far from their triangles, sometimes even outside the domain entirely. A clever trick I learned from @redblobgames is using triangle centroids instead of circumcenters for Voronoi vertices. This simple change produces smoother, more bubble-like regions with gentler transitions between cells. These softer angles are ideal for terrain generation, and the computation is actually simpler. Here’s the main takeaway (an animated comparison): We will go with centroids (instead of circumcenters) all the way through. Quad Mesh Construction So we have: Red vertices: Original seed points (Delaunay vertices) Blue vertices: Voronoi vertices (triangle centers) Both vertex sets contribute to the final terrain mesh. Throughout this series, we’ll compute attributes like elevation for both red and blue vertices, then triangulate the combined point set to generate the final terrain geometry. The Red-Blue Pattern A natural way to combine both the Delaunay and Voronoi meshes is to form quads by each red-blue-red-blue cycle, traversing around shared edges: Start with a Delaunay edge connecting two red vertices This edge is dual to a Voronoi edge connecting two blue vertices The four vertices form a natural quad: red-blue-red-blue In the resulting quad mesh: Red vertices have high valence (many incident edges) Blue vertices typically have valence 3 (from triangle origins) Edge flow follows a characteristic diamond pattern Mountain Peak Seed Points To generate realistic terrain with well-placed mountain peaks, we must flag a special subset of seed points that will become elevation maxima. This two-scale approach ensures mountains maintain natural spacing while aligning perfectly with our existing mesh vertices. The process leverages a second Bridson’s algorithm run with a much larger radius, typically 4-16 times the original \(r\). This coarse distribution determines where mountain peaks should roughly appear, ensuring they maintain natural spacing across the terrain. Here’s the algorithm: Build a kD-tree from the fine-grain seed points for efficient nearest-neighbor queries Run Bridson’s algorithm with radius \(R \gg r\) to get coarse peak candidates For each coarse candidate, find its nearest neighbor in the fine distribution Flag these nearest neighbors as mountain peak seeds Spacial hashing (the kD-tree in my case) is crucial here for performance. With thousands of seed points, nearest-neighbor search would be prohibitively slow otherwise. This approach has several advantages: Natural spacing: Mountains won’t cluster unnaturally or leave large empty regions Mesh alignment: Peak points are actual mesh vertices, not interpolated positions Controllable density: Adjusting \(R\) directly controls mountain frequency Reproducible: Given the same random seed, peak placement is deterministic These flagged mountain peaks will later serve as local maxima during elevation assignment, with height falloff based on distance. But that’s a topic for Part II. Above is an animation with varying mountain separation \(R\) over the same set of regular seed points. Next Steps This is the distribution (~27000 points) we will be using throughout the rest of the series. With our mesh structures in place we have the skeletal framework for our island. Part II will dive into elevation assignment using noise functions, creating realistic height maps that produce convincing mountains, valleys, and coastlines. Resources Amit Patel’s Polygon Map Generation - The inspiration for this series Bridson’s Original Paper - Fast Poisson disk sampling Lloyd’s Algorithm - The mathematical foundation]]></summary><media:thumbnail xmlns:media="http://search.yahoo.com/mrss/" url="https://brashandplucky.com/thumbnails/2025/chemaguerra-procedural-island-generation-i.png" /><media:content medium="image" url="https://brashandplucky.com/thumbnails/2025/chemaguerra-procedural-island-generation-i.png" xmlns:media="http://search.yahoo.com/mrss/" /></entry><entry><title type="html">Spherical Harmonics</title><link href="https://brashandplucky.com/2025/08/25/spherical-harmonics.html" rel="alternate" type="text/html" title="Spherical Harmonics" /><published>2025-08-25T10:00:00+02:00</published><updated>2025-08-25T10:00:00+02:00</updated><id>https://brashandplucky.com/2025/08/25/spherical-harmonics</id><content type="html" xml:base="https://brashandplucky.com/2025/08/25/spherical-harmonics.html"><![CDATA[<blockquote>
+</ul>]]></content><author><name>Chema Guerra</name></author><category term="graphics" /><category term="procedural" /><category term="procedural" /><category term="terrain" /><category term="voronoi" /><category term="delaunay" /><category term="computationalgeometry" /><category term="bluenoise" /><summary type="html"><![CDATA[This post marks the beginning of a series on procedural island generation. I recently fell in love with Amit Patel’s brilliant polygon map generation articles, and this series will be my own exploration and interpretation of those techniques. This series assumes familiarity with computational geometry and procedural generation concepts such as Delaunay triangulation, Voronoi diagrams, FBM, etc… To challenge myself (I’m usually a C/C++ person), I decided to implement this in Rust. But I will barely delve into implementation details though. This series will focus on the algorithm itself, with neat (hopefully!) visualizations of the intermediate calculations. Motivation The main reason why I am tinkering with terrain generation now is Strike Back, the flight sim I’ve been developing on and off. I will be using this algorithm as a foundation to create battle arenas which I plan to extend eventually. Working Domain Procedural terrain generation offers infinite variety from finite code. But islands make particularly interesting subjects because they’re self-contained worlds with natural boundaries. The polygon-based approach we’ll explore provides a nice balance between organic appearance and computational tractability. We’ll work in a regular grid within a unit square domain. While regular grids are the classic approach for terrain generation (much simpler implementation, no topological headaches), irregular grids produce far more organic-looking geometry. That’s what we’re after. Irregular grids have been having a moment lately, BTW. Especially since Townscaper captured everyone’s imagination. Seed Point Generation The foundation of an organic-looking terrain mesh is the distribution of its vertices. Random point placement leads to ugly, irregular triangulation. We need something better. Ideally, we need points that are random yet evenly spaced. This is where blue noise comes in. Blue Noise and Poisson Disk Sampling Blue noise distributions have a specific property: points maintain a minimum distance from each other whilst filling space uniformly. No clumping, no voids. The spectrum of blue noise is weighted toward higher frequencies, which translates visually to pleasant, nature-resembling distributions. Bridson’s algorithm for Poisson disk sampling is elegantly simple: Start with a random initial point Generate candidate points in an annulus around existing points Accept candidates that are far enough from all existing points Repeat until no valid candidates remain The key parameters are: \(r\): minimum distance acceptable between points \(k\): number of candidates to try before rejection (typically 30) The algorithm maintains an “active list” of points that might still have valid neighbors. When a point fails to produce valid candidates after \(k\) attempts, it is removed from the active list. Spatial indexing is crucial for efficient nearest-neighbor queries in Bridson’s algorithm. A simple grid works well: divide space into cells of size \(r/\sqrt{2}\), ensuring at most one point per cell for \(O(1)\) lookups. Below is an auxiliary visualization animation I wrote in Python: Lloyd’s Relaxation There are different families of algorithms for blue noise generation. Dart-throwing methods, void-and-cluster, Fourier-based methods, relaxation methods, … While we will stick to Bridson’s algorithm as described above, I am fond of Lloyd’s relaxation (also known as Voronoi iteration). And because we will be working with the Voronoi diagram later I thought it would be worth mentioning. The process is beautifully simple: Start with any set of random points. Compute the Voronoi diagram for current points Move each point to the centroid of its Voronoi cell Repeat until convergence This iterative process naturally evolves toward a hexagonal-dominant grid; the most efficient packing in 2D. Below is another animation I made in Python: Lloyd’s relaxation is computationally expensive and produces overly regular distributions that can look artificial for terrain. Bridson strikes a better balance: it’s fast and maintains the organic irregularity we want. Boundary Treatment Instead of letting Poisson disk sampling run across the entire domain, I restrict it to a shrunk area, leaving a gap of radius \(r\) around the edges. Then I add two rings of evenly-spaced points: one at the boundary itself (green), and another ring \(r\) units outside the domain (red). This approach ensures full coverage with well-behaved triangles at the edges for Delaunay triangulation and simplifies handling of unbounded Voronoi regions. In the animation above, working with a unit square domain and \(r = \frac{1}{200}\), we’d theoretically fit up to \(\left(\frac{1}{r}\right)^2 = 200^2 = 40000\) points in a perfect grid. But Poisson disk sampling produces a looser packing. With the annulus radius range \([r, 2r]\) and rejection sampling, we get ~27000 points in practice, about 68% of the theoretical maximum. Delaunay Triangulation With our well-distributed seed points, we need to create a mesh. Delaunay triangulation is the go-to choice for terrain generation because it maximizes the minimum angle of all triangles, avoiding skinny, degenerate triangles that cause numerical and visual issues. In the visualizations throughout this post, red dots will represent seed points (Delaunay vertices), while blue dots will represent Voronoi vertices (corresponding to Delaunay triangle centers). For the implementation, I went with Rust’s delaunator crate. It’s a robust, battle-tested port of the JavaScript library of the same name, implementing a fast sweep-line algorithm that runs in \(O(n \log n)\) time. The cyclic animation is just the same code but decreasing/increasing \(r\) (more/fewer points). Voronoi Diagram The Voronoi diagram is the dual of the Delaunay triangulation. Each Delaunay triangle vertex becomes a Voronoi cell, and each Delaunay edge corresponds to a Voronoi edge. For terrain generation, Voronoi cells are a staple: they define convex-shaped regions around each seed point, perfect for assigning terrain properties like elevation, moisture, and biome types. Rather than using an off-the-shelf solution, I built the dual construction using my topology library TopoKit, recently ported to Rust. The half-edge (DCEL) data structure I have there makes it trivial to traverse neighbors, and maintain the topological relationships we need for terrain generation. TopoKit also handles serialization, relaxation, LOD subdivision, and other features I’ll tap into later. Circumcenters vs. Centroids The classical Voronoi diagram uses triangle circumcenters as Voronoi vertices. The circumcenter is equidistant from all three triangle vertices, making it the natural meeting point of three Voronoi cells. However the circumcenter potentially lies outside its triangle if it is obtuse enough. For very flat triangles near boundaries, circumcenters can be far from their triangles, sometimes even outside the domain entirely. A clever trick I learned from @redblobgames is using triangle centroids instead of circumcenters for Voronoi vertices. This simple change produces smoother, more bubble-like regions with gentler transitions between cells. These softer angles are ideal for terrain generation, and the computation is actually simpler. Here’s the main takeaway (an animated comparison): We will go with centroids (instead of circumcenters) for the rest of the series. Quad Mesh Construction So we have: Red vertices: Original seed points (Delaunay vertices) Blue vertices: Voronoi vertices (triangle centers) Both vertex sets contribute to the final terrain mesh. Throughout this series, we’ll compute attributes like elevation for both red and blue vertices, then triangulate the combined point set to generate the final terrain geometry. The Red-Blue Pattern A natural way to combine both the Delaunay and Voronoi meshes is to form quads by each red-blue-red-blue cycle, traversing around shared edges: Start with a Delaunay edge connecting two red vertices This edge is dual to a Voronoi edge connecting two blue vertices The four vertices form a natural quad: red-blue-red-blue In the resulting quad mesh: Red vertices have high valence (many incident edges) Blue vertices typically have valence 3 (from triangle origins) Edge flow follows a characteristic diamond pattern Mountain Peak Seed Points To generate realistic terrain with well-placed mountain peaks, we must flag a special subset of seed points that will become elevation maxima. This two-scale approach ensures mountains maintain natural spacing while aligning perfectly with our existing mesh vertices. The process leverages a second Bridson’s algorithm run with a much larger radius, typically 4-16 times the original \(r\). This coarse distribution determines where mountain peaks should roughly appear, ensuring they maintain natural spacing across the terrain. Here’s the algorithm: Build a kD-tree from the fine-grain seed points for efficient nearest-neighbor queries Run Bridson’s algorithm with radius \(R \gg r\) to get coarse peak candidates For each coarse candidate, find its nearest neighbor in the fine distribution Flag these nearest neighbors as mountain peak seeds Spacial hashing (the kD-tree in my case) is crucial here for performance. With thousands of seed points, nearest-neighbor search would be prohibitively slow otherwise. This approach has several advantages: Natural spacing: Mountains won’t cluster unnaturally or leave large empty regions Mesh alignment: Peak points are actual mesh vertices, not interpolated positions Controllable density: Adjusting \(R\) directly controls mountain frequency Reproducible: Given the same random seed, peak placement is deterministic These flagged mountain peaks will later serve as local maxima during elevation assignment, with height falloff based on distance. But that’s a topic for Part II. Above is an animation with varying mountain separation \(R\) over the same set of regular seed points. Next Steps This is the type of distribution (~27000 points) we will be using throughout the rest of the series. With our mesh structures in place we have the skeletal framework for our island. Part II will dive into elevation assignment using noise functions, creating realistic height maps that produce convincing mountains, valleys, and coastlines. Resources Amit Patel’s Polygon Map Generation - The inspiration for this series Bridson’s Original Paper - Fast Poisson disk sampling Lloyd’s Algorithm - The mathematical foundation]]></summary><media:thumbnail xmlns:media="http://search.yahoo.com/mrss/" url="https://brashandplucky.com/thumbnails/2025/chemaguerra-procedural-island-generation-i.png" /><media:content medium="image" url="https://brashandplucky.com/thumbnails/2025/chemaguerra-procedural-island-generation-i.png" xmlns:media="http://search.yahoo.com/mrss/" /></entry><entry><title type="html">Spherical Harmonics</title><link href="https://brashandplucky.com/2025/08/25/spherical-harmonics.html" rel="alternate" type="text/html" title="Spherical Harmonics" /><published>2025-08-25T10:00:00+02:00</published><updated>2025-08-25T10:00:00+02:00</updated><id>https://brashandplucky.com/2025/08/25/spherical-harmonics</id><content type="html" xml:base="https://brashandplucky.com/2025/08/25/spherical-harmonics.html"><![CDATA[<blockquote>
   <p><strong>Note:</strong> This post was written nearly 2 years ago and never published. I’m posting it now as-is, with some sections incomplete but the core content intact.</p>
 </blockquote>
 
@@ -261,7 +439,7 @@
 
 <p>It is important to note that in doing so, the integrals we will be calculating below need to account for distortion in their differential element.</p>
 
-<p><img src="/uploads/2023/chemaguerra-spherical-harmonics-differential.png" alt="Directions and differentials" /></p>
+<p><img src="/uploads/2025/spherical-harmonics/chemaguerra-spherical-harmonics-differential.png" alt="Directions and differentials" /></p>
 
 <p>The rgb-coded cubemap represents all the unit directions in a sphere \(\mathbf{\omega}\). The grayscale cubemap represents the differential element conversion between the unit sphere and the unit cubemap \(\mathrm{d}\mathbf{\omega}\). The HDR map unfolded as a cubemap is an example of an incoming radiance map \(L(\mathbf{\omega})\).</p>
 
@@ -345,15 +523,15 @@
 
 <p>This spherical (<em>i.e.,</em> polar in 3D) plot represents the SH basis for the first four levels (L0-L1-L2-L3). The SH magnitude is used for the radius at each spherical coord and the sign is used for the color.</p>
 
-<p><img src="/uploads/2023/chemaguerra-spherical-harmonics.jpg" alt="L0-L1-L2-L3 Spherical Harmonics" /></p>
+<p><img src="/uploads/2025/spherical-harmonics/chemaguerra-spherical-harmonics.jpg" alt="L0-L1-L2-L3 Spherical Harmonics" /></p>
 
 <p>This is the same type of plot, but fixating \(r=1\) and using the magnitude/sign to interpolate between both colors. Note that I have thresholded the magnitude a bit so sign-flip boundaries more sharply distinct.</p>
 
-<p><img src="/uploads/2023/chemaguerra-spherical-harmonics-unit.jpg" alt="Trajectory constraint" /></p>
+<p><img src="/uploads/2025/spherical-harmonics/chemaguerra-spherical-harmonics-unit.jpg" alt="Trajectory constraint" /></p>
 
 <p>This is again the same plot, but now each unit sphere is unfolded in a cubemap layout. The same color thresholding is used here.</p>
 
-<p><img src="/uploads/2023/chemaguerra-spherical-harmonics-cubemap.jpg" alt="Trajectory constraint" /></p>
+<p><img src="/uploads/2025/spherical-harmonics/chemaguerra-spherical-harmonics-cubemap.jpg" alt="Trajectory constraint" /></p>
 
 <h3 id="what-the-shs-will-do-for-us">What the SHs will do for us</h3>
 
@@ -389,19 +567,19 @@
 
 <p>Let’s start with this panorama taken from <a href="https://commons.wikimedia.org/wiki/File:Harderwijk_harbour_2018_-_360_panorama.jpg">commons.wikimedia.org</a>. The image is 8-bit, Low-Dynamic-Range, and not particularly high-frequency. <em>i.e.,</em> a 360-degree panorama of a pretty exterior.</p>
 
-<p><img src="/uploads/2023/chemaguerra-spherical-harmonics-ldr.png" alt="LDR panorama" /></p>
+<p><img src="/uploads/2025/spherical-harmonics/chemaguerra-spherical-harmonics-ldr.png" alt="LDR panorama" /></p>
 
 <p>Here’s what happens if we pass it through our SH codec with \(L=3\) (\(9 \times 3=27\) coefficients).</p>
 
-<p><img src="/uploads/2023/chemaguerra-spherical-harmonics-ldr-9x3.png" alt="SH reconstruction LDR 27" /></p>
+<p><img src="/uploads/2025/spherical-harmonics/chemaguerra-spherical-harmonics-ldr-9x3.png" alt="SH reconstruction LDR 27" /></p>
 
 <p>Now with \(L=4\) (\(16 \times 3=48\) coefficients).</p>
 
-<p><img src="/uploads/2023/chemaguerra-spherical-harmonics-ldr-16x3.png" alt="SH reconstruction LDR 48" /></p>
+<p><img src="/uploads/2025/spherical-harmonics/chemaguerra-spherical-harmonics-ldr-16x3.png" alt="SH reconstruction LDR 48" /></p>
 
 <p>And now with \(L=10\) (\(100 \times 3=300\) coefficients).</p>
 
-<p><img src="/uploads/2023/chemaguerra-spherical-harmonics-ldr-100x3.png" alt="SH reconstruction LDR 300" /></p>
+<p><img src="/uploads/2025/spherical-harmonics/chemaguerra-spherical-harmonics-ldr-100x3.png" alt="SH reconstruction LDR 300" /></p>
 
 <blockquote>
   <p>You can right-click and download (or open in another tab) to view these images at 1:1 scale.</p>
@@ -409,11 +587,11 @@
 
 <p>The more the SHs (and coefficients) the more faithful and detailed the reconstruction becomes. While this is obvious, it is important to remark that the SH basis we’re using is “ordered by frequency”, meaning that the first ones encode lower-frequency bands, and adding more and more SHs adds more and more higher-frequency bands. In the continuous case, an infinite number of SHs and coefficients would be required to guarantee an ever lossless restoration. In the discrete case, as with the FT and other transforms, a finite amount of coefficients (proportional to the input data size) will suffice.</p>
 
-<p><img src="/uploads/2023/chemaguerra-spherical-harmonics-ldr-progression.gif" alt="SH reconstruction progression" /></p>
+<p><img src="/uploads/2025/spherical-harmonics/chemaguerra-spherical-harmonics-ldr-progression.gif" alt="SH reconstruction progression" /></p>
 
 <p>Let’s try with a spherically-blurred version (not a regular image blur):</p>
 
-<p><img src="/uploads/2023/chemaguerra-spherical-harmonics-ldr-blurred-progression.gif" alt="SH reconstruction progression" /></p>
+<p><img src="/uploads/2025/spherical-harmonics/chemaguerra-spherical-harmonics-ldr-blurred-progression.gif" alt="SH reconstruction progression" /></p>
 
 <p>The most important takeaway here is:</p>
 
@@ -431,7 +609,7 @@
 
 <p>This is nothing but a manifestation of the well-known <a href="https://en.wikipedia.org/wiki/Gibbs_phenomenon">Gibbs phenomenon</a>.</p>
 
-<p><img src="/uploads/2023/chemaguerra-spherical-harmonics-hdr-1.gif" alt="SH reconstruction progression" /></p>
+<p><img src="/uploads/2025/spherical-harmonics/chemaguerra-spherical-harmonics-hdr-1.gif" alt="SH reconstruction progression" /></p>
 
 <p>Higher frequencies in an image semantically mean more fine/sharp detail (<em>i.e.,</em> more average variation from one pixel to its neighbors). But another factor that amplifies the amount of variation is the dynamic range of the data. Having a high-dynamic range may or may not affect what frequencies are present, but will certainly affect the amplitudes (the magnitude) of the encoded coefficients. Since the harmonics are wave-like, ringing may occur.</p>
 
@@ -442,15 +620,15 @@
   <li>Blur the input data to shave off the higher frequencies.</li>
 </ul>
 
-<p><img src="/uploads/2023/chemaguerra-spherical-harmonics-hdr-clamped.gif" alt="SH reconstruction progression" /></p>
+<p><img src="/uploads/2025/spherical-harmonics/chemaguerra-spherical-harmonics-hdr-clamped.gif" alt="SH reconstruction progression" /></p>
 
 <p>Let’s try with another classic HDR panorama. High-frequencies and high-amplitudes together cause a wobbly disaster:</p>
 
-<p><img src="/uploads/2023/chemaguerra-spherical-harmonics-hdr-2.gif" alt="SH reconstruction progression" /></p>
+<p><img src="/uploads/2025/spherical-harmonics/chemaguerra-spherical-harmonics-hdr-2.gif" alt="SH reconstruction progression" /></p>
 
 <p>And now let’s try with a spherically-blurred version of the same map. The particular blur I am using here is a cosine-weighted hemispherical blur:</p>
 
-<p><img src="/uploads/2023/chemaguerra-spherical-harmonics-hdr-blurred.gif" alt="SH reconstruction progression" /></p>
+<p><img src="/uploads/2025/spherical-harmonics/chemaguerra-spherical-harmonics-hdr-blurred.gif" alt="SH reconstruction progression" /></p>
 
 <p>Because type of blur used is cosine-weighted over the hemisphere, this light probe exactly captures the irradiance that a <em>lambertian surface</em> would receive from the scene if illuminated with the unblurred HDR panorama.</p>
 
@@ -923,29 +1101,29 @@ C = 0 \\
 
 <p>The source code implementation is a bit less intimidating, though:</p>
 
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>struct particle_t
-{
-  explicit particle_t() : m( 1 ), p( 1, 0 ), v( 0 ) {}
+<div class="language-cpp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">struct</span> <span class="nc">particle_t</span>
+<span class="p">{</span>
+  <span class="k">explicit</span> <span class="n">particle_t</span><span class="p">()</span> <span class="o">:</span> <span class="n">m</span><span class="p">(</span> <span class="mi">1</span> <span class="p">),</span> <span class="n">p</span><span class="p">(</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span> <span class="p">),</span> <span class="n">v</span><span class="p">(</span> <span class="mi">0</span> <span class="p">)</span> <span class="p">{}</span>
 
-  void step( const f64_t dt, const vec2d_c&amp; Fa )
-  {
-    const   f64_t pp =  ( p * p );
-    const   f64_t vv =  ( v * v );
+  <span class="kt">void</span> <span class="nf">step</span><span class="p">(</span> <span class="k">const</span> <span class="n">f64_t</span> <span class="n">dt</span><span class="p">,</span> <span class="k">const</span> <span class="n">vec2d_c</span><span class="o">&amp;</span> <span class="n">Fa</span> <span class="p">)</span>
+  <span class="p">{</span>
+    <span class="k">const</span>   <span class="n">f64_t</span> <span class="n">pp</span> <span class="o">=</span>  <span class="p">(</span> <span class="n">p</span> <span class="o">*</span> <span class="n">p</span> <span class="p">);</span>
+    <span class="k">const</span>   <span class="n">f64_t</span> <span class="n">vv</span> <span class="o">=</span>  <span class="p">(</span> <span class="n">v</span> <span class="o">*</span> <span class="n">v</span> <span class="p">);</span>
 
-    const   f64_t lambda = -( ( ( p * Fa ) + ( m * vv ) ) / pp );
+    <span class="k">const</span>   <span class="n">f64_t</span> <span class="n">lambda</span> <span class="o">=</span> <span class="o">-</span><span class="p">(</span> <span class="p">(</span> <span class="p">(</span> <span class="n">p</span> <span class="o">*</span> <span class="n">Fa</span> <span class="p">)</span> <span class="o">+</span> <span class="p">(</span> <span class="n">m</span> <span class="o">*</span> <span class="n">vv</span> <span class="p">)</span> <span class="p">)</span> <span class="o">/</span> <span class="n">pp</span> <span class="p">);</span>
 
-    const vec2d_c Fc = ( p * lambda );
+    <span class="k">const</span> <span class="n">vec2d_c</span> <span class="n">Fc</span> <span class="o">=</span> <span class="p">(</span> <span class="n">p</span> <span class="o">*</span> <span class="n">lambda</span> <span class="p">);</span>
 
-    const vec2d_c a  = ( ( Fa + Fc ) / m );
+    <span class="k">const</span> <span class="n">vec2d_c</span> <span class="n">a</span>  <span class="o">=</span> <span class="p">(</span> <span class="p">(</span> <span class="n">Fa</span> <span class="o">+</span> <span class="n">Fc</span> <span class="p">)</span> <span class="o">/</span> <span class="n">m</span> <span class="p">);</span>
 
-    v += ( a * dt );
-    p += ( v * dt );
-  }
+    <span class="n">v</span> <span class="o">+=</span> <span class="p">(</span> <span class="n">a</span> <span class="o">*</span> <span class="n">dt</span> <span class="p">);</span>
+    <span class="n">p</span> <span class="o">+=</span> <span class="p">(</span> <span class="n">v</span> <span class="o">*</span> <span class="n">dt</span> <span class="p">);</span>
+  <span class="p">}</span>
 
-    f64_t m;  // Mass.
-  vec2d_c p;  // Position.
-  vec2d_c v;  // Velocity.
-};
+    <span class="n">f64_t</span> <span class="n">m</span><span class="p">;</span>  <span class="c1">// Mass.</span>
+  <span class="n">vec2d_c</span> <span class="n">p</span><span class="p">;</span>  <span class="c1">// Position.</span>
+  <span class="n">vec2d_c</span> <span class="n">v</span><span class="p">;</span>  <span class="c1">// Velocity.</span>
+<span class="p">};</span>
 </code></pre></div></div>
 
 <p>This is the code in action, assuming that the particle starts at rest at a legal position in the circle.</p>
@@ -982,37 +1160,37 @@ C = 0 \\
 
 <p>And here’s the new simulation code:</p>
 
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>struct particle_t
-{
-  explicit particle_t() : m( 1 ), p( 1, 0 ), v( 0 ) {}
+<div class="language-cpp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">struct</span> <span class="nc">particle_t</span>
+<span class="p">{</span>
+  <span class="k">explicit</span> <span class="n">particle_t</span><span class="p">()</span> <span class="o">:</span> <span class="n">m</span><span class="p">(</span> <span class="mi">1</span> <span class="p">),</span> <span class="n">p</span><span class="p">(</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span> <span class="p">),</span> <span class="n">v</span><span class="p">(</span> <span class="mi">0</span> <span class="p">)</span> <span class="p">{}</span>
 
-  void step( const f64_t dt, const vec2d_c&amp; Fa )
-  {
-    const   f64_t ks     = 1e+2;
-    const   f64_t kd     = 1e-2;
+  <span class="kt">void</span> <span class="nf">step</span><span class="p">(</span> <span class="k">const</span> <span class="n">f64_t</span> <span class="n">dt</span><span class="p">,</span> <span class="k">const</span> <span class="n">vec2d_c</span><span class="o">&amp;</span> <span class="n">Fa</span> <span class="p">)</span>
+  <span class="p">{</span>
+    <span class="k">const</span>   <span class="n">f64_t</span> <span class="n">ks</span>     <span class="o">=</span> <span class="mf">1e+2</span><span class="p">;</span>
+    <span class="k">const</span>   <span class="n">f64_t</span> <span class="n">kd</span>     <span class="o">=</span> <span class="mf">1e-2</span><span class="p">;</span>
 
-    const   f64_t pp     =  ( p * p );
-    const   f64_t vv     =  ( v * v );
-    const   f64_t C_dot  =  ( p * v );
+    <span class="k">const</span>   <span class="n">f64_t</span> <span class="n">pp</span>     <span class="o">=</span>  <span class="p">(</span> <span class="n">p</span> <span class="o">*</span> <span class="n">p</span> <span class="p">);</span>
+    <span class="k">const</span>   <span class="n">f64_t</span> <span class="n">vv</span>     <span class="o">=</span>  <span class="p">(</span> <span class="n">v</span> <span class="o">*</span> <span class="n">v</span> <span class="p">);</span>
+    <span class="k">const</span>   <span class="n">f64_t</span> <span class="n">C_dot</span>  <span class="o">=</span>  <span class="p">(</span> <span class="n">p</span> <span class="o">*</span> <span class="n">v</span> <span class="p">);</span>
 
-    const   f64_t C      =  ( ( pp - 1 ) / 2 );
+    <span class="k">const</span>   <span class="n">f64_t</span> <span class="n">C</span>      <span class="o">=</span>  <span class="p">(</span> <span class="p">(</span> <span class="n">pp</span> <span class="o">-</span> <span class="mi">1</span> <span class="p">)</span> <span class="o">/</span> <span class="mi">2</span> <span class="p">);</span>
 
-    const   f64_t k      =  ( ( ks * C ) + ( kd * C_dot ) );
+    <span class="k">const</span>   <span class="n">f64_t</span> <span class="n">k</span>      <span class="o">=</span>  <span class="p">(</span> <span class="p">(</span> <span class="n">ks</span> <span class="o">*</span> <span class="n">C</span> <span class="p">)</span> <span class="o">+</span> <span class="p">(</span> <span class="n">kd</span> <span class="o">*</span> <span class="n">C_dot</span> <span class="p">)</span> <span class="p">);</span>
 
-    const   f64_t lambda = -( ( ( p * Fa ) + ( m * vv ) + k ) ) / pp );
+    <span class="k">const</span>   <span class="n">f64_t</span> <span class="n">lambda</span> <span class="o">=</span> <span class="o">-</span><span class="p">(</span> <span class="p">(</span> <span class="p">(</span> <span class="n">p</span> <span class="o">*</span> <span class="n">Fa</span> <span class="p">)</span> <span class="o">+</span> <span class="p">(</span> <span class="n">m</span> <span class="o">*</span> <span class="n">vv</span> <span class="p">)</span> <span class="o">+</span> <span class="n">k</span> <span class="p">)</span> <span class="p">)</span> <span class="o">/</span> <span class="n">pp</span> <span class="p">);</span>
 
-    const vec2d_c Fc     =  ( p * lambda );
+    <span class="k">const</span> <span class="n">vec2d_c</span> <span class="n">Fc</span>     <span class="o">=</span>  <span class="p">(</span> <span class="n">p</span> <span class="o">*</span> <span class="n">lambda</span> <span class="p">);</span>
 
-    const vec2d_c a      =  ( ( Fa + Fc ) / m );
+    <span class="k">const</span> <span class="n">vec2d_c</span> <span class="n">a</span>      <span class="o">=</span>  <span class="p">(</span> <span class="p">(</span> <span class="n">Fa</span> <span class="o">+</span> <span class="n">Fc</span> <span class="p">)</span> <span class="o">/</span> <span class="n">m</span> <span class="p">);</span>
 
-    v += ( a * dt );
-    p += ( v * dt );
-  }
+    <span class="n">v</span> <span class="o">+=</span> <span class="p">(</span> <span class="n">a</span> <span class="o">*</span> <span class="n">dt</span> <span class="p">);</span>
+    <span class="n">p</span> <span class="o">+=</span> <span class="p">(</span> <span class="n">v</span> <span class="o">*</span> <span class="n">dt</span> <span class="p">);</span>
+  <span class="p">}</span>
 
-    f64_t m;
-  vec2d_c p;  // Position.
-  vec2d_c v;  // Velocity.
-};
+    <span class="n">f64_t</span> <span class="n">m</span><span class="p">;</span>
+  <span class="n">vec2d_c</span> <span class="n">p</span><span class="p">;</span>  <span class="c1">// Position.</span>
+  <span class="n">vec2d_c</span> <span class="n">v</span><span class="p">;</span>  <span class="c1">// Velocity.</span>
+<span class="p">};</span>
 </code></pre></div></div>
 
 <h2 id="generalization">Generalization</h2>
@@ -1066,53 +1244,53 @@ scales linearly with respect to said length increment:</p>
 
 <p>The source code below extends the previous post in order to incorporate a spring connecting the particle to the origin alongside the force of gravity.</p>
 
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>struct spring_mass_t
-{
-  explicit spring_mass_t
+<div class="language-cpp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">struct</span> <span class="nc">spring_mass_t</span>
+<span class="p">{</span>
+  <span class="k">explicit</span> <span class="n">spring_mass_t</span>
   
-      ( const f64_t rest_length = .5,
-        const f64_t stiffness   = 1e3,
-        const f64_t damping     = 1e3 )
+      <span class="p">(</span> <span class="k">const</span> <span class="n">f64_t</span> <span class="n">rest_length</span> <span class="o">=</span> <span class="mf">.5</span><span class="p">,</span>
+        <span class="k">const</span> <span class="n">f64_t</span> <span class="n">stiffness</span>   <span class="o">=</span> <span class="mf">1e3</span><span class="p">,</span>
+        <span class="k">const</span> <span class="n">f64_t</span> <span class="n">damping</span>     <span class="o">=</span> <span class="mf">1e3</span> <span class="p">)</span>
 
-      : m( 100 ), p( rest_length, 0 ), v( 0 ),
+      <span class="o">:</span> <span class="n">m</span><span class="p">(</span> <span class="mi">100</span> <span class="p">),</span> <span class="n">p</span><span class="p">(</span> <span class="n">rest_length</span><span class="p">,</span> <span class="mi">0</span> <span class="p">),</span> <span class="n">v</span><span class="p">(</span> <span class="mi">0</span> <span class="p">),</span>
 
-        L( rest_length ), ks( stiffness ), kd( damping ) {}
+        <span class="n">L</span><span class="p">(</span> <span class="n">rest_length</span> <span class="p">),</span> <span class="n">ks</span><span class="p">(</span> <span class="n">stiffness</span> <span class="p">),</span> <span class="n">kd</span><span class="p">(</span> <span class="n">damping</span> <span class="p">)</span> <span class="p">{}</span>
 
-  void step( const f64_t dt, const vec2d_c&amp; gravity )
-  {
-    // Current spring state.
+  <span class="kt">void</span> <span class="nf">step</span><span class="p">(</span> <span class="k">const</span> <span class="n">f64_t</span> <span class="n">dt</span><span class="p">,</span> <span class="k">const</span> <span class="n">vec2d_c</span><span class="o">&amp;</span> <span class="n">gravity</span> <span class="p">)</span>
+  <span class="p">{</span>
+    <span class="c1">// Current spring state.</span>
 
-    const vec2d_c s_D  =   p;             // Spring dir. Anchored at (0,0).
+    <span class="k">const</span> <span class="n">vec2d_c</span> <span class="n">s_D</span>  <span class="o">=</span>   <span class="n">p</span><span class="p">;</span>             <span class="c1">// Spring dir. Anchored at (0,0).</span>
 
-    const   f64_t s_L  =   s_D.length();  // Spring len.
+    <span class="k">const</span>   <span class="n">f64_t</span> <span class="n">s_L</span>  <span class="o">=</span>   <span class="n">s_D</span><span class="p">.</span><span class="n">length</span><span class="p">();</span>  <span class="c1">// Spring len.</span>
 
-    const vec2d_c s_d  = ( s_D / s_L );   // Spring dir (normalized).
+    <span class="k">const</span> <span class="n">vec2d_c</span> <span class="n">s_d</span>  <span class="o">=</span> <span class="p">(</span> <span class="n">s_D</span> <span class="o">/</span> <span class="n">s_L</span> <span class="p">);</span>   <span class="c1">// Spring dir (normalized).</span>
 
-    const vec2d_c s_Fs = ( s_d * ( ( L - s_L ) * ks ) );  // Hooke's Law.
-    const vec2d_c s_Fd = ( s_d * ( ( v * s_d ) * kd ) );  // Damping.
+    <span class="k">const</span> <span class="n">vec2d_c</span> <span class="n">s_Fs</span> <span class="o">=</span> <span class="p">(</span> <span class="n">s_d</span> <span class="o">*</span> <span class="p">(</span> <span class="p">(</span> <span class="n">L</span> <span class="o">-</span> <span class="n">s_L</span> <span class="p">)</span> <span class="o">*</span> <span class="n">ks</span> <span class="p">)</span> <span class="p">);</span>  <span class="c1">// Hooke's Law.</span>
+    <span class="k">const</span> <span class="n">vec2d_c</span> <span class="n">s_Fd</span> <span class="o">=</span> <span class="p">(</span> <span class="n">s_d</span> <span class="o">*</span> <span class="p">(</span> <span class="p">(</span> <span class="n">v</span> <span class="o">*</span> <span class="n">s_d</span> <span class="p">)</span> <span class="o">*</span> <span class="n">kd</span> <span class="p">)</span> <span class="p">);</span>  <span class="c1">// Damping.</span>
 
-    // Forces sum =&gt; Acceleration.
+    <span class="c1">// Forces sum =&gt; Acceleration.</span>
 
-    const vec2d_c a = ( gravity + ( ( s_Fs - s_Fd ) / m ) );
+    <span class="k">const</span> <span class="n">vec2d_c</span> <span class="n">a</span> <span class="o">=</span> <span class="p">(</span> <span class="n">gravity</span> <span class="o">+</span> <span class="p">(</span> <span class="p">(</span> <span class="n">s_Fs</span> <span class="o">-</span> <span class="n">s_Fd</span> <span class="p">)</span> <span class="o">/</span> <span class="n">m</span> <span class="p">)</span> <span class="p">);</span>
 
-    // Semi-implicit Euler.
+    <span class="c1">// Semi-implicit Euler.</span>
 
-    v += ( a * dt );
-    p += ( v * dt );
-  }
+    <span class="n">v</span> <span class="o">+=</span> <span class="p">(</span> <span class="n">a</span> <span class="o">*</span> <span class="n">dt</span> <span class="p">);</span>
+    <span class="n">p</span> <span class="o">+=</span> <span class="p">(</span> <span class="n">v</span> <span class="o">*</span> <span class="n">dt</span> <span class="p">);</span>
+  <span class="p">}</span>
 
-  // Particle state.
+  <span class="c1">// Particle state.</span>
 
-    f64_t m;
-  vec2d_c p;
-  vec2d_c v;
+    <span class="n">f64_t</span> <span class="n">m</span><span class="p">;</span>
+  <span class="n">vec2d_c</span> <span class="n">p</span><span class="p">;</span>
+  <span class="n">vec2d_c</span> <span class="n">v</span><span class="p">;</span>
 
-  // Spring.
+  <span class="c1">// Spring.</span>
 
-    f64_t L;   // Rest length.
-    f64_t ks;  // Stiffness.
-    f64_t kd;  // Damping.
-};
+    <span class="n">f64_t</span> <span class="n">L</span><span class="p">;</span>   <span class="c1">// Rest length.</span>
+    <span class="n">f64_t</span> <span class="n">ks</span><span class="p">;</span>  <span class="c1">// Stiffness.</span>
+    <span class="n">f64_t</span> <span class="n">kd</span><span class="p">;</span>  <span class="c1">// Damping.</span>
+<span class="p">};</span>
 </code></pre></div></div>
 
 <p>Here’s a goopy spring (\(k_s=1e3\)):</p>
@@ -1175,65 +1353,65 @@ that has the effect of reducing or preventing the oscillation. A damped spring i
 
 <p><img src="/uploads/2023/chemaguerra-damped-stiff-double-spring-512.gif" alt="Damped Stiff double spring" /></p>
 
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>struct double_spring_mass_t
-{
-  explicit double_spring_mass_t
+<div class="language-cpp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">struct</span> <span class="nc">double_spring_mass_t</span>
+<span class="p">{</span>
+  <span class="k">explicit</span> <span class="n">double_spring_mass_t</span>
   
-      ( const f64_t rest_length =  .5,
-        const f64_t stiffness   = 1e3,
-        const f64_t damping     = 1e3 )
+      <span class="p">(</span> <span class="k">const</span> <span class="n">f64_t</span> <span class="n">rest_length</span> <span class="o">=</span>  <span class="mf">.5</span><span class="p">,</span>
+        <span class="k">const</span> <span class="n">f64_t</span> <span class="n">stiffness</span>   <span class="o">=</span> <span class="mf">1e3</span><span class="p">,</span>
+        <span class="k">const</span> <span class="n">f64_t</span> <span class="n">damping</span>     <span class="o">=</span> <span class="mf">1e3</span> <span class="p">)</span>
 
-      : m( 100 ), p1( ( rest_length * 1 ), 0 ), v1( 0 ),
-                  p2( ( rest_length * 2 ), 0 ), v2( 0 ),
+      <span class="o">:</span> <span class="n">m</span><span class="p">(</span> <span class="mi">100</span> <span class="p">),</span> <span class="n">p1</span><span class="p">(</span> <span class="p">(</span> <span class="n">rest_length</span> <span class="o">*</span> <span class="mi">1</span> <span class="p">),</span> <span class="mi">0</span> <span class="p">),</span> <span class="n">v1</span><span class="p">(</span> <span class="mi">0</span> <span class="p">),</span>
+                  <span class="n">p2</span><span class="p">(</span> <span class="p">(</span> <span class="n">rest_length</span> <span class="o">*</span> <span class="mi">2</span> <span class="p">),</span> <span class="mi">0</span> <span class="p">),</span> <span class="n">v2</span><span class="p">(</span> <span class="mi">0</span> <span class="p">),</span>
 
-        L( rest_length ), ks( stiffness ), kd( damping ) {}
+        <span class="n">L</span><span class="p">(</span> <span class="n">rest_length</span> <span class="p">),</span> <span class="n">ks</span><span class="p">(</span> <span class="n">stiffness</span> <span class="p">),</span> <span class="n">kd</span><span class="p">(</span> <span class="n">damping</span> <span class="p">)</span> <span class="p">{}</span>
 
-  void step( const f64_t dt, const vec2d_c&amp; gravity )
-  {
-    // Current spring states.
+  <span class="kt">void</span> <span class="nf">step</span><span class="p">(</span> <span class="k">const</span> <span class="n">f64_t</span> <span class="n">dt</span><span class="p">,</span> <span class="k">const</span> <span class="n">vec2d_c</span><span class="o">&amp;</span> <span class="n">gravity</span> <span class="p">)</span>
+  <span class="p">{</span>
+    <span class="c1">// Current spring states.</span>
 
-    const vec2d_c s1_D  = ( p1      );      // Spring dir.
-    const vec2d_c s2_D  = ( p2 - p1 );      //
+    <span class="k">const</span> <span class="n">vec2d_c</span> <span class="n">s1_D</span>  <span class="o">=</span> <span class="p">(</span> <span class="n">p1</span>      <span class="p">);</span>      <span class="c1">// Spring dir.</span>
+    <span class="k">const</span> <span class="n">vec2d_c</span> <span class="n">s2_D</span>  <span class="o">=</span> <span class="p">(</span> <span class="n">p2</span> <span class="o">-</span> <span class="n">p1</span> <span class="p">);</span>      <span class="c1">//</span>
 
-    const   f64_t s1_L  =   s1_D.length();  // Spring len.
-    const   f64_t s2_L  =   s2_D.length();  //
+    <span class="k">const</span>   <span class="n">f64_t</span> <span class="n">s1_L</span>  <span class="o">=</span>   <span class="n">s1_D</span><span class="p">.</span><span class="n">length</span><span class="p">();</span>  <span class="c1">// Spring len.</span>
+    <span class="k">const</span>   <span class="n">f64_t</span> <span class="n">s2_L</span>  <span class="o">=</span>   <span class="n">s2_D</span><span class="p">.</span><span class="n">length</span><span class="p">();</span>  <span class="c1">//</span>
 
-    const vec2d_c s1_d  = ( s1_D / s1_L );  // Spring dir (normalized).
-    const vec2d_c s2_d  = ( s2_D / s2_L );  //
+    <span class="k">const</span> <span class="n">vec2d_c</span> <span class="n">s1_d</span>  <span class="o">=</span> <span class="p">(</span> <span class="n">s1_D</span> <span class="o">/</span> <span class="n">s1_L</span> <span class="p">);</span>  <span class="c1">// Spring dir (normalized).</span>
+    <span class="k">const</span> <span class="n">vec2d_c</span> <span class="n">s2_d</span>  <span class="o">=</span> <span class="p">(</span> <span class="n">s2_D</span> <span class="o">/</span> <span class="n">s2_L</span> <span class="p">);</span>  <span class="c1">//</span>
 
-    const vec2d_c s1_Fs = ( s1_d * ( ( L  - s1_L ) * ks ) );  // Hooke's Law.
-    const vec2d_c s2_Fs = ( s2_d * ( ( L  - s2_L ) * ks ) );  //
+    <span class="k">const</span> <span class="n">vec2d_c</span> <span class="n">s1_Fs</span> <span class="o">=</span> <span class="p">(</span> <span class="n">s1_d</span> <span class="o">*</span> <span class="p">(</span> <span class="p">(</span> <span class="n">L</span>  <span class="o">-</span> <span class="n">s1_L</span> <span class="p">)</span> <span class="o">*</span> <span class="n">ks</span> <span class="p">)</span> <span class="p">);</span>  <span class="c1">// Hooke's Law.</span>
+    <span class="k">const</span> <span class="n">vec2d_c</span> <span class="n">s2_Fs</span> <span class="o">=</span> <span class="p">(</span> <span class="n">s2_d</span> <span class="o">*</span> <span class="p">(</span> <span class="p">(</span> <span class="n">L</span>  <span class="o">-</span> <span class="n">s2_L</span> <span class="p">)</span> <span class="o">*</span> <span class="n">ks</span> <span class="p">)</span> <span class="p">);</span>  <span class="c1">//</span>
 
-    const vec2d_c s1_Fd = ( s1_d * ( ( v1 * s1_d ) * kd ) );  // Damping.
-    const vec2d_c s2_Fd = ( s2_d * ( ( v2 * s2_d ) * kd ) );  //
+    <span class="k">const</span> <span class="n">vec2d_c</span> <span class="n">s1_Fd</span> <span class="o">=</span> <span class="p">(</span> <span class="n">s1_d</span> <span class="o">*</span> <span class="p">(</span> <span class="p">(</span> <span class="n">v1</span> <span class="o">*</span> <span class="n">s1_d</span> <span class="p">)</span> <span class="o">*</span> <span class="n">kd</span> <span class="p">)</span> <span class="p">);</span>  <span class="c1">// Damping.</span>
+    <span class="k">const</span> <span class="n">vec2d_c</span> <span class="n">s2_Fd</span> <span class="o">=</span> <span class="p">(</span> <span class="n">s2_d</span> <span class="o">*</span> <span class="p">(</span> <span class="p">(</span> <span class="n">v2</span> <span class="o">*</span> <span class="n">s2_d</span> <span class="p">)</span> <span class="o">*</span> <span class="n">kd</span> <span class="p">)</span> <span class="p">);</span>  <span class="c1">//</span>
 
-    const vec2d_c s1_F  = ( s1_Fs - s1_Fd );
-    const vec2d_c s2_F  = ( s2_Fs - s2_Fd );
+    <span class="k">const</span> <span class="n">vec2d_c</span> <span class="n">s1_F</span>  <span class="o">=</span> <span class="p">(</span> <span class="n">s1_Fs</span> <span class="o">-</span> <span class="n">s1_Fd</span> <span class="p">);</span>
+    <span class="k">const</span> <span class="n">vec2d_c</span> <span class="n">s2_F</span>  <span class="o">=</span> <span class="p">(</span> <span class="n">s2_Fs</span> <span class="o">-</span> <span class="n">s2_Fd</span> <span class="p">);</span>
 
-    // Forces sum =&gt; Acceleration.
+    <span class="c1">// Forces sum =&gt; Acceleration.</span>
 
-    const vec2d_c a1 = ( gravity + ( ( s1_F - s2_F ) / m ) );
-    const vec2d_c a2 = ( gravity + ( ( s2_F        ) / m ) );
+    <span class="k">const</span> <span class="n">vec2d_c</span> <span class="n">a1</span> <span class="o">=</span> <span class="p">(</span> <span class="n">gravity</span> <span class="o">+</span> <span class="p">(</span> <span class="p">(</span> <span class="n">s1_F</span> <span class="o">-</span> <span class="n">s2_F</span> <span class="p">)</span> <span class="o">/</span> <span class="n">m</span> <span class="p">)</span> <span class="p">);</span>
+    <span class="k">const</span> <span class="n">vec2d_c</span> <span class="n">a2</span> <span class="o">=</span> <span class="p">(</span> <span class="n">gravity</span> <span class="o">+</span> <span class="p">(</span> <span class="p">(</span> <span class="n">s2_F</span>        <span class="p">)</span> <span class="o">/</span> <span class="n">m</span> <span class="p">)</span> <span class="p">);</span>
 
-    // Semi-implicit Euler.
+    <span class="c1">// Semi-implicit Euler.</span>
 
-    v1 += ( a1 * dt ); p1 += ( v1 * dt );
-    v2 += ( a2 * dt ); p2 += ( v2 * dt );
-  }
+    <span class="n">v1</span> <span class="o">+=</span> <span class="p">(</span> <span class="n">a1</span> <span class="o">*</span> <span class="n">dt</span> <span class="p">);</span> <span class="n">p1</span> <span class="o">+=</span> <span class="p">(</span> <span class="n">v1</span> <span class="o">*</span> <span class="n">dt</span> <span class="p">);</span>
+    <span class="n">v2</span> <span class="o">+=</span> <span class="p">(</span> <span class="n">a2</span> <span class="o">*</span> <span class="n">dt</span> <span class="p">);</span> <span class="n">p2</span> <span class="o">+=</span> <span class="p">(</span> <span class="n">v2</span> <span class="o">*</span> <span class="n">dt</span> <span class="p">);</span>
+  <span class="p">}</span>
 
-  // Particle state.
+  <span class="c1">// Particle state.</span>
 
-    f64_t m;   // m=m1=m2.
+    <span class="n">f64_t</span> <span class="n">m</span><span class="p">;</span>   <span class="c1">// m=m1=m2.</span>
 
-  vec2d_c p1, v1;
-  vec2d_c p2, v2;
+  <span class="n">vec2d_c</span> <span class="n">p1</span><span class="p">,</span> <span class="n">v1</span><span class="p">;</span>
+  <span class="n">vec2d_c</span> <span class="n">p2</span><span class="p">,</span> <span class="n">v2</span><span class="p">;</span>
 
-  // Both springs.
+  <span class="c1">// Both springs.</span>
 
-    f64_t L;   // Rest length.
-    f64_t ks;  // Stiffness.
-    f64_t kd;  // Damping.
-};
+    <span class="n">f64_t</span> <span class="n">L</span><span class="p">;</span>   <span class="c1">// Rest length.</span>
+    <span class="n">f64_t</span> <span class="n">ks</span><span class="p">;</span>  <span class="c1">// Stiffness.</span>
+    <span class="n">f64_t</span> <span class="n">kd</span><span class="p">;</span>  <span class="c1">// Damping.</span>
+<span class="p">};</span>
 </code></pre></div></div>
 
 <h2 id="representing-constraints-properly">Representing constraints properly</h2>
@@ -1356,22 +1534,22 @@ that has the effect of reducing or preventing the oscillation. A damped spring i
 
 <p>Here’s a simple implementation for the particle state and the simulation step:</p>
 
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>struct particle_t
-{
-  explicit particle_t() : m( 1 ), p( 0 ), v( 0 ) {}
+<div class="language-cpp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">struct</span> <span class="nc">particle_t</span>
+<span class="p">{</span>
+  <span class="k">explicit</span> <span class="n">particle_t</span><span class="p">()</span> <span class="o">:</span> <span class="n">m</span><span class="p">(</span> <span class="mi">1</span> <span class="p">),</span> <span class="n">p</span><span class="p">(</span> <span class="mi">0</span> <span class="p">),</span> <span class="n">v</span><span class="p">(</span> <span class="mi">0</span> <span class="p">)</span> <span class="p">{}</span>
 
-  void step( const f64_t dt, const vec2d_c&amp; F )
-  {
-    const vec2d_c a = ( F / m );
+  <span class="kt">void</span> <span class="nf">step</span><span class="p">(</span> <span class="k">const</span> <span class="n">f64_t</span> <span class="n">dt</span><span class="p">,</span> <span class="k">const</span> <span class="n">vec2d_c</span><span class="o">&amp;</span> <span class="n">F</span> <span class="p">)</span>
+  <span class="p">{</span>
+    <span class="k">const</span> <span class="n">vec2d_c</span> <span class="n">a</span> <span class="o">=</span> <span class="p">(</span> <span class="n">F</span> <span class="o">/</span> <span class="n">m</span> <span class="p">);</span>
 
-    v += ( a * dt );
-    p += ( v * dt );
-  }
+    <span class="n">v</span> <span class="o">+=</span> <span class="p">(</span> <span class="n">a</span> <span class="o">*</span> <span class="n">dt</span> <span class="p">);</span>
+    <span class="n">p</span> <span class="o">+=</span> <span class="p">(</span> <span class="n">v</span> <span class="o">*</span> <span class="n">dt</span> <span class="p">);</span>
+  <span class="p">}</span>
 
-    f64_t m;  // Mass.
-  vec2d_c p;  // Position.
-  vec2d_c v;  // Velocity.
-};
+    <span class="n">f64_t</span> <span class="n">m</span><span class="p">;</span>  <span class="c1">// Mass.</span>
+  <span class="n">vec2d_c</span> <span class="n">p</span><span class="p">;</span>  <span class="c1">// Position.</span>
+  <span class="n">vec2d_c</span> <span class="n">v</span><span class="p">;</span>  <span class="c1">// Velocity.</span>
+<span class="p">};</span>
 </code></pre></div></div>
 
 <p>Here’s a humble animation of the particle in free-fall:</p>
@@ -1528,17 +1706,4 @@ that has the effect of reducing or preventing the oscillation. A damped spring i
 
 <p><code class="language-plaintext highlighter-rouge">( u / static_cast&lt; f32_t &gt;( 0x100000101ull ) )</code> is the <code class="language-plaintext highlighter-rouge">f:[0..1)</code> we were looking for.</p>
 
-<p><code class="language-plaintext highlighter-rouge">( u / static_cast&lt; f64_t &gt;( 0x100000080ull ) )</code> does the same in double-precision.</p>]]></content><author><name></name></author><summary type="html"><![CDATA[Many sampling algorithms take as input random numbers in the [0..1) interval. On the other hand, Pseudo-Random Number Generators usually produce their output as (unsigned) integer 32-bit or 64-bit numbers. It is trivial to turn an u:u32 integer into an f:[0..1] floating-point value, dividing u by 2^32-1. This is because u ranges in [0..2^32-1]. One might think that u/2^32 would produce a floating-point value lower than 1. But it does not, as evidenced by this loop: The number printed out happens to be 0x100000101 which is 2^32+257. ( u / static_cast&lt; f32_t &gt;( 0x100000101ull ) ) is the f:[0..1) we were looking for. ( u / static_cast&lt; f64_t &gt;( 0x100000080ull ) ) does the same in double-precision.]]></summary><media:thumbnail xmlns:media="http://search.yahoo.com/mrss/" url="https://brashandplucky.com/thumbnails/2023/chemaguerra-u-to-f.png" /><media:content medium="image" url="https://brashandplucky.com/thumbnails/2023/chemaguerra-u-to-f.png" xmlns:media="http://search.yahoo.com/mrss/" /></entry><entry><title type="html">Wool flyaways</title><link href="https://brashandplucky.com/2023/01/07/wool-flyaways.html" rel="alternate" type="text/html" title="Wool flyaways" /><published>2023-01-07T00:00:00+01:00</published><updated>2023-01-07T00:00:00+01:00</updated><id>https://brashandplucky.com/2023/01/07/wool-flyaways</id><content type="html" xml:base="https://brashandplucky.com/2023/01/07/wool-flyaways.html"><![CDATA[<p>Searching for a proper formulation for flyaways in wool and fabric in general.</p>
-
-<p><img src="/uploads/2023/chemaguerra-fibers.png" alt="Wool fibers" width="600px" /></p>
-
-<p>These are some simulations of growth from the root being randomly affected. From top to bottom, using different seeds. From left to right, the resulting B-Spline being evaluated using few or many control points.</p>
-
-<p>Everything happens in 3D, but this image is just the X-Z projection.</p>
-
-<h2 id="force-field-dynamics">Force-field dynamics</h2>
-
-<p><em>e.g.,</em> wind, vibrations, etc…</p>
-
-<p><img src="/uploads/2023/chemaguerra-vibrating-fiber-1.gif" alt="Vibrating fiber #1" />
-<img src="/uploads/2023/chemaguerra-vibrating-fiber-2.gif" alt="Vibrating fiber #2" /></p>]]></content><author><name></name></author><summary type="html"><![CDATA[Searching for a proper formulation for flyaways in wool and fabric in general. These are some simulations of growth from the root being randomly affected. From top to bottom, using different seeds. From left to right, the resulting B-Spline being evaluated using few or many control points. Everything happens in 3D, but this image is just the X-Z projection. Force-field dynamics e.g., wind, vibrations, etc…]]></summary><media:thumbnail xmlns:media="http://search.yahoo.com/mrss/" url="https://brashandplucky.com/thumbnails/2023/chemaguerra-wool-flyaways.png" /><media:content medium="image" url="https://brashandplucky.com/thumbnails/2023/chemaguerra-wool-flyaways.png" xmlns:media="http://search.yahoo.com/mrss/" /></entry></feed>
+<p><code class="language-plaintext highlighter-rouge">( u / static_cast&lt; f64_t &gt;( 0x100000080ull ) )</code> does the same in double-precision.</p>]]></content><author><name></name></author><summary type="html"><![CDATA[Many sampling algorithms take as input random numbers in the [0..1) interval. On the other hand, Pseudo-Random Number Generators usually produce their output as (unsigned) integer 32-bit or 64-bit numbers. It is trivial to turn an u:u32 integer into an f:[0..1] floating-point value, dividing u by 2^32-1. This is because u ranges in [0..2^32-1]. One might think that u/2^32 would produce a floating-point value lower than 1. But it does not, as evidenced by this loop: The number printed out happens to be 0x100000101 which is 2^32+257. ( u / static_cast&lt; f32_t &gt;( 0x100000101ull ) ) is the f:[0..1) we were looking for. ( u / static_cast&lt; f64_t &gt;( 0x100000080ull ) ) does the same in double-precision.]]></summary><media:thumbnail xmlns:media="http://search.yahoo.com/mrss/" url="https://brashandplucky.com/thumbnails/2023/chemaguerra-u-to-f.png" /><media:content medium="image" url="https://brashandplucky.com/thumbnails/2023/chemaguerra-u-to-f.png" xmlns:media="http://search.yahoo.com/mrss/" /></entry></feed>
