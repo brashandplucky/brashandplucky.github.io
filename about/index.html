@@ -25,8 +25,8 @@
     <!-- Make post images clickable to enlarge -->
     <script>
     document.addEventListener('DOMContentLoaded', function() {
-      // Find all images in post content.
-      var images = document.querySelectorAll('.post-content img');
+      // Find all images in post content and page content.
+      var images = document.querySelectorAll('.post-content img, .page-content img');
       
       images.forEach(function(img) {
         // Skip if already wrapped in a link.
@@ -77,7 +77,7 @@
       <div class="wrapper">
         <p>My name is <strong>Chema Guerra</strong> and I am from Madrid (Spain).</p>
 
-<h1 id="some-quick-facts-about-me">Some quick facts about me</h1>
+<h2 id="some-quick-facts-about-me">Some quick facts about me</h2>
 
 <ul>
   <li>I am the CEO and Lead Engineer at <a href="https://randomcontrol.com">RandomControl, SL</a>.</li>
@@ -89,35 +89,55 @@
 fryrender, Arion and <a href="http://www.arionfx.com">Arion FX</a>.</li>
 </ul>
 
-<h1 id="my-hobbies">My hobbies</h1>
+<h2 id="my-hobbies">My hobbies</h2>
 
 <ul>
   <li>I’ve been practicing long-distance running since I was a teenager.</li>
   <li>The little time I do not spend coding or running I may be found either coding or running.</li>
 </ul>
 
-<h1 id="social-media">Social Media</h1>
+<h2 id="social-media">Social Media</h2>
 
 <p>I am not a social media person, but these are my personal handles:</p>
 
-<ul>
-  <li>This blog: <a href="https://brashandplucky.github.io/">@brashandplucky</a></li>
-  <li>X/Twitter: <a href="https://x.com/chemaguerra/">@chemaguerra</a> / <a href="https://x.com/topotoylabs/">@topotoylabs</a></li>
-  <li>Instagram: <a href="https://instagram.com/brashandplucky/">@brashandplucky</a></li>
-  <li>Youtube: <a href="https://youtube.com/@brashandplucky/">@brashandplucky</a></li>
-</ul>
+<table>
+  <thead>
+    <tr>
+      <th>Platform</th>
+      <th>Handle</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>This blog</td>
+      <td><a href="https://brashandplucky.github.io/">@brashandplucky</a></td>
+    </tr>
+    <tr>
+      <td>X/Twitter</td>
+      <td><a href="https://x.com/chemaguerra/">@chemaguerra</a> / <a href="https://x.com/topotoylabs/">@topotoylabs</a></td>
+    </tr>
+    <tr>
+      <td>Instagram</td>
+      <td><a href="https://instagram.com/brashandplucky/">@brashandplucky</a></td>
+    </tr>
+    <tr>
+      <td>Youtube</td>
+      <td><a href="https://youtube.com/@brashandplucky/">@brashandplucky</a></td>
+    </tr>
+  </tbody>
+</table>
 
 <p>There is a little more info about me in <a href="https://chemaguerra.com/">chemaguerra.com</a>.</p>
 
 <p>If necessary, I can be reached by e-mail at <code class="language-plaintext highlighter-rouge">brashandplucky 0x40 gmail.com</code>.</p>
 
-<h1 id="what-is-this-blog">What is this blog?</h1>
+<h2 id="what-is-this-blog">What is this blog?</h2>
 
 <p>I occasionally post here about the projects that I am working on.</p>
 
 <p><code class="language-plaintext highlighter-rouge">printf( "This... is... Sparta!!! o.O\n" );</code></p>
 
-<h1 id="why-brash--plucky-com">Why Brash &amp; Plucky (.com)?</h1>
+<h2 id="why-brash--plucky-com">Why Brash &amp; Plucky (.com)?</h2>
 
 <p>My real name has a challenging pronunciation in most other languages.
 <em>e.g.,</em> In English it would be something like:</p>
@@ -164,16 +184,32 @@ may not be simpler, but… hey! I like the sound of it!</p>
 
   <div class="wrapper">
 
-    <h2 class="footer-heading">Chema Guerra</h2>
-
     <div class="footer-col-wrapper">
       <div class="footer-col footer-col-1">
+        <h2 class="footer-heading">Chema Guerra</h2>
         <ul class="contact-list">
-          <li class="p-name">Chema Guerra</li><li><a class="u-email" href="mailto:brashandplucky@gmail.com">brashandplucky@gmail.com</a></li></ul>
+          <li class="p-name"><a class="u-email" href="mailto:brashandplucky@gmail.com">brashandplucky@gmail.com</a></li>
+        </ul>
       </div>
 
-      <div class="footer-col footer-col-2"><ul class="social-media-list"><li><a href="https://github.com/chemaguerra"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#github"></use></svg> <span class="username">chemaguerra</span></a></li><li><a href="https://www.twitter.com/chemaguerra"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#twitter"></use></svg> <span class="username">chemaguerra</span></a></li></ul>
-</div>
+      <div class="footer-col footer-col-2"><ul class="social-media-list">
+  <li>
+    <a href="https://x.com/chemaguerra">
+      <svg class="svg-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" fill="currentColor"/>
+      </svg>
+      <span class="username">@chemaguerra</span>
+    </a>
+  </li>
+  <li>
+    <a href="https://x.com/topotoylabs">
+      <svg class="svg-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" fill="currentColor"/>
+      </svg>
+      <span class="username">@topotoylabs</span>
+    </a>
+  </li>
+</ul></div>
 
       <div class="footer-col footer-col-3">
         <p>This is a coding blog where I post about the various projects that I am currently working on, both at work, or as an independent researcher. Most content here revolves around computer graphics and physics simulation.</p>
@@ -182,7 +218,6 @@ may not be simpler, but… hey! I like the sound of it!</p>
 
   </div>
 
-</footer>
-</body>
+</footer></body>
 
 </html>

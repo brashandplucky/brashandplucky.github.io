@@ -25,8 +25,8 @@
     <!-- Make post images clickable to enlarge -->
     <script>
     document.addEventListener('DOMContentLoaded', function() {
-      // Find all images in post content.
-      var images = document.querySelectorAll('.post-content img');
+      // Find all images in post content and page content.
+      var images = document.querySelectorAll('.post-content img, .page-content img');
       
       images.forEach(function(img) {
         // Skip if already wrapped in a link.
@@ -96,9 +96,10 @@
 
 <p>It is well-known, however, that while this approach works great for low dimensions, high dimensions often exhibit a great degree of undesired correlation. The following image displays a grid where each cell combines two components of the <em>32-dimensional</em> Halton hyper-cube.</p>
 
-<p><em>Raw 32-dimensional Halton hyper-cube</em></p>
-
-<p><img src="/uploads/2022/chemaguerra-scrambled-halton-1.png" alt="Raw 32-dimensional Halton hyper-cube" /></p>
+<figure>
+  <img src="/uploads/2022/chemaguerra-scrambled-halton-1.png" alt="Raw 32-dimensional Halton hyper-cube" />
+  <figcaption>Raw 32-dimensional Halton hyper-cube</figcaption>
+</figure>
 
 <p>One can easily spot how some pairs exhibit an obvious pattern, while others fill their corresponding 2D area very densely. This happens more aggressively for higher dimensions (<em>i.e.,</em> to the right/bottom in the image) and for pairs formed with close components (<em>i.e.,</em> near the diagonal in the image). Click to enlarge!</p>
 
@@ -110,9 +111,10 @@
 
 <p>Here’s the scrambling strategy in action:</p>
 
-<p><em>Scrambled 32-dimensional Halton hyper-cube</em></p>
-
-<p><img src="/uploads/2022/chemaguerra-scrambled-halton-2.png" alt="Scrambled 32-dimensional Halton hyper-cube" /></p>
+<figure>
+  <img src="/uploads/2022/chemaguerra-scrambled-halton-2.png" alt="Scrambled 32-dimensional Halton hyper-cube" />
+  <figcaption>Scrambled 32-dimensional Halton hyper-cube</figcaption>
+</figure>
 
 <p>Now all the blocks in the grid look equally dense. Magic!</p>
 
@@ -129,16 +131,32 @@
 
   <div class="wrapper">
 
-    <h2 class="footer-heading">Chema Guerra</h2>
-
     <div class="footer-col-wrapper">
       <div class="footer-col footer-col-1">
+        <h2 class="footer-heading">Chema Guerra</h2>
         <ul class="contact-list">
-          <li class="p-name">Chema Guerra</li><li><a class="u-email" href="mailto:brashandplucky@gmail.com">brashandplucky@gmail.com</a></li></ul>
+          <li class="p-name"><a class="u-email" href="mailto:brashandplucky@gmail.com">brashandplucky@gmail.com</a></li>
+        </ul>
       </div>
 
-      <div class="footer-col footer-col-2"><ul class="social-media-list"><li><a href="https://github.com/chemaguerra"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#github"></use></svg> <span class="username">chemaguerra</span></a></li><li><a href="https://www.twitter.com/chemaguerra"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#twitter"></use></svg> <span class="username">chemaguerra</span></a></li></ul>
-</div>
+      <div class="footer-col footer-col-2"><ul class="social-media-list">
+  <li>
+    <a href="https://x.com/chemaguerra">
+      <svg class="svg-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" fill="currentColor"/>
+      </svg>
+      <span class="username">@chemaguerra</span>
+    </a>
+  </li>
+  <li>
+    <a href="https://x.com/topotoylabs">
+      <svg class="svg-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" fill="currentColor"/>
+      </svg>
+      <span class="username">@topotoylabs</span>
+    </a>
+  </li>
+</ul></div>
 
       <div class="footer-col footer-col-3">
         <p>This is a coding blog where I post about the various projects that I am currently working on, both at work, or as an independent researcher. Most content here revolves around computer graphics and physics simulation.</p>
@@ -147,7 +165,6 @@
 
   </div>
 
-</footer>
-</body>
+</footer></body>
 
 </html>

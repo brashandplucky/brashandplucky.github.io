@@ -25,8 +25,8 @@
     <!-- Make post images clickable to enlarge -->
     <script>
     document.addEventListener('DOMContentLoaded', function() {
-      // Find all images in post content.
-      var images = document.querySelectorAll('.post-content img');
+      // Find all images in post content and page content.
+      var images = document.querySelectorAll('.post-content img, .page-content img');
       
       images.forEach(function(img) {
         // Skip if already wrapped in a link.
@@ -87,17 +87,19 @@
   <div class="post-content e-content" itemprop="articleBody">
     <p>Here’s what we could call a mean pyramid of the 512×512 <a href="https://en.wikipedia.org/wiki/Lena_Fors%C3%A9n">Lena image</a>. <em>i.e.</em>, a sequence of progressive 1:2 downscalings, where each pixel in the i-th downscaled level is the average of the corresponding 4 pixels in the previous level. For people familiar with OpenGL and such, this is what happens when the mipmaps for a texture map are computed:</p>
 
-<p><em>The 9+1 mipmap levels in the 512×512 Lena image</em></p>
-
-<p><img src="/uploads/2022/chemaguerra-filling-of-missing-1.png" alt="9+1 mipmap levels" /></p>
+<figure>
+  <img src="/uploads/2022/chemaguerra-filling-of-missing-1.png" alt="9+1 mipmap levels" />
+  <figcaption>The 9+1 mipmap levels in the 512×512 Lena image</figcaption>
+</figure>
 
 <p>There are many smart, efficient, and relatively simple algorithms based on multi-resolution image pyramids. Modern GPUs can deal with upscaling and downscaling of RGB/A images at the speed of light, so usually such algorithms can be implemented at interactive or even real-time framerates.</p>
 
 <p>Here is the result of upscaling all the mip levels of the Lena image by doing progressive 2:1 bi-linear upscalings until the original resolution is reached:</p>
 
-<p><em>Upscaled mipmap levels</em></p>
-
-<p><img src="/uploads/2022/chemaguerra-filling-of-missing-2.png" alt="Upscaled mipmap levels" /></p>
+<figure>
+  <img src="/uploads/2022/chemaguerra-filling-of-missing-2.png" alt="Upscaled mipmap levels" />
+  <figcaption>Upscaled mipmap levels</figcaption>
+</figure>
 
 <p>Note the characteristic “blocky” (bi-linear) appearance, specially evident in the images of the second row.</p>
 
@@ -110,17 +112,19 @@
   <li>The second stage (synthesis) starts at the smallest level and goes up, leaving meaningful pixels intact, while replacing holes by upscaled data from the previous (lower) level.</li>
 </ol>
 
-<p><em>Mean pyramid (with holes)</em></p>
-
-<p><img src="/uploads/2022/chemaguerra-filling-of-missing-3.png" alt="Mean pyramid (with holes)" /></p>
+<figure>
+  <img src="/uploads/2022/chemaguerra-filling-of-missing-3.png" alt="Mean pyramid (with holes)" />
+  <figcaption>Mean pyramid (with holes)</figcaption>
+</figure>
 
 <p>Note that the analysis stage can stop as soon as a mip level doesn’t have any holes.</p>
 
 <p>Here is the full algorithm, successfully filling the missing pixels in the image.</p>
 
-<p><em>Mean pyramid (filled)</em></p>
-
-<p><img src="/uploads/2022/chemaguerra-filling-of-missing-4.png" alt="Mean pyramid (filled)" /></p>
+<figure>
+  <img src="/uploads/2022/chemaguerra-filling-of-missing-4.png" alt="Mean pyramid (filled)" />
+  <figcaption>Mean pyramid (filled)</figcaption>
+</figure>
 
 <h2 id="conclusions">Conclusions</h2>
 
@@ -139,16 +143,32 @@
 
   <div class="wrapper">
 
-    <h2 class="footer-heading">Chema Guerra</h2>
-
     <div class="footer-col-wrapper">
       <div class="footer-col footer-col-1">
+        <h2 class="footer-heading">Chema Guerra</h2>
         <ul class="contact-list">
-          <li class="p-name">Chema Guerra</li><li><a class="u-email" href="mailto:brashandplucky@gmail.com">brashandplucky@gmail.com</a></li></ul>
+          <li class="p-name"><a class="u-email" href="mailto:brashandplucky@gmail.com">brashandplucky@gmail.com</a></li>
+        </ul>
       </div>
 
-      <div class="footer-col footer-col-2"><ul class="social-media-list"><li><a href="https://github.com/chemaguerra"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#github"></use></svg> <span class="username">chemaguerra</span></a></li><li><a href="https://www.twitter.com/chemaguerra"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#twitter"></use></svg> <span class="username">chemaguerra</span></a></li></ul>
-</div>
+      <div class="footer-col footer-col-2"><ul class="social-media-list">
+  <li>
+    <a href="https://x.com/chemaguerra">
+      <svg class="svg-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" fill="currentColor"/>
+      </svg>
+      <span class="username">@chemaguerra</span>
+    </a>
+  </li>
+  <li>
+    <a href="https://x.com/topotoylabs">
+      <svg class="svg-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" fill="currentColor"/>
+      </svg>
+      <span class="username">@topotoylabs</span>
+    </a>
+  </li>
+</ul></div>
 
       <div class="footer-col footer-col-3">
         <p>This is a coding blog where I post about the various projects that I am currently working on, both at work, or as an independent researcher. Most content here revolves around computer graphics and physics simulation.</p>
@@ -157,7 +177,6 @@
 
   </div>
 
-</footer>
-</body>
+</footer></body>
 
 </html>

@@ -25,8 +25,8 @@
     <!-- Make post images clickable to enlarge -->
     <script>
     document.addEventListener('DOMContentLoaded', function() {
-      // Find all images in post content.
-      var images = document.querySelectorAll('.post-content img');
+      // Find all images in post content and page content.
+      var images = document.querySelectorAll('.post-content img, .page-content img');
       
       images.forEach(function(img) {
         // Skip if already wrapped in a link.
@@ -95,17 +95,19 @@
 
 <p>The problem with this simple approach is that spherical coordinates are not an equal-area transform, as they concentrate points near the poles.</p>
 
-<p><em>Spherical coordinates encoding: phi gets more precision than theta, and density between the equator/poles is highly uneven.</em></p>
-
-<p><img src="/uploads/2022/chemaguerra-octahedron-unitvector-encoding-1.png" alt="Spherical coordinates encoding" /></p>
+<figure>
+  <img src="/uploads/2022/chemaguerra-octahedron-unitvector-encoding-1.png" alt="Spherical coordinates encoding" />
+  <figcaption>Spherical coordinates encoding: phi gets more precision than theta, and density between the equator/poles is highly uneven.</figcaption>
+</figure>
 
 <h2 id="octahedron-encoding">Octahedron encoding</h2>
 
 <p>A smarter solution which produces a much more even distribution, while being strikingly simple and more efficient computationally (no trigonometry whatsoever) is <em>octahedron encoding</em>.</p>
 
-<p><em>Octahedron encoding: The distribution is pretty even.</em></p>
-
-<p><img src="/uploads/2022/chemaguerra-octahedron-unitvector-encoding-2.png" alt="Octahedron encoding" /></p>
+<figure>
+  <img src="/uploads/2022/chemaguerra-octahedron-unitvector-encoding-2.png" alt="Octahedron encoding" />
+  <figcaption>Octahedron encoding: The distribution is pretty even.</figcaption>
+</figure>
 
 <p>The idea is to project positions in the sphere (unit vectors) onto a sphere-centered octahedron. And then piece together the 8 faces of the octahedron in the unit cube. This diagram should be self-explanatory.</p>
 
@@ -125,9 +127,10 @@
 
 <p><em>Octahedron:</em> <a href="https://www.shadertoy.com/view/Mtfyzl">Shadertoy #2</a></p>
 
-<p><em>Fibonacci encoding: Looks great, but comes at a price.</em></p>
-
-<p><img src="/uploads/2022/chemaguerra-octahedron-unitvector-encoding-4.png" alt="Fibonacci encoding" /></p>
+<figure>
+  <img src="/uploads/2022/chemaguerra-octahedron-unitvector-encoding-4.png" alt="Fibonacci encoding" />
+  <figcaption>Fibonacci encoding: Looks great, but comes at a price.</figcaption>
+</figure>
 
 <p>This looks elegant (pretty even!). Unfortunately the implementation to encode/decode unit-vectors with <code class="language-plaintext highlighter-rouge">n</code> bits is rather convoluted and involves <code class="language-plaintext highlighter-rouge">N=2^n</code>  and <code class="language-plaintext highlighter-rouge">1/N</code>. As soon as <code class="language-plaintext highlighter-rouge">n&gt;24</code> or so numerical degradation makes this solution unusable in single-precision. Also, this method is significantly slower than octahedron encoding, and while the distribution looks prettier, the difference in practice is negligible.</p>
 
@@ -140,16 +143,32 @@
 
   <div class="wrapper">
 
-    <h2 class="footer-heading">Chema Guerra</h2>
-
     <div class="footer-col-wrapper">
       <div class="footer-col footer-col-1">
+        <h2 class="footer-heading">Chema Guerra</h2>
         <ul class="contact-list">
-          <li class="p-name">Chema Guerra</li><li><a class="u-email" href="mailto:brashandplucky@gmail.com">brashandplucky@gmail.com</a></li></ul>
+          <li class="p-name"><a class="u-email" href="mailto:brashandplucky@gmail.com">brashandplucky@gmail.com</a></li>
+        </ul>
       </div>
 
-      <div class="footer-col footer-col-2"><ul class="social-media-list"><li><a href="https://github.com/chemaguerra"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#github"></use></svg> <span class="username">chemaguerra</span></a></li><li><a href="https://www.twitter.com/chemaguerra"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#twitter"></use></svg> <span class="username">chemaguerra</span></a></li></ul>
-</div>
+      <div class="footer-col footer-col-2"><ul class="social-media-list">
+  <li>
+    <a href="https://x.com/chemaguerra">
+      <svg class="svg-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" fill="currentColor"/>
+      </svg>
+      <span class="username">@chemaguerra</span>
+    </a>
+  </li>
+  <li>
+    <a href="https://x.com/topotoylabs">
+      <svg class="svg-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" fill="currentColor"/>
+      </svg>
+      <span class="username">@topotoylabs</span>
+    </a>
+  </li>
+</ul></div>
 
       <div class="footer-col footer-col-3">
         <p>This is a coding blog where I post about the various projects that I am currently working on, both at work, or as an independent researcher. Most content here revolves around computer graphics and physics simulation.</p>
@@ -158,7 +177,6 @@
 
   </div>
 
-</footer>
-</body>
+</footer></body>
 
 </html>

@@ -25,8 +25,8 @@
     <!-- Make post images clickable to enlarge -->
     <script>
     document.addEventListener('DOMContentLoaded', function() {
-      // Find all images in post content.
-      var images = document.querySelectorAll('.post-content img');
+      // Find all images in post content and page content.
+      var images = document.querySelectorAll('.post-content img, .page-content img');
       
       images.forEach(function(img) {
         // Skip if already wrapped in a link.
@@ -103,11 +103,15 @@
 
 <p><a href="https://en.wikipedia.org/wiki/MurmurHash">MurMurHash</a></p>
 
-<p><img src="/uploads/2022/chemaguerra-the-avalanche-effect-1.png" alt="MurMurHash" /></p>
+<figure>
+  <img src="/uploads/2022/chemaguerra-the-avalanche-effect-1.png" alt="MurMurHash" />
+  <figcaption>MurMurHash</figcaption>
+</figure>
 
-<p><em>Avalanche matrix for MurMur3’s finalizer</em></p>
-
-<p><img src="/uploads/2022/chemaguerra-the-avalanche-effect-2.jpg" alt="MurMur3 finalizer" /></p>
+<figure>
+  <img src="/uploads/2022/chemaguerra-the-avalanche-effect-2.jpg" alt="MurMur3 finalizer" />
+  <figcaption>Avalanche matrix for MurMur3's finalizer</figcaption>
+</figure>
 
 <h2 id="i-wrote-a-shadertoy-for-this">I wrote a Shadertoy for this</h2>
 
@@ -121,17 +125,20 @@
 
 <p>Some results with other hash functions:</p>
 
-<p><em>Avalanche matrix for iquint1</em></p>
+<figure>
+  <img src="/uploads/2022/chemaguerra-the-avalanche-effect-3.jpg" alt="Avalanche matrix for iquint1" />
+  <figcaption>Avalanche matrix for iquint1</figcaption>
+</figure>
 
-<p><img src="/uploads/2022/chemaguerra-the-avalanche-effect-3.jpg" alt="Avalanche matrix for iquint1" /></p>
+<figure>
+  <img src="/uploads/2022/chemaguerra-the-avalanche-effect-4.jpg" alt="Avalanche matrix for Schechter and Bridson hash" />
+  <figcaption>Avalanche matrix for Schechter and Bridson hash</figcaption>
+</figure>
 
-<p><em>Avalanche matrix for Schechter and Bridson hash</em></p>
-
-<p><img src="/uploads/2022/chemaguerra-the-avalanche-effect-4.jpg" alt="Avalanche matrix for Schechter and Bridson hash" /></p>
-
-<p><em>Avalanche matrix for Wang’s hash</em></p>
-
-<p><img src="/uploads/2022/chemaguerra-the-avalanche-effect-5.jpg" alt="Avalanche matrix for Wang's hash" /></p>
+<figure>
+  <img src="/uploads/2022/chemaguerra-the-avalanche-effect-5.jpg" alt="Avalanche matrix for Wang's hash" />
+  <figcaption>Avalanche matrix for Wang's hash</figcaption>
+</figure>
 
 <h2 id="valuable-links">Valuable links</h2>
 
@@ -162,16 +169,32 @@
 
   <div class="wrapper">
 
-    <h2 class="footer-heading">Chema Guerra</h2>
-
     <div class="footer-col-wrapper">
       <div class="footer-col footer-col-1">
+        <h2 class="footer-heading">Chema Guerra</h2>
         <ul class="contact-list">
-          <li class="p-name">Chema Guerra</li><li><a class="u-email" href="mailto:brashandplucky@gmail.com">brashandplucky@gmail.com</a></li></ul>
+          <li class="p-name"><a class="u-email" href="mailto:brashandplucky@gmail.com">brashandplucky@gmail.com</a></li>
+        </ul>
       </div>
 
-      <div class="footer-col footer-col-2"><ul class="social-media-list"><li><a href="https://github.com/chemaguerra"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#github"></use></svg> <span class="username">chemaguerra</span></a></li><li><a href="https://www.twitter.com/chemaguerra"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#twitter"></use></svg> <span class="username">chemaguerra</span></a></li></ul>
-</div>
+      <div class="footer-col footer-col-2"><ul class="social-media-list">
+  <li>
+    <a href="https://x.com/chemaguerra">
+      <svg class="svg-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" fill="currentColor"/>
+      </svg>
+      <span class="username">@chemaguerra</span>
+    </a>
+  </li>
+  <li>
+    <a href="https://x.com/topotoylabs">
+      <svg class="svg-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" fill="currentColor"/>
+      </svg>
+      <span class="username">@topotoylabs</span>
+    </a>
+  </li>
+</ul></div>
 
       <div class="footer-col footer-col-3">
         <p>This is a coding blog where I post about the various projects that I am currently working on, both at work, or as an independent researcher. Most content here revolves around computer graphics and physics simulation.</p>
@@ -180,7 +203,6 @@
 
   </div>
 
-</footer>
-</body>
+</footer></body>
 
 </html>

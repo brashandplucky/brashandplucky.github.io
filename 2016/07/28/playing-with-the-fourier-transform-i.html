@@ -25,8 +25,8 @@
     <!-- Make post images clickable to enlarge -->
     <script>
     document.addEventListener('DOMContentLoaded', function() {
-      // Find all images in post content.
-      var images = document.querySelectorAll('.post-content img');
+      // Find all images in post content and page content.
+      var images = document.querySelectorAll('.post-content img, .page-content img');
       
       images.forEach(function(img) {
         // Skip if already wrapped in a link.
@@ -93,23 +93,26 @@
 
 <p>I will use pow-2 square sizes (my FT implementation is an FFT). Let’s start by this <em>Aperture x Obstacle</em> map output directly from ArionFX for Photoshop v3.5.0.</p>
 
-<p><em>Aperture x Obstacle mask, rasterized @ 512×512</em></p>
-
-<p><img src="/uploads/2022/chemaguerra-playing-with-the-fourier-transform-1.png" alt="Aperture x Obstacle mask" /></p>
+<figure>
+  <img src="/uploads/2022/chemaguerra-playing-with-the-fourier-transform-1.png" alt="Aperture x Obstacle mask" />
+  <figcaption>Aperture x Obstacle mask, rasterized @ 512×512</figcaption>
+</figure>
 
 <p>The Fourier Transform of this image, rasterized at that size in said 512px buffer, is the following.</p>
 
-<p><em>FT of the mask above</em></p>
-
-<p><img src="/uploads/2022/chemaguerra-playing-with-the-fourier-transform-2.png" alt="FT of the mask above" /></p>
+<figure>
+  <img src="/uploads/2022/chemaguerra-playing-with-the-fourier-transform-2.png" alt="FT of the mask above" />
+  <figcaption>FT of the mask above</figcaption>
+</figure>
 
 <p>The faux-color is done on the magnitude of each complex number in the FT. All the FT images in this post are normalized equally, and offset to look “centered” around the mid-pixel.</p>
 
 <p>Such diffraction patterns and some heavy convolution magic are what ArionFX uses to compute glare on HDR images:</p>
 
-<p><em>Resulting glare in ArionFX</em></p>
-
-<p><img src="/uploads/2022/chemaguerra-playing-with-the-fourier-transform-3.png" alt="Resulting glare in ArionFX" /></p>
+<figure>
+  <img src="/uploads/2022/chemaguerra-playing-with-the-fourier-transform-3.png" alt="Resulting glare in ArionFX" />
+  <figcaption>Resulting glare in ArionFX</figcaption>
+</figure>
 
 <p>Now, let’s focus on what happens to the FT (frequency space) when one does certain operations on the source data (image space). Or, in this exemplification: what happens to the diffraction pattern when one plays with the rasterized aperture mask.</p>
 
@@ -121,17 +124,19 @@
 
 <p>As we will see next, this property holds true regardless of the center of rotation, because the magnitude of the FT is invariant with respect to translations.</p>
 
-<p><em>Rotation about the center</em></p>
-
-<p><img src="/uploads/2022/chemaguerra-playing-with-the-fourier-transform-4.png" alt="Rotation about the center" /></p>
+<figure>
+  <img src="/uploads/2022/chemaguerra-playing-with-the-fourier-transform-4.png" alt="Rotation about the center" />
+  <figcaption>Rotation about the center</figcaption>
+</figure>
 
 <h2 id="translation-with-wrap-around">Translation (with wrap-around)</h2>
 
 <p>Frequencies arise from the relative position of values in the data field, and not from their absolute position in said field. For this reason, shifting (wrap-around included) the source data does not affect the magnitude of the corresponding Fourier Transform in any way.</p>
 
-<p><em>Invariance to translation</em></p>
-
-<p><img src="/uploads/2022/chemaguerra-playing-with-the-fourier-transform-5.png" alt="Invariance to translation" /></p>
+<figure>
+  <img src="/uploads/2022/chemaguerra-playing-with-the-fourier-transform-5.png" alt="Invariance to translation" />
+  <figcaption>Invariance to translation</figcaption>
+</figure>
 
 <p>Let’s recall that the idea behind the FT is that <em>“any periodic function can be rewritten as a weighted sum of sines and cosines of different frequencies”</em>. Periodic being the keyword there.</p>
 
@@ -141,9 +146,10 @@
 
 <p>This is because no new frequencies are introduced, since we are transforming the same source data. However, the source data is <code class="language-plaintext highlighter-rouge">NxM</code> times smaller proportional to the data buffer size (<em>i.e.,</em> the frequencies become <code class="language-plaintext highlighter-rouge">NxM</code> times higher).</p>
 
-<p><em>Exploded frequencies on tiling</em></p>
-
-<p><img src="/uploads/2022/chemaguerra-playing-with-the-fourier-transform-6.png" alt="Exploded frequencies on tiling" /></p>
+<figure>
+  <img src="/uploads/2022/chemaguerra-playing-with-the-fourier-transform-6.png" alt="Exploded frequencies on tiling" />
+  <figcaption>Exploded frequencies on tiling</figcaption>
+</figure>
 
 <h2 id="data-scaling">Data scaling</h2>
 
@@ -151,9 +157,10 @@
 
 <p>This is because encoding smaller data produces higher fundamental frequencies, while encoding a larger version of the same data produces lower fundamental frequencies.</p>
 
-<p><em>Inverse effect on scaling</em></p>
-
-<p><img src="/uploads/2022/chemaguerra-playing-with-the-fourier-transform-7.png" alt="Inverse effect on scaling" /></p>
+<figure>
+  <img src="/uploads/2022/chemaguerra-playing-with-the-fourier-transform-7.png" alt="Inverse effect on scaling" />
+  <figcaption>Inverse effect on scaling</figcaption>
+</figure>
 
 <p>In the particular case of glare (<em>e.g.,</em> ArionFX) this means that the diffraction pattern becomes blurrier if the iris is sampled small. Or, in other words, for a given iris, the sharpest diffraction pattern possible is achieved when the iris is sampled as large as the data buffer itself.</p>
 
@@ -166,16 +173,32 @@
 
   <div class="wrapper">
 
-    <h2 class="footer-heading">Chema Guerra</h2>
-
     <div class="footer-col-wrapper">
       <div class="footer-col footer-col-1">
+        <h2 class="footer-heading">Chema Guerra</h2>
         <ul class="contact-list">
-          <li class="p-name">Chema Guerra</li><li><a class="u-email" href="mailto:brashandplucky@gmail.com">brashandplucky@gmail.com</a></li></ul>
+          <li class="p-name"><a class="u-email" href="mailto:brashandplucky@gmail.com">brashandplucky@gmail.com</a></li>
+        </ul>
       </div>
 
-      <div class="footer-col footer-col-2"><ul class="social-media-list"><li><a href="https://github.com/chemaguerra"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#github"></use></svg> <span class="username">chemaguerra</span></a></li><li><a href="https://www.twitter.com/chemaguerra"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#twitter"></use></svg> <span class="username">chemaguerra</span></a></li></ul>
-</div>
+      <div class="footer-col footer-col-2"><ul class="social-media-list">
+  <li>
+    <a href="https://x.com/chemaguerra">
+      <svg class="svg-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" fill="currentColor"/>
+      </svg>
+      <span class="username">@chemaguerra</span>
+    </a>
+  </li>
+  <li>
+    <a href="https://x.com/topotoylabs">
+      <svg class="svg-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" fill="currentColor"/>
+      </svg>
+      <span class="username">@topotoylabs</span>
+    </a>
+  </li>
+</ul></div>
 
       <div class="footer-col footer-col-3">
         <p>This is a coding blog where I post about the various projects that I am currently working on, both at work, or as an independent researcher. Most content here revolves around computer graphics and physics simulation.</p>
@@ -184,7 +207,6 @@
 
   </div>
 
-</footer>
-</body>
+</footer></body>
 
 </html>

@@ -25,8 +25,8 @@
     <!-- Make post images clickable to enlarge -->
     <script>
     document.addEventListener('DOMContentLoaded', function() {
-      // Find all images in post content.
-      var images = document.querySelectorAll('.post-content img');
+      // Find all images in post content and page content.
+      var images = document.querySelectorAll('.post-content img, .page-content img');
       
       images.forEach(function(img) {
         // Skip if already wrapped in a link.
@@ -121,9 +121,10 @@
 
 <p>In the worst case where <code class="language-plaintext highlighter-rouge">S</code> is a power-of-2-plus-1, <code class="language-plaintext highlighter-rouge">S’</code> gets nearly twice as large as <code class="language-plaintext highlighter-rouge">S</code>. If the original image is 8-bit and we are using single-precision floating-point math for the FFT/IFFT, this means a memory usage factor of 64x. In the case of an HDR (single-precision floating-point) grayscale image, we are speaking of a worst case scenario of 16x. In average, however, the memory usage factor is around 8x. If <code class="language-plaintext highlighter-rouge">S</code> is a power-of-2, then the memory usage factor goes down to 4x.</p>
 
-<p><em>Heavy glare using the FFT-based method in an HDR image by Paul Debevec</em></p>
-
-<p><img src="/uploads/2022/chemaguerra-fast-convolutions-ii-1.gif" alt="Heavy glare using the FFT-based method" /></p>
+<figure>
+  <img src="/uploads/2022/chemaguerra-fast-convolutions-ii-1.gif" alt="Heavy glare using the FFT-based method" />
+  <figcaption>Heavy glare using the FFT-based method in an HDR image by Paul Debevec</figcaption>
+</figure>
 
 <p>This image with heavy glare has been output with some ArionFX-related experimental tonemapping code I am working on these days.</p>
 
@@ -148,16 +149,32 @@
 
   <div class="wrapper">
 
-    <h2 class="footer-heading">Chema Guerra</h2>
-
     <div class="footer-col-wrapper">
       <div class="footer-col footer-col-1">
+        <h2 class="footer-heading">Chema Guerra</h2>
         <ul class="contact-list">
-          <li class="p-name">Chema Guerra</li><li><a class="u-email" href="mailto:brashandplucky@gmail.com">brashandplucky@gmail.com</a></li></ul>
+          <li class="p-name"><a class="u-email" href="mailto:brashandplucky@gmail.com">brashandplucky@gmail.com</a></li>
+        </ul>
       </div>
 
-      <div class="footer-col footer-col-2"><ul class="social-media-list"><li><a href="https://github.com/chemaguerra"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#github"></use></svg> <span class="username">chemaguerra</span></a></li><li><a href="https://www.twitter.com/chemaguerra"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#twitter"></use></svg> <span class="username">chemaguerra</span></a></li></ul>
-</div>
+      <div class="footer-col footer-col-2"><ul class="social-media-list">
+  <li>
+    <a href="https://x.com/chemaguerra">
+      <svg class="svg-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" fill="currentColor"/>
+      </svg>
+      <span class="username">@chemaguerra</span>
+    </a>
+  </li>
+  <li>
+    <a href="https://x.com/topotoylabs">
+      <svg class="svg-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" fill="currentColor"/>
+      </svg>
+      <span class="username">@topotoylabs</span>
+    </a>
+  </li>
+</ul></div>
 
       <div class="footer-col footer-col-3">
         <p>This is a coding blog where I post about the various projects that I am currently working on, both at work, or as an independent researcher. Most content here revolves around computer graphics and physics simulation.</p>
@@ -166,7 +183,6 @@
 
   </div>
 
-</footer>
-</body>
+</footer></body>
 
 </html>

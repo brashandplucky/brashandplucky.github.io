@@ -25,8 +25,8 @@
     <!-- Make post images clickable to enlarge -->
     <script>
     document.addEventListener('DOMContentLoaded', function() {
-      // Find all images in post content.
-      var images = document.querySelectorAll('.post-content img');
+      // Find all images in post content and page content.
+      var images = document.querySelectorAll('.post-content img, .page-content img');
       
       images.forEach(function(img) {
         // Skip if already wrapped in a link.
@@ -127,9 +127,10 @@
 
 <p>A separable convolution kernel is one that can be broken into two 1D (vertical and horizontal) projections. For these projections the (matrix) product of the <code class="language-plaintext highlighter-rouge">1xh</code> vertical kernel by the <code class="language-plaintext highlighter-rouge">wx1</code> horizontal kernel must restore the original <code class="language-plaintext highlighter-rouge">wxh</code> 2D kernel.</p>
 
-<p><em>1D vertical and horizontal Gaussian convolution</em></p>
-
-<p><img src="/uploads/2022/chemaguerra-fast-convolutions-i-1.png" alt="1D Gaussian convolution" /></p>
+<figure>
+  <img src="/uploads/2022/chemaguerra-fast-convolutions-i-1.png" alt="1D Gaussian convolution" />
+  <figcaption>1D vertical and horizontal Gaussian convolution</figcaption>
+</figure>
 
 <p>Conveniently enough, the most usual convolution kernels (<em>e.g.,</em> Gaussian blur, box blur, …) happen to be separable.</p>
 
@@ -142,9 +143,10 @@
 
 <p>Note: These two steps are commutative.</p>
 
-<p><em>2-step separable vs. brute-force 2D Gaussian convolution</em></p>
-
-<p><img src="/uploads/2022/chemaguerra-fast-convolutions-i-2.png" alt="2D Gaussian convolution" /></p>
+<figure>
+  <img src="/uploads/2022/chemaguerra-fast-convolutions-i-2.png" alt="2D Gaussian convolution" />
+  <figcaption>2-step separable vs. brute-force 2D Gaussian convolution</figcaption>
+</figure>
 
 <p><em>Pros:</em></p>
 
@@ -187,13 +189,15 @@
   <li>Compute the Inverse Fourier Transform of the result.</li>
 </ol>
 
-<p><em>Brute-force 2D Gaussian vs. the convolution theorem</em></p>
+<figure>
+  <img src="/uploads/2022/chemaguerra-fast-convolutions-i-3.png" alt="Convolution theorem" />
+  <figcaption>Brute-force 2D Gaussian vs. the convolution theorem</figcaption>
+</figure>
 
-<p><img src="/uploads/2022/chemaguerra-fast-convolutions-i-3.png" alt="Convolution theorem" /></p>
-
-<p><em>Magic</em></p>
-
-<p><img src="/uploads/2022/chemaguerra-fast-convolutions-i-4.gif" alt="Magic" /></p>
+<figure>
+  <img src="/uploads/2022/chemaguerra-fast-convolutions-i-4.gif" alt="Magic" />
+  <figcaption>Magic</figcaption>
+</figure>
 
 <p><em>Pros:</em></p>
 
@@ -242,16 +246,32 @@
 
   <div class="wrapper">
 
-    <h2 class="footer-heading">Chema Guerra</h2>
-
     <div class="footer-col-wrapper">
       <div class="footer-col footer-col-1">
+        <h2 class="footer-heading">Chema Guerra</h2>
         <ul class="contact-list">
-          <li class="p-name">Chema Guerra</li><li><a class="u-email" href="mailto:brashandplucky@gmail.com">brashandplucky@gmail.com</a></li></ul>
+          <li class="p-name"><a class="u-email" href="mailto:brashandplucky@gmail.com">brashandplucky@gmail.com</a></li>
+        </ul>
       </div>
 
-      <div class="footer-col footer-col-2"><ul class="social-media-list"><li><a href="https://github.com/chemaguerra"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#github"></use></svg> <span class="username">chemaguerra</span></a></li><li><a href="https://www.twitter.com/chemaguerra"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#twitter"></use></svg> <span class="username">chemaguerra</span></a></li></ul>
-</div>
+      <div class="footer-col footer-col-2"><ul class="social-media-list">
+  <li>
+    <a href="https://x.com/chemaguerra">
+      <svg class="svg-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" fill="currentColor"/>
+      </svg>
+      <span class="username">@chemaguerra</span>
+    </a>
+  </li>
+  <li>
+    <a href="https://x.com/topotoylabs">
+      <svg class="svg-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" fill="currentColor"/>
+      </svg>
+      <span class="username">@topotoylabs</span>
+    </a>
+  </li>
+</ul></div>
 
       <div class="footer-col footer-col-3">
         <p>This is a coding blog where I post about the various projects that I am currently working on, both at work, or as an independent researcher. Most content here revolves around computer graphics and physics simulation.</p>
@@ -260,7 +280,6 @@
 
   </div>
 
-</footer>
-</body>
+</footer></body>
 
 </html>

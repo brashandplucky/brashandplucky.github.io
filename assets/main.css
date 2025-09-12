@@ -1,6 +1,7 @@
 /**
  * Reset some basic elements
  */
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap");
 body, h1, h2, h3, h4, h5, h6,
 p, blockquote, pre, hr,
 dl, dd, ol, ul, figure {
@@ -647,37 +648,69 @@ table td {
 }
 
 html {
-  font-size: 112.5%;
+  font-size: 100%;
 }
 
 body {
-  line-height: 1.7;
+  line-height: 1.75;
+  font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-size: 18px;
+}
+
+p {
+  margin-bottom: 1.5em;
+  line-height: 1.75;
 }
 
 h1 {
-  font-size: 2.5em;
+  font-size: 54px;
+  font-weight: 700;
+  line-height: 1.2;
+  margin: 0 0 1.5rem 0;
 }
 
 h2 {
-  font-size: 2em;
+  font-size: 36px;
+  font-weight: 400;
+  line-height: 1.3;
+  margin: 3rem 0 1.75rem;
 }
 
 h3 {
-  font-size: 1.5em;
+  font-size: 30.6px;
+  font-weight: 700;
+  line-height: 1.4;
+  margin: 2.5rem 0 1.5rem;
 }
 
 h4 {
-  font-size: 1.25em;
+  font-size: 27px;
+  font-weight: 400;
+  line-height: 1.4;
+  margin: 2rem 0 1.25rem;
+}
+
+ul, ol {
+  line-height: 1.75;
+  margin-bottom: 1.5em;
+}
+
+li {
+  margin-bottom: 0.5em;
 }
 
 .wrapper {
-  max-width: 840px;
+  max-width: 964px;
 }
 
 :root {
-  --bnp_bkg: #121418;
-  --bnp_frg: #B1B9C7;
-  --bnp_blu: #90B4FD;
+  --bnp_bkg: rgb(0, 11, 26);
+  --bnp_header: rgb(0, 20, 41);
+  --bnp_frg: rgb(219, 219, 219);
+  --bnp_blu: rgb(0, 119, 255);
+  --bnp_blu_hover: rgb(0, 75, 161);
+  --bnp_code_bg: rgb(0, 6, 15);
+  --bnp_code_text: rgb(225, 228, 232);
 }
 
 body {
@@ -688,6 +721,7 @@ body {
 a {
   color: var(--bnp_blu);
   text-decoration: none;
+  font-weight: 600;
 }
 
 a:visited {
@@ -695,8 +729,14 @@ a:visited {
 }
 
 a:hover {
-  color: #5575C3;
+  color: var(--bnp_blu_hover);
   text-decoration: underline;
+}
+
+.social-media-list a {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
 }
 
 .social-media-list a:hover {
@@ -707,28 +747,58 @@ a:hover {
   text-decoration: underline;
 }
 
-pre, code {
-  font-size: 15px;
-  border: 1px solid #000;
+.social-media-list .svg-icon {
+  width: 16px;
+  height: 16px;
+  vertical-align: middle;
+}
+
+code {
+  font-size: 0.9em;
+  padding: 0.2em 0.4em;
+  border: none;
   border-radius: 3px;
-  background-color: #000;
+  background-color: var(--bnp_code_bg);
+  color: var(--bnp_code_text);
+}
+
+pre {
+  font-size: 16px;
+  line-height: 1.5;
+  padding: 1.25rem;
+  margin: 2rem 0;
+  border: none;
+  border-radius: 6px;
+  background-color: var(--bnp_code_bg);
+  overflow-x: auto;
+  color: var(--bnp_code_text);
+}
+
+pre code {
+  padding: 0;
+  font-size: inherit;
+  border: none;
+  background-color: transparent;
 }
 
 .highlight {
-  background: #000;
+  background: var(--bnp_code_bg);
+  border: none;
+  border-radius: 6px;
 }
 
 .highlighter-rouge .highlight {
-  background: #000;
+  background: var(--bnp_code_bg);
+  border: none;
 }
 
 .site-title {
   font-size: 26px;
   font-weight: 300;
-  line-height: 54px;
   letter-spacing: -1px;
-  margin-bottom: 0;
-  float: left;
+  margin: 0;
+  padding: 0;
+  float: none;
 }
 
 .site-title, .site-title:visited {
@@ -736,8 +806,11 @@ pre, code {
 }
 
 .site-nav {
-  float: right;
-  line-height: 54px;
+  float: none;
+  line-height: normal;
+  margin: 0;
+  padding: 0;
+  margin-left: auto;
 }
 
 .site-nav .nav-trigger {
@@ -748,21 +821,61 @@ pre, code {
   display: none;
 }
 
+.site-nav .trigger {
+  display: flex;
+  align-items: center;
+}
+
 .site-nav .page-link {
   color: var(--bnp_frg);
   line-height: 1.5;
 }
 
 .site-nav .page-link:not(:last-child) {
-  margin-right: 20px;
+  margin-right: 35px;
 }
 
 .site-header {
-  border-bottom: 1px solid var(--bnp_frg);
+  border-bottom: none;
+  background-color: var(--bnp_header);
+  min-height: 64px;
+  display: flex;
+  align-items: center;
+}
+.site-header .wrapper {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
 
 .site-footer {
-  border-top: 1px solid var(--bnp_frg);
+  border-top: none;
+  background-color: var(--bnp_header);
+  color: var(--bnp_frg);
+  padding: 45px 0;
+}
+.site-footer .footer-heading {
+  font-size: 1.5rem;
+  margin-top: 0;
+  margin-bottom: 1rem;
+  color: var(--bnp_frg);
+}
+.site-footer .footer-col-wrapper {
+  display: flex;
+  align-items: stretch;
+}
+.site-footer .footer-col {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  margin-bottom: 0;
+}
+.site-footer .footer-col-3 p {
+  margin: 0;
+  font-size: 0.85em;
+  opacity: 0.7;
+  font-style: italic;
 }
 
 table {
@@ -789,18 +902,112 @@ table td {
 }
 
 hr.style-one {
-  height: 5px;
-  border-top: 1px solid var(--bnp_frg);
-  border-left: 0px;
-  border-right: 0px;
-  border-bottom: 0px;
-  background-color: var(--bnp_bkg);
+  height: 1px;
+  border: none;
+  background: var(--bnp_blu);
+  margin: 2rem 0;
+  opacity: 0.2;
 }
 
 img {
   border-radius: 8px;
   max-width: 100%;
   height: auto;
+  margin: 2rem auto;
+  display: block;
+}
+
+video {
+  border-radius: 8px;
+  max-width: 100%;
+  height: auto;
+  margin: 2rem auto;
+  display: block;
+}
+
+figure {
+  margin: 2rem 0;
+  text-align: center;
+}
+figure img, figure video {
+  margin: 0 auto 1rem;
+  display: block;
+}
+figure figcaption {
+  font-size: 0.85em;
+  color: var(--bnp_frg);
+  opacity: 0.7;
+  font-style: italic;
+  margin-top: 0.5rem;
+  line-height: 1.4;
+}
+
+.caption {
+  display: block;
+  font-size: 0.85em;
+  color: var(--bnp_frg);
+  opacity: 0.7;
+  font-style: italic;
+  text-align: center;
+  margin-top: -1.5rem;
+  margin-bottom: 2rem;
+  line-height: 1.4;
+}
+
+.row {
+  display: flex;
+  align-items: flex-start;
+  margin-bottom: 1.5rem;
+  gap: 1rem;
+}
+
+.span2 {
+  flex-shrink: 0;
+}
+.span2 img {
+  margin: 0;
+  border-radius: 4px;
+}
+
+.span10 {
+  flex-grow: 1;
+}
+.span10 h3 {
+  margin-top: 0;
+  margin-bottom: 0.5rem;
+  font-size: 1.5rem;
+  line-height: 1.2;
+}
+.span10 p {
+  margin: 0.25rem 0;
+  line-height: 1.5;
+}
+.span10 .post-date {
+  font-size: 0.85em;
+  color: var(--bnp_frg);
+  opacity: 0.7;
+  font-style: italic;
+}
+
+.post-content {
+  line-height: 1.75;
+}
+.post-content > * + * {
+  margin-top: 1.5rem;
+}
+.post-content h2 {
+  margin-top: 3rem;
+}
+.post-content h3 {
+  margin-top: 2.5rem;
+}
+.post-content blockquote {
+  margin: 2rem 0;
+  padding-left: 1.5rem;
+  border-left: 4px solid var(--bnp_blu);
+  color: var(--bnp_frg);
+  opacity: 0.85;
+  font-style: italic;
 }
 
 /*# sourceMappingURL=main.css.map */

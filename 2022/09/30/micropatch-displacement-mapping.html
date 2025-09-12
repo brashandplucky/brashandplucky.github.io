@@ -25,8 +25,8 @@
     <!-- Make post images clickable to enlarge -->
     <script>
     document.addEventListener('DOMContentLoaded', function() {
-      // Find all images in post content.
-      var images = document.querySelectorAll('.post-content img');
+      // Find all images in post content and page content.
+      var images = document.querySelectorAll('.post-content img, .page-content img');
       
       images.forEach(function(img) {
         // Skip if already wrapped in a link.
@@ -99,13 +99,15 @@
 
 <h2 id="say-hi-to-micro-patch-displacement-mapping">Say hi to: Micro-Patch Displacement Mapping</h2>
 
-<p><em>Non-affine MPDM in arbitrarily-curved surfaces</em></p>
+<figure>
+  <video controls="controls" playsinline="playsinline" loop="" src="/uploads/2022/chemaguerra-micropatch-displacement-mapping-1.mp4" width="600" height="600" poster="/uploads/2022/chemaguerra-micropatch-displacement-mapping-poster-1.png" alt="Non-affine MPDM" preload="none"></video>
+  <figcaption>Non-affine MPDM in arbitrarily-curved surfaces</figcaption>
+</figure>
 
-<video controls="controls" playsinline="playsinline" loop="" src="/uploads/2022/chemaguerra-micropatch-displacement-mapping-1.mp4" width="600" height="600" poster="/uploads/2022/chemaguerra-micropatch-displacement-mapping-poster-1.png" alt="" preload="none"></video>
-
-<p><em>Affine MPDM in flat surfaces</em></p>
-
-<video controls="controls" playsinline="playsinline" loop="" src="/uploads/2022/chemaguerra-micropatch-displacement-mapping-2.mp4" width="600" height="600" poster="/uploads/2022/chemaguerra-micropatch-displacement-mapping-poster-2.png" alt="" preload="none"></video>
+<figure>
+  <video controls="controls" playsinline="playsinline" loop="" src="/uploads/2022/chemaguerra-micropatch-displacement-mapping-2.mp4" width="600" height="600" poster="/uploads/2022/chemaguerra-micropatch-displacement-mapping-poster-2.png" alt="Affine MPDM" preload="none"></video>
+  <figcaption>Affine MPDM in flat surfaces</figcaption>
+</figure>
 
 <p>Some good properties of Maverick’s displacement:</p>
 
@@ -153,21 +155,25 @@
   <li>Because of the non-affine treatment, at the lowest hierarchy level you no longer have quads or triangles, but bilinear patches (hence the name: <em>Micro-PATCH Displacement Mapping</em>).</li>
 </ul>
 
-<p><em>Non-affine MPDM in arbitrarily-curved surfaces</em></p>
+<figure>
+  <img src="/uploads/2022/chemaguerra-micropatch-displacement-mapping-3.png" alt="Non-affine MPDM in arbitrarily-curved surfaces" />
+  <figcaption>Non-affine MPDM in arbitrarily-curved surfaces</figcaption>
+</figure>
 
-<p><img src="/uploads/2022/chemaguerra-micropatch-displacement-mapping-3.png" alt="Non-affine MPDM in arbitrarily-curved surfaces" /></p>
+<figure>
+  <img src="/uploads/2022/chemaguerra-micropatch-displacement-mapping-4.jpg" alt="The input heightmap used" />
+  <figcaption>The input heightmap used</figcaption>
+</figure>
 
-<p><em>The input heightmap used</em></p>
+<figure>
+  <img src="/uploads/2022/chemaguerra-micropatch-displacement-mapping-5.png" alt="Affine MPDM in flat surfaces" />
+  <figcaption>Affine MPDM in flat surfaces (special optimization branch)</figcaption>
+</figure>
 
-<p><img src="/uploads/2022/chemaguerra-micropatch-displacement-mapping-4.jpg" alt="The input heightmap used" /></p>
-
-<p><em>Affine MPDM in flat surfaces (special optimization branch)</em></p>
-
-<p><img src="/uploads/2022/chemaguerra-micropatch-displacement-mapping-5.png" alt="Affine MPDM in flat surfaces" /></p>
-
-<p><em>The input heightmap used</em></p>
-
-<p><img src="/uploads/2022/chemaguerra-micropatch-displacement-mapping-6.jpg" alt="The input heightmap used" /></p>
+<figure>
+  <img src="/uploads/2022/chemaguerra-micropatch-displacement-mapping-6.jpg" alt="The input heightmap used" />
+  <figcaption>The input heightmap used</figcaption>
+</figure>
 
 <p>But the devil lies in the details. Efficient implementation of this all was a multi-week hell working with data structures, low-level optimizations, coordinating MPDM with OptiX and the rest of the Maverick core, and dealing with plenty of non-obvious fine-grain issues such as:</p>
 
@@ -285,16 +291,32 @@
 
   <div class="wrapper">
 
-    <h2 class="footer-heading">Chema Guerra</h2>
-
     <div class="footer-col-wrapper">
       <div class="footer-col footer-col-1">
+        <h2 class="footer-heading">Chema Guerra</h2>
         <ul class="contact-list">
-          <li class="p-name">Chema Guerra</li><li><a class="u-email" href="mailto:brashandplucky@gmail.com">brashandplucky@gmail.com</a></li></ul>
+          <li class="p-name"><a class="u-email" href="mailto:brashandplucky@gmail.com">brashandplucky@gmail.com</a></li>
+        </ul>
       </div>
 
-      <div class="footer-col footer-col-2"><ul class="social-media-list"><li><a href="https://github.com/chemaguerra"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#github"></use></svg> <span class="username">chemaguerra</span></a></li><li><a href="https://www.twitter.com/chemaguerra"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#twitter"></use></svg> <span class="username">chemaguerra</span></a></li></ul>
-</div>
+      <div class="footer-col footer-col-2"><ul class="social-media-list">
+  <li>
+    <a href="https://x.com/chemaguerra">
+      <svg class="svg-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" fill="currentColor"/>
+      </svg>
+      <span class="username">@chemaguerra</span>
+    </a>
+  </li>
+  <li>
+    <a href="https://x.com/topotoylabs">
+      <svg class="svg-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" fill="currentColor"/>
+      </svg>
+      <span class="username">@topotoylabs</span>
+    </a>
+  </li>
+</ul></div>
 
       <div class="footer-col footer-col-3">
         <p>This is a coding blog where I post about the various projects that I am currently working on, both at work, or as an independent researcher. Most content here revolves around computer graphics and physics simulation.</p>
@@ -303,7 +325,6 @@
 
   </div>
 
-</footer>
-</body>
+</footer></body>
 
 </html>

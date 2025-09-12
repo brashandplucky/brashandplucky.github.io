@@ -25,8 +25,8 @@
     <!-- Make post images clickable to enlarge -->
     <script>
     document.addEventListener('DOMContentLoaded', function() {
-      // Find all images in post content.
-      var images = document.querySelectorAll('.post-content img');
+      // Find all images in post content and page content.
+      var images = document.querySelectorAll('.post-content img, .page-content img');
       
       images.forEach(function(img) {
         // Skip if already wrapped in a link.
@@ -89,9 +89,10 @@
 
 <p>The plot below represents input size (in pixels) in the <code class="language-plaintext highlighter-rouge">x</code> axis, and convolution time (in seconds) in the <code class="language-plaintext highlighter-rouge">y</code> axis. So, if you go to <code class="language-plaintext highlighter-rouge">x=4096</code> that means <em>“a convolution of a 4096×4096 image by a 4096×4096 kernel”</em>.</p>
 
-<p><em>Even competition between FFT-based vs. separable convolution methods</em></p>
-
-<p><img src="/uploads/2022/chemaguerra-fast-convolutions-iii-1.png" alt="FFT-based vs. separable convolution" /></p>
+<figure>
+  <img src="/uploads/2022/chemaguerra-fast-convolutions-iii-1.png" alt="FFT-based vs. separable convolution" />
+  <figcaption>Even competition between FFT-based vs. separable convolution methods</figcaption>
+</figure>
 
 <p>Two conclusions can be made from the above plot, which confirm what was explained in my previous post:</p>
 
@@ -104,9 +105,10 @@
 
 <p><strong>[EDIT] It’s been 8 years since this post (2014..2022). Now we use the cuFFT implementation in Maverick, which is blazingly fast.</strong></p>
 
-<p><em>Separable convolution with a fixed 11×11 kernel (in orange)</em></p>
-
-<p><img src="/uploads/2022/chemaguerra-fast-convolutions-iii-2.png" alt="Fixed 11×11 kernel" /></p>
+<figure>
+  <img src="/uploads/2022/chemaguerra-fast-convolutions-iii-2.png" alt="Fixed 11×11 kernel" />
+  <figcaption>Separable convolution with a fixed 11×11 kernel (in orange)</figcaption>
+</figure>
 
 <p>A couple more remarks:</p>
 
@@ -124,16 +126,32 @@
 
   <div class="wrapper">
 
-    <h2 class="footer-heading">Chema Guerra</h2>
-
     <div class="footer-col-wrapper">
       <div class="footer-col footer-col-1">
+        <h2 class="footer-heading">Chema Guerra</h2>
         <ul class="contact-list">
-          <li class="p-name">Chema Guerra</li><li><a class="u-email" href="mailto:brashandplucky@gmail.com">brashandplucky@gmail.com</a></li></ul>
+          <li class="p-name"><a class="u-email" href="mailto:brashandplucky@gmail.com">brashandplucky@gmail.com</a></li>
+        </ul>
       </div>
 
-      <div class="footer-col footer-col-2"><ul class="social-media-list"><li><a href="https://github.com/chemaguerra"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#github"></use></svg> <span class="username">chemaguerra</span></a></li><li><a href="https://www.twitter.com/chemaguerra"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#twitter"></use></svg> <span class="username">chemaguerra</span></a></li></ul>
-</div>
+      <div class="footer-col footer-col-2"><ul class="social-media-list">
+  <li>
+    <a href="https://x.com/chemaguerra">
+      <svg class="svg-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" fill="currentColor"/>
+      </svg>
+      <span class="username">@chemaguerra</span>
+    </a>
+  </li>
+  <li>
+    <a href="https://x.com/topotoylabs">
+      <svg class="svg-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" fill="currentColor"/>
+      </svg>
+      <span class="username">@topotoylabs</span>
+    </a>
+  </li>
+</ul></div>
 
       <div class="footer-col footer-col-3">
         <p>This is a coding blog where I post about the various projects that I am currently working on, both at work, or as an independent researcher. Most content here revolves around computer graphics and physics simulation.</p>
@@ -142,7 +160,6 @@
 
   </div>
 
-</footer>
-</body>
+</footer></body>
 
 </html>
