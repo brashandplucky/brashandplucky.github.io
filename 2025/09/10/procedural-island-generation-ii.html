@@ -87,7 +87,7 @@
   <div class="post-content e-content" itemprop="articleBody">
     <figure>
   <img src="/uploads/2025/procedural-island-generation-ii/chemaguerra-paintmap-hero-pixelated.png" alt="Paint map terrain elevation" />
-  <figcaption>128×128 paint map defining the island's base elevation structure</figcaption>
+  <figcaption>128x128 paint map defining the island's base elevation structure</figcaption>
 </figure>
 
 <p>This post is a direct continuation to <a href="/2025/09/07/procedural-island-generation-i.html">Part I</a>, where we established the terrain mesh foundation using Poisson disk sampling and Delaunay/Voronoi structures. Now we’ll breathe life into that skeletal framework by assigning elevations to create realistic terrain.</p>
@@ -96,7 +96,7 @@
 
 <h2 id="elevation-color-gradients">Elevation Color Gradients</h2>
 
-<p>Before we delve into elevation itself, we will pick a color gradient to map height values to natural-looking terrain colors. For example, <a href="https://github.com/redblobgames/mapgen4">mapgen4</a>, which inspired this series, uses this color gradient:</p>
+<p>Before we delve into elevation itself, we will pick a color gradient to map height values to natural-looking terrain colors. For example, <a href="https://github.com/redblobgames/mapgen4">mapgen4</a> (which inspired this series) uses this color gradient:</p>
 
 <figure>
   <img src="/uploads/2025/procedural-island-generation-ii/chemaguerra-gradient-elevation-classic.png" alt="Classic elevation gradient" />
@@ -162,7 +162,8 @@
   <figcaption>Initial paint map with procedurally generated island shape</figcaption>
 </figure>
 
-<p>The paint map uses a simple elevation encoding:</p>
+<p>The range of the paint map is remapped to use the color gradient presented above:</p>
+
 <ul>
   <li><strong>-1</strong>: Deep ocean (dark blue)</li>
   <li><strong>0</strong>: Sea level (the coastline)</li>
@@ -185,7 +186,7 @@
   <figcaption>Fractal Brownian motion (fBm) - Simplex noise (octaves=5, persistence=0.5) for organic terrain variation</figcaption>
 </figure>
 
-<p>These two components combine according to this base elevation formula:</p>
+<p>These two components are combined according to this base elevation formula:</p>
 
 \[e = \frac{k_{fBm} \cdot \text{fBm} + k_d \cdot (0.75 - 2 \cdot d^2)}{2}\]
 
@@ -211,7 +212,7 @@
 
 <h2 id="mountain-ridges">Mountain Ridges</h2>
 
-<p>While fBm and distance create the base terrain, mountain ridges add dramatic peaks and valleys to land areas.</p>
+<p>While distance and fBm create the base terrain, mountain ridges add dramatic peaks and valleys to land areas.</p>
 
 <h3 id="ridge-pattern-decomposition">Ridge Pattern Decomposition</h3>
 
@@ -239,15 +240,13 @@
 
 \[R = (\text{noise}_1 + \text{noise}_2) \in [-2, 2]\]
 
-\[r = \max(0, 1 - \lvert R \rvert)\]
+\[r = \text{saturate}(0, 1 - \lvert R \rvert)\]
 
 \[s = \text{saturate}(5e)\]
 
-\[m = s \cdot r\]
+\[r_{final} = \clamp(s \cdot r, e, 3e)\]
 
-\[e_{final} = \max(e, \min(3e, m))\]
-
-<p>The ridge pattern combines two octaves from differently-seeded noise functions. The \(1 - \lvert R \rvert\) transformation creates the characteristic worm-like ridge appearance - any similar function that emphasizes values near zero would work equally well.</p>
+<p>The ridge pattern combines two octaves from differently-seeded noise functions. The \(1 - \lvert R \rvert\) transformation creates the characteristic tubular appearance, although any similar function that emphasizes values near zero would work equally well.</p>
 
 <p>The strength multiplier \(s\) ensures ridges fade naturally at coastlines and intensify at higher elevations, confining mountain formation to land areas while scaling with terrain height.</p>
 
@@ -262,21 +261,21 @@
 
 <figure>
   <img src="/uploads/2025/procedural-island-generation-ii/chemaguerra-final-paint-map.png" alt="Final composite" />
-  <figcaption>128×128 paint map - raw visualization</figcaption>
+  <figcaption>128x128 paint map - raw visualization</figcaption>
 </figure>
 
 \[e_{final} = e + r_{final}\]
 
-<p>Although the paint map operates at low resolution (128×128), the implementation supports sampling at any floating-point coordinate within the unit square through bilinear interpolation, providing smooth transitions between grid points.</p>
+<p>Although the paint map operates at low resolution (128x128), the implementation supports sampling at any floating-point coordinate within the unit square through bilinear interpolation, providing smooth transitions between grid points.</p>
 
 <figure>
   <img src="/uploads/2025/procedural-island-generation-ii/chemaguerra-final-paint-map-512.png" alt="Final bilinear sampled" />
-  <figcaption>128×128 paint map - bilinearly sampled in the unit square domain</figcaption>
+  <figcaption>128x128 paint map - bilinearly sampled in the unit square domain</figcaption>
 </figure>
 
 <h2 id="next-steps">Next Steps</h2>
 
-<p>We’ve established the paint map foundation with fBm noise, island shape constraints, and mountain ridge patterns. This 128×128 grid provides the broad strokes of our terrain. Part III will add the fine details: multi-scale noise layers, distance-based mountain peaks, and sophisticated elevation blending that brings the terrain to life.</p>
+<p>We’ve established the paint map foundation with fBm noise, island shape constraints, and mountain ridge patterns. This 128x128 grid provides the broad strokes of our terrain. Part III will add the fine details: multi-scale noise layers, distance-based mountain peaks, and elevation blending that brings the terrain to life.</p>
 
 <h2 id="valuable-resources">Valuable Resources</h2>
 
