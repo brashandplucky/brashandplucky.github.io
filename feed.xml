@@ -1,4 +1,247 @@
-<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="4.3.2">Jekyll</generator><link href="https://brashandplucky.com/feed.xml" rel="self" type="application/atom+xml" /><link href="https://brashandplucky.com/" rel="alternate" type="text/html" /><updated>2025-09-16T01:31:09+02:00</updated><id>https://brashandplucky.com/feed.xml</id><title type="html">Chema Guerra</title><subtitle>This is a coding blog where I post about the various projects that I am currently working on, both at work, or as an independent researcher. Most content here revolves around computer graphics and physics simulation.</subtitle><author><name>Chema Guerra</name></author><entry><title type="html">Procedural Island Generation (II)</title><link href="https://brashandplucky.com/2025/09/10/procedural-island-generation-ii.html" rel="alternate" type="text/html" title="Procedural Island Generation (II)" /><published>2025-09-10T00:00:00+02:00</published><updated>2025-09-10T00:00:00+02:00</updated><id>https://brashandplucky.com/2025/09/10/procedural-island-generation-ii</id><content type="html" xml:base="https://brashandplucky.com/2025/09/10/procedural-island-generation-ii.html"><![CDATA[<figure>
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="4.3.2">Jekyll</generator><link href="https://brashandplucky.com/feed.xml" rel="self" type="application/atom+xml" /><link href="https://brashandplucky.com/" rel="alternate" type="text/html" /><updated>2025-09-17T06:45:39+02:00</updated><id>https://brashandplucky.com/feed.xml</id><title type="html">Chema Guerra</title><subtitle>This is a coding blog where I post about the various projects that I am currently working on, both at work, or as an independent researcher. Most content here revolves around computer graphics and physics simulation.</subtitle><author><name>Chema Guerra</name></author><entry><title type="html">Procedural Island Generation (III)</title><link href="https://brashandplucky.com/2025/09/17/procedural-island-generation-iii.html" rel="alternate" type="text/html" title="Procedural Island Generation (III)" /><published>2025-09-17T00:00:00+02:00</published><updated>2025-09-17T00:00:00+02:00</updated><id>https://brashandplucky.com/2025/09/17/procedural-island-generation-iii</id><content type="html" xml:base="https://brashandplucky.com/2025/09/17/procedural-island-generation-iii.html"><![CDATA[<figure>
+  <img src="/uploads/2025/procedural-island-generation-iii/chemaguerra-terrain-elevation-detailed.png" alt="Terrain elevation with noise layers" />
+  <figcaption>Resulting terrain elevation with multi-scale noise layers and mountain peaks</figcaption>
+</figure>
+
+<p>This post continues from <a href="/2025/09/10/procedural-island-generation-ii.html">Part II</a>, where we established the paint map foundation and mountain ridge system. Now we’ll add detailed noise layers, distance-based mountain peaks, and do blending to create the final terrain elevation.</p>
+
+<h2 id="paint-map-recap">Paint Map (recap)</h2>
+
+<p>Before applying noise layers, we start with the foundation established in Part I - the paint map that defines our base land/water distribution:</p>
+
+<figure>
+  <img src="/uploads/2025/procedural-island-generation-iii/chemaguerra-paint-map-part-i.png" alt="Paint map from Part I" />
+  <figcaption>The paint map from Part I - our starting elevation values before noise enhancement</figcaption>
+</figure>
+
+<p>For visualization throughout this series, we’ll be using the magma palette from matplotlib, which I patched to artificially darken the ocean areas to highlight the coastline:</p>
+
+<figure>
+  <img src="/uploads/2025/procedural-island-generation-iii/chemaguerra-paint-map-triangulated.png" alt="Paint map sampled at triangle centroids" />
+  <figcaption>Paint map values sampled at the centroids of Delaunay triangles</figcaption>
+</figure>
+
+<p>Note that we’ll be sampling the paint map <em>per Delaunay triangle</em> (at each triangle’s centroid):</p>
+
+<figure>
+  <img src="/uploads/2025/procedural-island-generation-iii/chemaguerra-paint-map-triangulated-center.png" alt="Central portion of triangulated paint map" />
+  <figcaption>Central portion of the above image showing the per-triangle sampling more clearly</figcaption>
+</figure>
+
+<p>Remember that the paint map provides the broad strokes: positive values for land, negative for ocean, with smooth transitions between them. Now we’ll enhance it with noise layers to create realistic terrain detail.</p>
+
+<h2 id="multi-scale-noise-layers">Multi-Scale Noise Layers</h2>
+
+<p>We will layer multiple octaves of Simplex noise at different frequencies over the broad strokes provided by the paint map. Each will contribute different detail scales to the final terrain.</p>
+
+<p><a href="https://github.com/redblobgames/mapgen4">mapgen4</a> by <a href="https://x.com/redblobgames">@redblobgames</a> in particular uses six layers:</p>
+
+<figure>
+  <img src="/uploads/2025/procedural-island-generation-iii/chemaguerra-noise-fields-combined.png" alt="Noise field visualization" />
+  <figcaption>All six noise fields at different frequencies (1x, 2x, 4x, 16x, 32x, 64x) shown in a 3x2 grid</figcaption>
+</figure>
+
+<figure>
+  <img src="/uploads/2025/procedural-island-generation-iii/chemaguerra-noise-triangulated.png" alt="Triangulated noise field" />
+  <figcaption>Top-left corner of noise2 - Note that we are sampling the noises at the (centroids of the) triangles.</figcaption>
+</figure>
+
+<table>
+  <thead>
+    <tr>
+      <th>Layer</th>
+      <th>Frequency</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>n₀</td>
+      <td>1x</td>
+      <td>Lowest frequency</td>
+    </tr>
+    <tr>
+      <td>n₁</td>
+      <td>2x</td>
+      <td>Low frequency</td>
+    </tr>
+    <tr>
+      <td>n₂</td>
+      <td>4x</td>
+      <td>Medium-low frequency</td>
+    </tr>
+    <tr>
+      <td>n₄</td>
+      <td>16x</td>
+      <td>Medium-high frequency</td>
+    </tr>
+    <tr>
+      <td>n₅</td>
+      <td>32x</td>
+      <td>High frequency</td>
+    </tr>
+    <tr>
+      <td>n₆</td>
+      <td>64x</td>
+      <td>Highest frequency</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>Notice the gap in numbering (n₃ is missing). This would correspond to frequency 8x, which we don’t use.</p>
+
+<h3 id="coastal-noise-enhancement">Coastal Noise Enhancement</h3>
+
+<p>mapgen4 starts with coastal noise enhancement. This provides control over the variation at coastlines while keeping inland elevation unaffected:</p>
+
+\[e = \text{Paint map from Part I}\]
+
+\[e_{coast} = e + \alpha \cdot (1 - e^4) \cdot \left(n_4 + \frac{n_5}{2} + \frac{n_6}{4}\right)\]
+
+<p>The term \((1 - e^4)\) creates a bell curve that peaks at \(e=0\) (coastline) and decreases rapidly for \(\lvert e \rvert &gt; 0\). This modulates an fBm-like combination of our three highest frequency noise layers.</p>
+
+<p>What matters here isn’t the exact formula or amplitudes, but the core principle: applying high-frequency detail specifically where land meets water.</p>
+
+\[e_{tmp} = \begin{cases}
+e &amp; \text{if } e_{coast} &gt; 0 \\
+e_{coast} &amp; \text{if } e_{coast} \leq 0
+\end{cases}\]
+
+<figure>
+  <video controls="" loop="" muted="" playsinline="" style="width: 512px; height: 512px;">
+    <source src="/uploads/2025/procedural-island-generation-iii/chemaguerra-noisy-coastlines-variation.mp4" type="video/mp4" />
+    Your browser does not support the video tag.
+  </video>
+  <figcaption>e<sub>tmp</sub> with varying α - Showing its effect on coastline and seabed complexity</figcaption>
+</figure>
+
+<h2 id="mountain-distance-field">Mountain Distance Field</h2>
+
+<p>Mountains need special pre-processing. If you remember from <a href="/2025/09/07/procedural-island-generation-i.html">Part I</a> in the swarm of seed points we tagged some as mountain peaks. Here we will pre-compute a <em>distance field</em> from every regular seed point to the closest mountain peak point.</p>
+
+<p>We compute distance through the mesh topology of the Delaunay triangulation using BFS (breadth-first search). <em>i.e.,</em> we don’t use Euclidean distance. This creates more organic mountain shapes that follow the terrain’s natural connectivity.</p>
+
+<p>The algorithm spreads outward from mountain peaks:</p>
+<ol>
+  <li>Start at triangles containing mountain seed points (distance = 0)</li>
+  <li>Visit neighboring triangles, incrementing distance by a randomized amount</li>
+  <li>The randomization creates natural ridge patterns instead of perfect cones</li>
+</ol>
+
+<p>Here’s the magic formula used for distance increment in each step:</p>
+
+\[\Delta = s \cdot (1 + j \cdot r)\]
+
+<p>Where:</p>
+<ul>
+  <li>\(s\) = spacing between triangles (uses configured Poisson disk separation)</li>
+  <li>\(j\) = jaggedness parameter (0 = true topological distance, 1 = very irregular)</li>
+  <li>\(r \in [-1,1]\) = random factor using triangular distribution</li>
+</ul>
+
+<p>The triangular distribution <code class="language-plaintext highlighter-rouge">rand() - rand()</code> clusters values near zero while allowing occasional larger variations. This looks more natural than uniform randomness.</p>
+
+<p>I implemented <a href="https://en.wikipedia.org/wiki/Fisher%E2%80%93Yates_shuffle">Fisher-Yates shuffling</a> when visiting neighbor triangles. Instead of processing neighbors in a fixed order (which would create directional bias), the order is randomly shuffled each time. This ensures mountain ridges branch out organically in all directions rather than following predictable patterns.</p>
+
+<p>After computing distances this way, we normalize them (by the max dist, for example):</p>
+
+<figure>
+  <video controls="" loop="" muted="" playsinline="" style="width: 512px; height: 512px;">
+    <source src="/uploads/2025/procedural-island-generation-iii/chemaguerra-mountain-distance-field-jaggedness.mp4" type="video/mp4" />
+    Your browser does not support the video tag.
+  </video>
+  <figcaption>d<sub>m</sub> - Normalized mountain distance field with varying jaggedness parameter</figcaption>
+</figure>
+
+<h2 id="elevation-blending">Elevation Blending</h2>
+
+<p>The final elevation combines all components through weighted blending:</p>
+
+\[e_{final} = \begin{cases}
+\text{lerp}(e_{coast}^2, e_{hill}, e_{mountain}) &amp; \text{if } e_{coast} &gt; 0 \\
+e_{coast} \cdot (\rho + n_1) &amp; \text{if } e_{coast} \leq 0
+\end{cases}\]
+
+<p>Where:</p>
+
+<ul>
+  <li>\(e_{hill} = h \cdot (1 + \text{lerp}(\frac{1 + n_0}{2}, n_4, n_2))\) =&gt; hill elevation with noise-modulated height</li>
+  <li>\(e_{mountain} = 1 - \frac{\mu}{2^\sigma} \cdot d_m\) =&gt; mountain elevation from distance field</li>
+</ul>
+
+<p>The quadratic blend weight produces smooth transitions from hills near the coast through mixed terrain at mid-elevations to pure mountains at peaks.</p>
+
+<p>With (editable) parameters:</p>
+
+<ul>
+  <li>\(\alpha\): Coastal noise strength (0.01)</li>
+  <li>\(h\): Hill height scale (0.02)</li>
+  <li>\(\rho\): Ocean depth multiplier (1.5)</li>
+  <li>\(\mu\): Mountain slope (17.6)</li>
+  <li>\(\sigma\): Mountain sharpness (9.8)</li>
+</ul>
+
+<h3 id="interactive-parameter-exploration">Interactive Parameter Exploration</h3>
+
+<figure>
+  <video controls="" loop="" muted="" playsinline="" style="width: 512px; height: 512px;">
+    <source src="/uploads/2025/procedural-island-generation-iii/chemaguerra-mountain-sharpness-variation.mp4" type="video/mp4" />
+    Your browser does not support the video tag.
+  </video>
+  <figcaption>Terrain elevation with varying mountain sharpness σ</figcaption>
+</figure>
+
+<figure>
+  <video controls="" loop="" muted="" playsinline="" style="width: 512px; height: 512px;">
+    <source src="/uploads/2025/procedural-island-generation-iii/chemaguerra-mountain-jaggedness-elevation.mp4" type="video/mp4" />
+    Your browser does not support the video tag.
+  </video>
+  <figcaption>Terrain elevation with varying mountain jaggedness j</figcaption>
+</figure>
+
+<figure>
+  <video controls="" loop="" muted="" playsinline="" style="width: 512px; height: 512px;">
+    <source src="/uploads/2025/procedural-island-generation-iii/chemaguerra-hill-height-variation.mp4" type="video/mp4" />
+    Your browser does not support the video tag.
+  </video>
+  <figcaption>Terrain elevation with varying hill height scale h</figcaption>
+</figure>
+
+<figure>
+  <video controls="" loop="" muted="" playsinline="" style="width: 512px; height: 512px;">
+    <source src="/uploads/2025/procedural-island-generation-iii/chemaguerra-ocean-depth-variation.mp4" type="video/mp4" />
+    Your browser does not support the video tag.
+  </video>
+  <figcaption>Terrain elevation with varying ocean depth multiplier ρ</figcaption>
+</figure>
+
+<h2 id="region-vs-triangle-elevation">Region (vs. Triangle) Elevation</h2>
+
+<p>So far we’ve computed elevation for triangles. But our Voronoi regions (from Part I) also need elevations for certain stages in the rest of the series.</p>
+
+<figure>
+  <img src="/uploads/2025/procedural-island-generation-iii/chemaguerra-triangle-region-full-animation.gif" alt="Triangle vs Region elevation animation" />
+  <figcaption>Animation comparing triangle elevation vs region elevation (1 second each)</figcaption>
+</figure>
+
+<p>Each seed point defines a Voronoi region and serves as a vertex in multiple Delaunay triangles. To assign elevation to a Voronoi region, we average the elevations of all triangles that share its seed point as a vertex.</p>
+
+<figure>
+  <img src="/uploads/2025/procedural-island-generation-iii/chemaguerra-triangle-region-animation.gif" alt="Triangle vs Region elevation animation" />
+  <figcaption>Central detail animating between triangle elevation and region elevation (1 second each)</figcaption>
+</figure>
+
+<h2 id="next-steps">Next Steps</h2>
+
+<p>With elevation complete, our island has shape but lacks the defining features carved by water. Part IV will simulate the hydrological cycle: rainfall patterns influenced by topography, rivers flowing from peaks to ocean, and valleys carved by erosion.</p>
+
+<h2 id="valuable-resources">Valuable Resources</h2>
+
+<ul>
+  <li><a href="https://www.redblobgames.com/maps/terrain-from-noise/">Terrain from Noise</a> - Amit Patel’s Red Blob Games guide to layering noise for terrain</li>
+  <li><a href="https://www.redblobgames.com/x/1843-planet-generation/">Polygonal Map Generation</a> - Red Blob Games on Voronoi-based terrain (mapgen4 inspiration)</li>
+  <li><a href="https://www.redblobgames.com/x/1723-procedural-river-growing/">Distance Fields for Terrain</a> - Red Blob Games on using distance fields in terrain generation</li>
+</ul>]]></content><author><name>Chema Guerra</name></author><category term="graphics" /><category term="procedural" /><category term="procgen" /><category term="procedural" /><category term="procgen" /><category term="terrain" /><category term="elevation" /><category term="noise" /><category term="fBm" /><summary type="html"><![CDATA[Resulting terrain elevation with multi-scale noise layers and mountain peaks]]></summary><media:thumbnail xmlns:media="http://search.yahoo.com/mrss/" url="https://brashandplucky.com/thumbnails/2025/chemaguerra-procedural-island-generation-iii.png" /><media:content medium="image" url="https://brashandplucky.com/thumbnails/2025/chemaguerra-procedural-island-generation-iii.png" xmlns:media="http://search.yahoo.com/mrss/" /></entry><entry><title type="html">Procedural Island Generation (II)</title><link href="https://brashandplucky.com/2025/09/10/procedural-island-generation-ii.html" rel="alternate" type="text/html" title="Procedural Island Generation (II)" /><published>2025-09-10T00:00:00+02:00</published><updated>2025-09-10T00:00:00+02:00</updated><id>https://brashandplucky.com/2025/09/10/procedural-island-generation-ii</id><content type="html" xml:base="https://brashandplucky.com/2025/09/10/procedural-island-generation-ii.html"><![CDATA[<figure>
   <img src="/uploads/2025/procedural-island-generation-ii/chemaguerra-paintmap-hero-pixelated.png" alt="Paint map terrain elevation" />
   <figcaption>128x128 paint map defining the island's base elevation structure</figcaption>
 </figure>
@@ -196,7 +439,7 @@
   <li><a href="https://thebookofshaders.com/13/">Fractal Brownian Motion</a> - The Book of Shaders fBm tutorial</li>
   <li><a href="https://www.redblobgames.com/maps/terrain-from-noise/">Terrain from Noise</a> - Red Blob Games elevation techniques</li>
   <li><a href="https://www.redblobgames.com/maps/terrain-from-noise/#elevation">Amit Patel’s Map Generation</a> - Paint map concepts</li>
-</ul>]]></content><author><name>Chema Guerra</name></author><category term="graphics" /><category term="procedural" /><category term="procedural" /><category term="terrain" /><category term="elevation" /><category term="noise" /><category term="computationalgeometry" /><category term="fBm" /><summary type="html"><![CDATA[128x128 paint map defining the island's base elevation structure]]></summary><media:thumbnail xmlns:media="http://search.yahoo.com/mrss/" url="https://brashandplucky.com/thumbnails/2025/chemaguerra-procedural-island-generation-ii.png" /><media:content medium="image" url="https://brashandplucky.com/thumbnails/2025/chemaguerra-procedural-island-generation-ii.png" xmlns:media="http://search.yahoo.com/mrss/" /></entry><entry><title type="html">Procedural Island Generation (I)</title><link href="https://brashandplucky.com/2025/09/07/procedural-island-generation-i.html" rel="alternate" type="text/html" title="Procedural Island Generation (I)" /><published>2025-09-07T00:00:00+02:00</published><updated>2025-09-07T00:00:00+02:00</updated><id>https://brashandplucky.com/2025/09/07/procedural-island-generation-i</id><content type="html" xml:base="https://brashandplucky.com/2025/09/07/procedural-island-generation-i.html"><![CDATA[<figure>
+</ul>]]></content><author><name>Chema Guerra</name></author><category term="graphics" /><category term="procedural" /><category term="procgen" /><category term="procedural" /><category term="procgen" /><category term="terrain" /><category term="elevation" /><category term="noise" /><category term="computationalgeometry" /><category term="fBm" /><summary type="html"><![CDATA[128x128 paint map defining the island's base elevation structure]]></summary><media:thumbnail xmlns:media="http://search.yahoo.com/mrss/" url="https://brashandplucky.com/thumbnails/2025/chemaguerra-procedural-island-generation-ii.png" /><media:content medium="image" url="https://brashandplucky.com/thumbnails/2025/chemaguerra-procedural-island-generation-ii.png" xmlns:media="http://search.yahoo.com/mrss/" /></entry><entry><title type="html">Procedural Island Generation (I)</title><link href="https://brashandplucky.com/2025/09/07/procedural-island-generation-i.html" rel="alternate" type="text/html" title="Procedural Island Generation (I)" /><published>2025-09-07T00:00:00+02:00</published><updated>2025-09-07T00:00:00+02:00</updated><id>https://brashandplucky.com/2025/09/07/procedural-island-generation-i</id><content type="html" xml:base="https://brashandplucky.com/2025/09/07/procedural-island-generation-i.html"><![CDATA[<figure>
   <img src="/uploads/2025/procedural-island-generation-i/chemaguerra-procedural-island-generation-terrain-mesh.png" alt="Terrain mesh visualization" />
   <figcaption>Procedurally generated terrain mesh with organic triangulation</figcaption>
 </figure>
@@ -452,7 +695,7 @@
   <li><a href="http://www-cs-students.stanford.edu/~amitp/game-programming/polygon-map-generation/">Amit Patel’s Polygon Map Generation</a> - The inspiration for this series</li>
   <li><a href="https://www.cs.ubc.ca/~rbridson/docs/bridson-siggraph07-poissondisk.pdf">Bridson’s Original Paper</a> - Fast Poisson disk sampling</li>
   <li><a href="https://en.wikipedia.org/wiki/Lloyd%27s_algorithm">Lloyd’s Algorithm</a> - The mathematical foundation</li>
-</ul>]]></content><author><name>Chema Guerra</name></author><category term="graphics" /><category term="procedural" /><category term="procedural" /><category term="terrain" /><category term="voronoi" /><category term="delaunay" /><category term="computationalgeometry" /><category term="bluenoise" /><summary type="html"><![CDATA[Procedurally generated terrain mesh with organic triangulation This post marks the beginning of a series on procedural island generation. I recently fell in love with Amit Patel’s brilliant polygon map generation articles, and this series will be my own exploration and interpretation of those techniques. This series assumes familiarity with computational geometry and procedural generation concepts such as Delaunay triangulation, Voronoi diagrams, fBm, etc… To challenge myself (I’m usually a C/C++ person), I decided to implement this in Rust. But I will barely delve into implementation details though. This series will focus on the algorithm itself, with neat (hopefully!) visualizations of the intermediate calculations. Motivation The main reason why I am tinkering with terrain generation now is Strike Back, the flight sim I’ve been developing on and off. I will be using this algorithm as a foundation to create battle arenas which I plan to extend eventually. Working Domain Procedural terrain generation offers infinite variety from finite code. But islands make particularly interesting subjects because they’re self-contained worlds with natural boundaries. The polygon-based approach we’ll explore provides a nice balance between organic appearance and computational tractability. We’ll work in a regular grid within a unit square domain. While regular grids are the classic approach for terrain generation (much simpler implementation, no topological headaches), irregular grids produce far more organic-looking geometry. That’s what we’re after. Irregular grids have been having a moment lately, BTW. Especially since Townscaper captured everyone’s imagination. Seed Point Generation The foundation of an organic-looking terrain mesh is the distribution of its vertices. Random point placement leads to ugly, irregular triangulation. We need something better. Ideally, we need points that are random yet evenly spaced. This is where blue noise comes in. Blue Noise and Poisson Disk Sampling Blue noise distributions have a specific property: points maintain a minimum distance from each other whilst filling space uniformly. No clumping, no voids. The spectrum of blue noise is weighted toward higher frequencies, which translates visually to pleasant, nature-resembling distributions. Bridson’s algorithm for Poisson disk sampling is elegantly simple: Start with a random initial point Generate candidate points in an annulus around existing points Accept candidates that are far enough from all existing points Repeat until no valid candidates remain The key parameters are: \(r\): minimum distance acceptable between points \(k\): number of candidates to try before rejection (typically 30) The algorithm maintains an “active list” of points that might still have valid neighbors. When a point fails to produce valid candidates after \(k\) attempts, it is removed from the active list. Spatial indexing is crucial for efficient nearest-neighbor queries in Bridson’s algorithm. A simple grid works well: divide space into cells of size \(r/\sqrt{2}\), ensuring at most one point per cell for \(O(1)\) lookups. Below is an auxiliary visualization animation I wrote in Python: Bridson's algorithm generating Poisson disk distribution with minimum distance constraint Lloyd’s Relaxation There are different families of algorithms for blue noise generation. Dart-throwing methods, void-and-cluster, Fourier-based methods, relaxation methods, … While we will stick to Bridson’s algorithm as described above, I am fond of Lloyd’s relaxation (also known as Voronoi iteration). And because we will be working with the Voronoi diagram later I thought it would be worth mentioning. The process is beautifully simple: Start with any set of random points. Compute the Voronoi diagram for current points Move each point to the centroid of its Voronoi cell Repeat until convergence This iterative process naturally evolves toward a hexagonal-dominant grid; the most efficient packing in 2D. Below is another animation I made in Python: Lloyd's relaxation iteratively moving points to Voronoi cell centroids Lloyd’s relaxation is computationally expensive and produces overly regular distributions that can look artificial for terrain. Bridson strikes a better balance: it’s fast and maintains the organic irregularity we want. Boundary Treatment Instead of letting Poisson disk sampling run across the entire domain, I restrict it to a shrunk area, leaving a gap of radius \(r\) around the edges. Then I add two rings of evenly-spaced points: one at the boundary itself (green), and another ring \(r\) units outside the domain (red). This approach ensures full coverage with well-behaved triangles at the edges for Delaunay triangulation and simplifies handling of unbounded Voronoi regions. Boundary treatment with interior points (white), boundary ring (green), and exterior ring (red) In the animation above, working with a unit square domain and \(r = \frac{1}{200}\), we’d theoretically fit up to \(\left(\frac{1}{r}\right)^2 = 200^2 = 40000\) points in a perfect grid. But Poisson disk sampling produces a looser packing. With the annulus radius range \([r, 2r]\) and rejection sampling, we get ~27000 points in practice, about 68% of the theoretical maximum. Delaunay Triangulation With our well-distributed seed points, we need to create a mesh. Delaunay triangulation is the go-to choice for terrain generation because it maximizes the minimum angle of all triangles, avoiding skinny, degenerate triangles that cause numerical and visual issues. In the visualizations throughout this post, red dots will represent seed points (Delaunay vertices), while blue dots will represent Voronoi vertices (corresponding to Delaunay triangle centers). Delaunay triangulation maximizing minimum angles for well-formed triangles Close-up of Delaunay triangulation showing triangle quality Animated Delaunay triangulation with varying point density For the implementation, I went with Rust’s delaunator crate. It’s a robust, battle-tested port of the JavaScript library of the same name, implementing a fast sweep-line algorithm that runs in \(O(n \log n)\) time. The cyclic animation is just the same code but decreasing/increasing \(r\) (more/fewer points). Voronoi Diagram The Voronoi diagram is the dual of the Delaunay triangulation. Each Delaunay triangle vertex becomes a Voronoi cell, and each Delaunay edge corresponds to a Voronoi edge. For terrain generation, Voronoi cells are a staple: they define convex-shaped regions around each seed point, perfect for assigning terrain properties like elevation, moisture, and biome types. Voronoi diagram showing cell boundaries and seed points Voronoi cells using triangle circumcenters as vertices Animated Voronoi diagram with changing cell structure Rather than using an off-the-shelf solution, I built the dual construction using my topology library TopoKit, recently ported to Rust. The half-edge (DCEL) data structure I have there makes it trivial to traverse neighbors, and maintain the topological relationships we need for terrain generation. TopoKit also handles serialization, relaxation, LOD subdivision, and other features I’ll tap into later. Circumcenters vs. Centroids The classical Voronoi diagram uses triangle circumcenters as Voronoi vertices. The circumcenter is equidistant from all three triangle vertices, making it the natural meeting point of three Voronoi cells. However the circumcenter potentially lies outside its triangle if it is obtuse enough. For very flat triangles near boundaries, circumcenters can be far from their triangles, sometimes even outside the domain entirely. A clever trick I learned from @redblobgames is using triangle centroids instead of circumcenters for Voronoi vertices. This simple change produces smoother, more bubble-like regions with gentler transitions between cells. These softer angles are ideal for terrain generation, and the computation is actually simpler. Voronoi cells using triangle centroids for smoother, bubble-like regions Here’s the main takeaway (an animated comparison): Animated comparison: circumcenters (angular) vs centroids (smooth) We will go with centroids (instead of circumcenters) for the rest of the series. Quad Mesh Construction So we have: Red vertices: Original seed points (Delaunay vertices) Blue vertices: Voronoi vertices (triangle centers) Both vertex sets contribute to the final terrain mesh. Throughout this series, we’ll compute attributes like elevation for both red and blue vertices, then triangulate the combined point set to generate the final terrain geometry. The Red-Blue Pattern A natural way to combine both the Delaunay and Voronoi meshes is to form quads by each red-blue-red-blue cycle, traversing around shared edges: Start with a Delaunay edge connecting two red vertices This edge is dual to a Voronoi edge connecting two blue vertices The four vertices form a natural quad: red-blue-red-blue Quad mesh formed by red-blue-red-blue vertex cycles Detail of quad mesh showing diamond pattern structure Animated quad mesh construction from Delaunay-Voronoi dual In the resulting quad mesh: Red vertices have high valence (many incident edges) Blue vertices typically have valence 3 (from triangle origins) Edge flow follows a characteristic diamond pattern Mountain Peak Seed Points To generate realistic terrain with well-placed mountain peaks, we must flag a special subset of seed points that will become elevation maxima. This two-scale approach ensures mountains maintain natural spacing while aligning perfectly with our existing mesh vertices. The process leverages a second Bridson’s algorithm run with a much larger radius, typically 4-16 times the original \(r\). This coarse distribution determines where mountain peaks should roughly appear, ensuring they maintain natural spacing across the terrain. Here’s the algorithm: Build a kD-tree from the fine-grain seed points for efficient nearest-neighbor queries Run Bridson’s algorithm with radius \(R \gg r\) to get coarse peak candidates For each coarse candidate, find its nearest neighbor in the fine distribution Flag these nearest neighbors as mountain peak seeds Spatial hashing (the kD-tree in my case) is crucial here for performance. With thousands of seed points, nearest-neighbor search would be prohibitively slow otherwise. This approach has several advantages: Natural spacing: Mountains won’t cluster unnaturally or leave large empty regions Mesh alignment: Peak points are actual mesh vertices, not interpolated positions Controllable density: Adjusting \(R\) directly controls mountain frequency Reproducible: Given the same random seed, peak placement is deterministic These flagged mountain peaks will later serve as local maxima during elevation assignment, with height falloff based on distance. But that’s a topic for Part II. Mountain peak distribution with varying separation radius R Above is an animation with varying mountain separation \(R\) over the same set of regular seed points. Next Steps This is the type of distribution (~27000 points) we will be using throughout the rest of the series. Final distribution of ~27,000 seed points for terrain generation Detail view showing organic point distribution quality With our mesh structures in place we have the skeletal framework for our island. Part II will dive into elevation assignment using noise functions, creating realistic height maps that produce convincing mountains, valleys, and coastlines. Resources Amit Patel’s Polygon Map Generation - The inspiration for this series Bridson’s Original Paper - Fast Poisson disk sampling Lloyd’s Algorithm - The mathematical foundation]]></summary><media:thumbnail xmlns:media="http://search.yahoo.com/mrss/" url="https://brashandplucky.com/thumbnails/2025/chemaguerra-procedural-island-generation-i.png" /><media:content medium="image" url="https://brashandplucky.com/thumbnails/2025/chemaguerra-procedural-island-generation-i.png" xmlns:media="http://search.yahoo.com/mrss/" /></entry><entry><title type="html">Spherical Harmonics</title><link href="https://brashandplucky.com/2025/08/25/spherical-harmonics.html" rel="alternate" type="text/html" title="Spherical Harmonics" /><published>2025-08-25T10:00:00+02:00</published><updated>2025-08-25T10:00:00+02:00</updated><id>https://brashandplucky.com/2025/08/25/spherical-harmonics</id><content type="html" xml:base="https://brashandplucky.com/2025/08/25/spherical-harmonics.html"><![CDATA[<blockquote>
+</ul>]]></content><author><name>Chema Guerra</name></author><category term="graphics" /><category term="procedural" /><category term="procgen" /><category term="procedural" /><category term="procgen" /><category term="terrain" /><category term="voronoi" /><category term="delaunay" /><category term="computationalgeometry" /><category term="bluenoise" /><summary type="html"><![CDATA[Procedurally generated terrain mesh with organic triangulation This post marks the beginning of a series on procedural island generation. I recently fell in love with Amit Patel’s brilliant polygon map generation articles, and this series will be my own exploration and interpretation of those techniques. This series assumes familiarity with computational geometry and procedural generation concepts such as Delaunay triangulation, Voronoi diagrams, fBm, etc… To challenge myself (I’m usually a C/C++ person), I decided to implement this in Rust. But I will barely delve into implementation details though. This series will focus on the algorithm itself, with neat (hopefully!) visualizations of the intermediate calculations. Motivation The main reason why I am tinkering with terrain generation now is Strike Back, the flight sim I’ve been developing on and off. I will be using this algorithm as a foundation to create battle arenas which I plan to extend eventually. Working Domain Procedural terrain generation offers infinite variety from finite code. But islands make particularly interesting subjects because they’re self-contained worlds with natural boundaries. The polygon-based approach we’ll explore provides a nice balance between organic appearance and computational tractability. We’ll work in a regular grid within a unit square domain. While regular grids are the classic approach for terrain generation (much simpler implementation, no topological headaches), irregular grids produce far more organic-looking geometry. That’s what we’re after. Irregular grids have been having a moment lately, BTW. Especially since Townscaper captured everyone’s imagination. Seed Point Generation The foundation of an organic-looking terrain mesh is the distribution of its vertices. Random point placement leads to ugly, irregular triangulation. We need something better. Ideally, we need points that are random yet evenly spaced. This is where blue noise comes in. Blue Noise and Poisson Disk Sampling Blue noise distributions have a specific property: points maintain a minimum distance from each other whilst filling space uniformly. No clumping, no voids. The spectrum of blue noise is weighted toward higher frequencies, which translates visually to pleasant, nature-resembling distributions. Bridson’s algorithm for Poisson disk sampling is elegantly simple: Start with a random initial point Generate candidate points in an annulus around existing points Accept candidates that are far enough from all existing points Repeat until no valid candidates remain The key parameters are: \(r\): minimum distance acceptable between points \(k\): number of candidates to try before rejection (typically 30) The algorithm maintains an “active list” of points that might still have valid neighbors. When a point fails to produce valid candidates after \(k\) attempts, it is removed from the active list. Spatial indexing is crucial for efficient nearest-neighbor queries in Bridson’s algorithm. A simple grid works well: divide space into cells of size \(r/\sqrt{2}\), ensuring at most one point per cell for \(O(1)\) lookups. Below is an auxiliary visualization animation I wrote in Python: Bridson's algorithm generating Poisson disk distribution with minimum distance constraint Lloyd’s Relaxation There are different families of algorithms for blue noise generation. Dart-throwing methods, void-and-cluster, Fourier-based methods, relaxation methods, … While we will stick to Bridson’s algorithm as described above, I am fond of Lloyd’s relaxation (also known as Voronoi iteration). And because we will be working with the Voronoi diagram later I thought it would be worth mentioning. The process is beautifully simple: Start with any set of random points. Compute the Voronoi diagram for current points Move each point to the centroid of its Voronoi cell Repeat until convergence This iterative process naturally evolves toward a hexagonal-dominant grid; the most efficient packing in 2D. Below is another animation I made in Python: Lloyd's relaxation iteratively moving points to Voronoi cell centroids Lloyd’s relaxation is computationally expensive and produces overly regular distributions that can look artificial for terrain. Bridson strikes a better balance: it’s fast and maintains the organic irregularity we want. Boundary Treatment Instead of letting Poisson disk sampling run across the entire domain, I restrict it to a shrunk area, leaving a gap of radius \(r\) around the edges. Then I add two rings of evenly-spaced points: one at the boundary itself (green), and another ring \(r\) units outside the domain (red). This approach ensures full coverage with well-behaved triangles at the edges for Delaunay triangulation and simplifies handling of unbounded Voronoi regions. Boundary treatment with interior points (white), boundary ring (green), and exterior ring (red) In the animation above, working with a unit square domain and \(r = \frac{1}{200}\), we’d theoretically fit up to \(\left(\frac{1}{r}\right)^2 = 200^2 = 40000\) points in a perfect grid. But Poisson disk sampling produces a looser packing. With the annulus radius range \([r, 2r]\) and rejection sampling, we get ~27000 points in practice, about 68% of the theoretical maximum. Delaunay Triangulation With our well-distributed seed points, we need to create a mesh. Delaunay triangulation is the go-to choice for terrain generation because it maximizes the minimum angle of all triangles, avoiding skinny, degenerate triangles that cause numerical and visual issues. In the visualizations throughout this post, red dots will represent seed points (Delaunay vertices), while blue dots will represent Voronoi vertices (corresponding to Delaunay triangle centers). Delaunay triangulation maximizing minimum angles for well-formed triangles Close-up of Delaunay triangulation showing triangle quality Animated Delaunay triangulation with varying point density For the implementation, I went with Rust’s delaunator crate. It’s a robust, battle-tested port of the JavaScript library of the same name, implementing a fast sweep-line algorithm that runs in \(O(n \log n)\) time. The cyclic animation is just the same code but decreasing/increasing \(r\) (more/fewer points). Voronoi Diagram The Voronoi diagram is the dual of the Delaunay triangulation. Each Delaunay triangle vertex becomes a Voronoi cell, and each Delaunay edge corresponds to a Voronoi edge. For terrain generation, Voronoi cells are a staple: they define convex-shaped regions around each seed point, perfect for assigning terrain properties like elevation, moisture, and biome types. Voronoi diagram showing cell boundaries and seed points Voronoi cells using triangle circumcenters as vertices Animated Voronoi diagram with changing cell structure Rather than using an off-the-shelf solution, I built the dual construction using my topology library TopoKit, recently ported to Rust. The half-edge (DCEL) data structure I have there makes it trivial to traverse neighbors, and maintain the topological relationships we need for terrain generation. TopoKit also handles serialization, relaxation, LOD subdivision, and other features I’ll tap into later. Circumcenters vs. Centroids The classical Voronoi diagram uses triangle circumcenters as Voronoi vertices. The circumcenter is equidistant from all three triangle vertices, making it the natural meeting point of three Voronoi cells. However the circumcenter potentially lies outside its triangle if it is obtuse enough. For very flat triangles near boundaries, circumcenters can be far from their triangles, sometimes even outside the domain entirely. A clever trick I learned from @redblobgames is using triangle centroids instead of circumcenters for Voronoi vertices. This simple change produces smoother, more bubble-like regions with gentler transitions between cells. These softer angles are ideal for terrain generation, and the computation is actually simpler. Voronoi cells using triangle centroids for smoother, bubble-like regions Here’s the main takeaway (an animated comparison): Animated comparison: circumcenters (angular) vs centroids (smooth) We will go with centroids (instead of circumcenters) for the rest of the series. Quad Mesh Construction So we have: Red vertices: Original seed points (Delaunay vertices) Blue vertices: Voronoi vertices (triangle centers) Both vertex sets contribute to the final terrain mesh. Throughout this series, we’ll compute attributes like elevation for both red and blue vertices, then triangulate the combined point set to generate the final terrain geometry. The Red-Blue Pattern A natural way to combine both the Delaunay and Voronoi meshes is to form quads by each red-blue-red-blue cycle, traversing around shared edges: Start with a Delaunay edge connecting two red vertices This edge is dual to a Voronoi edge connecting two blue vertices The four vertices form a natural quad: red-blue-red-blue Quad mesh formed by red-blue-red-blue vertex cycles Detail of quad mesh showing diamond pattern structure Animated quad mesh construction from Delaunay-Voronoi dual In the resulting quad mesh: Red vertices have high valence (many incident edges) Blue vertices typically have valence 3 (from triangle origins) Edge flow follows a characteristic diamond pattern Mountain Peak Seed Points To generate realistic terrain with well-placed mountain peaks, we must flag a special subset of seed points that will become elevation maxima. This two-scale approach ensures mountains maintain natural spacing while aligning perfectly with our existing mesh vertices. The process leverages a second Bridson’s algorithm run with a much larger radius, typically 4-16 times the original \(r\). This coarse distribution determines where mountain peaks should roughly appear, ensuring they maintain natural spacing across the terrain. Here’s the algorithm: Build a kD-tree from the fine-grain seed points for efficient nearest-neighbor queries Run Bridson’s algorithm with radius \(R \gg r\) to get coarse peak candidates For each coarse candidate, find its nearest neighbor in the fine distribution Flag these nearest neighbors as mountain peak seeds Spatial hashing (the kD-tree in my case) is crucial here for performance. With thousands of seed points, nearest-neighbor search would be prohibitively slow otherwise. This approach has several advantages: Natural spacing: Mountains won’t cluster unnaturally or leave large empty regions Mesh alignment: Peak points are actual mesh vertices, not interpolated positions Controllable density: Adjusting \(R\) directly controls mountain frequency Reproducible: Given the same random seed, peak placement is deterministic These flagged mountain peaks will later serve as local maxima during elevation assignment, with height falloff based on distance. But that’s a topic for Part II. Mountain peak distribution with varying separation radius R Above is an animation with varying mountain separation \(R\) over the same set of regular seed points. Next Steps This is the type of distribution (~27000 points) we will be using throughout the rest of the series. Final distribution of ~27,000 seed points for terrain generation Detail view showing organic point distribution quality With our mesh structures in place we have the skeletal framework for our island. Part II will dive into elevation assignment using noise functions, creating realistic height maps that produce convincing mountains, valleys, and coastlines. Resources Amit Patel’s Polygon Map Generation - The inspiration for this series Bridson’s Original Paper - Fast Poisson disk sampling Lloyd’s Algorithm - The mathematical foundation]]></summary><media:thumbnail xmlns:media="http://search.yahoo.com/mrss/" url="https://brashandplucky.com/thumbnails/2025/chemaguerra-procedural-island-generation-i.png" /><media:content medium="image" url="https://brashandplucky.com/thumbnails/2025/chemaguerra-procedural-island-generation-i.png" xmlns:media="http://search.yahoo.com/mrss/" /></entry><entry><title type="html">Spherical Harmonics</title><link href="https://brashandplucky.com/2025/08/25/spherical-harmonics.html" rel="alternate" type="text/html" title="Spherical Harmonics" /><published>2025-08-25T10:00:00+02:00</published><updated>2025-08-25T10:00:00+02:00</updated><id>https://brashandplucky.com/2025/08/25/spherical-harmonics</id><content type="html" xml:base="https://brashandplucky.com/2025/08/25/spherical-harmonics.html"><![CDATA[<blockquote>
   <p><strong>Note:</strong> This post was written nearly 2 years ago and never published. I’m posting it now as-is, with some sections incomplete but the core content intact.</p>
 </blockquote>
 
@@ -1768,16 +2011,4 @@ that has the effect of reducing or preventing the oscillation. A damped spring i
 
 <p><a href="https://twitter.com/topotoygames/status/1646473620447809538">twitter.com/topotoygames #2</a></p>
 
-<p><a href="https://twitter.com/topotoygames/status/1644790986676002817">twitter.com/topotoygames #3</a></p>]]></content><author><name>Chema Guerra</name></author><summary type="html"><![CDATA[This is a tiny pixelshader-only 2D path tracing engine. In my (little) spare time I’ve been writing a small C++ videogame/real-time engine and am doing some little experiments from time to time. The fragment shader here does stochastic PT and NEE, and MIS to weigh both. The rays and scene obstacles are all in 2D (line segments and rectangles). The 2 moving cubes are controlled by a gamepad, and the third cube that shows up in the trajectory between one and the other is a collision-detection test using the classic AABB vs. swept AABB algorithm (minkowski sum, etc…). UPDATE: More videos were posted on my Twitter account for recreational coding: twitter.com/topotoygames #1 twitter.com/topotoygames #2 twitter.com/topotoygames #3]]></summary><media:thumbnail xmlns:media="http://search.yahoo.com/mrss/" url="https://brashandplucky.com/thumbnails/2023/chemaguerra-tiny-path-tracing.png" /><media:content medium="image" url="https://brashandplucky.com/thumbnails/2023/chemaguerra-tiny-path-tracing.png" xmlns:media="http://search.yahoo.com/mrss/" /></entry><entry><title type="html">u32 to f32 in [0..1)</title><link href="https://brashandplucky.com/2023/01/07/u-to-f.html" rel="alternate" type="text/html" title="u32 to f32 in [0..1)" /><published>2023-01-07T00:00:00+01:00</published><updated>2023-01-07T00:00:00+01:00</updated><id>https://brashandplucky.com/2023/01/07/u-to-f</id><content type="html" xml:base="https://brashandplucky.com/2023/01/07/u-to-f.html"><![CDATA[<p>Many sampling algorithms take as input random numbers in the <code class="language-plaintext highlighter-rouge">[0..1)</code> interval. On the other hand, Pseudo-Random Number Generators usually produce their output as (unsigned) integer 32-bit or 64-bit numbers.</p>
-
-<p>It is trivial to turn an <code class="language-plaintext highlighter-rouge">u:u32</code> integer into an <code class="language-plaintext highlighter-rouge">f:[0..1]</code> floating-point value, dividing <code class="language-plaintext highlighter-rouge">u</code> by <code class="language-plaintext highlighter-rouge">2^32-1</code>. This is because <code class="language-plaintext highlighter-rouge">u</code> ranges in <code class="language-plaintext highlighter-rouge">[0..2^32-1]</code>.</p>
-
-<p>One might think that <code class="language-plaintext highlighter-rouge">u/2^32</code> would produce a floating-point value lower than 1. But it does <em>not</em>, as evidenced by this loop:</p>
-
-<p><img src="/uploads/2023/chemaguerra-u-to-f.png" alt="Better u32 to f32 conversion" /></p>
-
-<p>The number printed out happens to be <code class="language-plaintext highlighter-rouge">0x100000101</code> which is <code class="language-plaintext highlighter-rouge">2^32+257</code>.</p>
-
-<p><code class="language-plaintext highlighter-rouge">( u / static_cast&lt; f32_t &gt;( 0x100000101ull ) )</code> is the <code class="language-plaintext highlighter-rouge">f:[0..1)</code> we were looking for.</p>
-
-<p><code class="language-plaintext highlighter-rouge">( u / static_cast&lt; f64_t &gt;( 0x100000080ull ) )</code> does the same in double-precision.</p>]]></content><author><name>Chema Guerra</name></author><summary type="html"><![CDATA[Many sampling algorithms take as input random numbers in the [0..1) interval. On the other hand, Pseudo-Random Number Generators usually produce their output as (unsigned) integer 32-bit or 64-bit numbers. It is trivial to turn an u:u32 integer into an f:[0..1] floating-point value, dividing u by 2^32-1. This is because u ranges in [0..2^32-1]. One might think that u/2^32 would produce a floating-point value lower than 1. But it does not, as evidenced by this loop: The number printed out happens to be 0x100000101 which is 2^32+257. ( u / static_cast&lt; f32_t &gt;( 0x100000101ull ) ) is the f:[0..1) we were looking for. ( u / static_cast&lt; f64_t &gt;( 0x100000080ull ) ) does the same in double-precision.]]></summary><media:thumbnail xmlns:media="http://search.yahoo.com/mrss/" url="https://brashandplucky.com/thumbnails/2023/chemaguerra-u-to-f.png" /><media:content medium="image" url="https://brashandplucky.com/thumbnails/2023/chemaguerra-u-to-f.png" xmlns:media="http://search.yahoo.com/mrss/" /></entry></feed>
+<p><a href="https://twitter.com/topotoygames/status/1644790986676002817">twitter.com/topotoygames #3</a></p>]]></content><author><name>Chema Guerra</name></author><summary type="html"><![CDATA[This is a tiny pixelshader-only 2D path tracing engine. In my (little) spare time I’ve been writing a small C++ videogame/real-time engine and am doing some little experiments from time to time. The fragment shader here does stochastic PT and NEE, and MIS to weigh both. The rays and scene obstacles are all in 2D (line segments and rectangles). The 2 moving cubes are controlled by a gamepad, and the third cube that shows up in the trajectory between one and the other is a collision-detection test using the classic AABB vs. swept AABB algorithm (minkowski sum, etc…). UPDATE: More videos were posted on my Twitter account for recreational coding: twitter.com/topotoygames #1 twitter.com/topotoygames #2 twitter.com/topotoygames #3]]></summary><media:thumbnail xmlns:media="http://search.yahoo.com/mrss/" url="https://brashandplucky.com/thumbnails/2023/chemaguerra-tiny-path-tracing.png" /><media:content medium="image" url="https://brashandplucky.com/thumbnails/2023/chemaguerra-tiny-path-tracing.png" xmlns:media="http://search.yahoo.com/mrss/" /></entry></feed>
