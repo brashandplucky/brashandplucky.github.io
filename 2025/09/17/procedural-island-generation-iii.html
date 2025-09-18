@@ -245,14 +245,15 @@ e_{coast} &amp; \text{if } e_{coast} \leq 0
 <p>The final elevation combines all components through weighted blending:</p>
 
 \[e_{final} = \begin{cases}
-\text{lerp}(e_{coast}^2, e_{hill}, e_{mountain}) &amp; \text{if } e_{coast} &gt; 0 \\
+\text{lerp}(e_{hill}, e_{mountain}, e_{coast}^2) &amp; \text{if } e_{coast} &gt; 0 \\
 e_{coast} \cdot (\rho + n_1) &amp; \text{if } e_{coast} \leq 0
 \end{cases}\]
 
 <p>Where:</p>
 
 <ul>
-  <li>\(e_{hill} = h \cdot (1 + \text{lerp}(\frac{1 + n_0}{2}, n_4, n_2))\) =&gt; hill elevation with noise-modulated height</li>
+  <li>\(e_{hill} = h \cdot \bigl(1 + \text{lerp}(n_2, n_4, \tfrac{1 + n_0}{2})\bigr)\) =&gt; hill elevation with noise-modulated height</li>
+  <li>Here $\text{lerp}(a,b,t)=a(1-t)+bt$, so land transitions from hills toward mountains using $e_{coast}^2$ as the blend weight.</li>
   <li>\(e_{mountain} = 1 - \frac{\mu}{2^\sigma} \cdot d_m\) =&gt; mountain elevation from distance field</li>
 </ul>
 
