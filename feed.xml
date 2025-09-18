@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="4.3.2">Jekyll</generator><link href="https://brashandplucky.com/feed.xml" rel="self" type="application/atom+xml" /><link href="https://brashandplucky.com/" rel="alternate" type="text/html" /><updated>2025-09-18T09:12:07+02:00</updated><id>https://brashandplucky.com/feed.xml</id><title type="html">Chema Guerra</title><subtitle>This is a coding blog where I post about the various projects that I am currently working on, both at work, or as an independent researcher. Most content here revolves around computer graphics and physics simulation.</subtitle><author><name>Chema Guerra</name></author><entry><title type="html">Procedural Island Generation (III)</title><link href="https://brashandplucky.com/2025/09/17/procedural-island-generation-iii.html" rel="alternate" type="text/html" title="Procedural Island Generation (III)" /><published>2025-09-17T00:00:00+02:00</published><updated>2025-09-17T00:00:00+02:00</updated><id>https://brashandplucky.com/2025/09/17/procedural-island-generation-iii</id><content type="html" xml:base="https://brashandplucky.com/2025/09/17/procedural-island-generation-iii.html"><![CDATA[<figure>
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="4.3.2">Jekyll</generator><link href="https://brashandplucky.com/feed.xml" rel="self" type="application/atom+xml" /><link href="https://brashandplucky.com/" rel="alternate" type="text/html" /><updated>2025-09-18T21:34:39+02:00</updated><id>https://brashandplucky.com/feed.xml</id><title type="html">Chema Guerra</title><subtitle>This is a coding blog where I post about the various projects that I am currently working on, both at work, or as an independent researcher. Most content here revolves around computer graphics and physics simulation.</subtitle><author><name>Chema Guerra</name></author><entry><title type="html">Procedural Island Generation (III)</title><link href="https://brashandplucky.com/2025/09/17/procedural-island-generation-iii.html" rel="alternate" type="text/html" title="Procedural Island Generation (III)" /><published>2025-09-17T00:00:00+02:00</published><updated>2025-09-17T00:00:00+02:00</updated><id>https://brashandplucky.com/2025/09/17/procedural-island-generation-iii</id><content type="html" xml:base="https://brashandplucky.com/2025/09/17/procedural-island-generation-iii.html"><![CDATA[<figure>
   <img src="/uploads/2025/procedural-island-generation-iii/chemaguerra-terrain-elevation-detailed.png" alt="Terrain elevation with noise layers" />
   <figcaption>Resulting terrain elevation with multi-scale noise layers and mountain peaks</figcaption>
 </figure>
@@ -14,7 +14,7 @@
   <figcaption>The paint map from Part I - our starting elevation values before noise enhancement</figcaption>
 </figure>
 
-<p>For visualization throughout this series, we’ll be using the magma palette from matplotlib, which I patched to artificially darken the ocean areas to highlight the coastline:</p>
+<p>For visualization throughout this post, we’ll be using the magma palette from matplotlib, which I patched to artificially darken the ocean areas to highlight the coastline:</p>
 
 <figure>
   <img src="/uploads/2025/procedural-island-generation-iii/chemaguerra-paint-map-triangulated.png" alt="Paint map sampled at triangle centroids" />
@@ -43,7 +43,7 @@
 
 <figure>
   <img src="/uploads/2025/procedural-island-generation-iii/chemaguerra-noise-triangulated.png" alt="Triangulated noise field" />
-  <figcaption>Top-left corner of noise2 - Note that we are sampling the noises at the (centroids of the) triangles.</figcaption>
+  <figcaption>Top-left corner of n<sub>2</sub> - Note that we are sampling the noises at the (centroids of the) triangles.</figcaption>
 </figure>
 
 <table>
