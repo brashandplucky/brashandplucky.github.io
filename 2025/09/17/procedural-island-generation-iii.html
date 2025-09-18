@@ -253,7 +253,6 @@ e_{coast} \cdot (\rho + n_1) &amp; \text{if } e_{coast} \leq 0
 
 <ul>
   <li>\(e_{hill} = h \cdot \bigl(1 + \text{lerp}(n_2, n_4, \tfrac{1 + n_0}{2})\bigr)\) =&gt; hill elevation with noise-modulated height</li>
-  <li>Here $\text{lerp}(a,b,t)=a(1-t)+bt$, so land transitions from hills toward mountains using $e_{coast}^2$ as the blend weight.</li>
   <li>\(e_{mountain} = 1 - \frac{\mu}{2^\sigma} \cdot d_m\) =&gt; mountain elevation from distance field</li>
 </ul>
 
