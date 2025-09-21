@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="http://0.0.0.0:4000/feed.xml" title="Chema Guerra" /><!-- favicon -->
+    <link rel="shortcut icon" type="image/png" href="/favicon.png">
+    <!-- MathJax -->
+    <script type="text/javascript" id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <!-- Open Graph cards -->
+    <meta property="og:url" content="http://0.0.0.0:4000/2025/09/25/procedural-island-generation-v.html">
+    <meta property="og:title" content="Procedural Island Generation (V)">
+    <meta property="og:description" content="Coloring the island with an elevation/moisture colormap, exporting coarse biome tags alongside the mesh.">
+    <meta property="og:image" content="http://0.0.0.0:4000/thumbnails/2025/chemaguerra-procedural-island-generation-iv.png">
+    <meta property="og:type" content="article">
+    <!-- Twitter cards -->
+    <meta name="twitter:site" content="@chemaguerra">
+    <meta name="twitter:creator" content="@Chema Guerra">
+    <meta name="twitter:title" content="Procedural Island Generation (V)">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:description" content="Coloring the island with an elevation/moisture colormap, exporting coarse biome tags alongside the mesh.">
+    <meta name="twitter:image" content="http://0.0.0.0:4000/thumbnails/2025/chemaguerra-procedural-island-generation-iv.png">
+    <meta name="twitter:image:src" content="http://0.0.0.0:4000/thumbnails/2025/chemaguerra-procedural-island-generation-iv.png">
+    
+    <!-- Make post images clickable to enlarge -->
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      // Find all images in post content and page content.
+      var images = document.querySelectorAll('.post-content img, .page-content img');
+      
+      images.forEach(function(img) {
+        // Skip if already wrapped in a link.
+        if (img.parentElement.tagName === 'A') return;
+        
+        // Create link wrapper.
+        var link = document.createElement('a');
+        link.href = img.src;
+        link.target = '_blank';
+        link.title = 'Click to enlarge';
+        
+        // Wrap image with link.
+        img.parentNode.insertBefore(link, img);
+        link.appendChild(img);
+        
+        // Add cursor style.
+        img.style.cursor = 'zoom-in';
+      });
+      
+      // Make all external links open in new tab.
+      var links = document.querySelectorAll('.post-content a, .page-content a');
+      links.forEach(function(link) {
+        // Check if link is external (not same domain).
+        if (link.hostname && link.hostname !== window.location.hostname) {
+          link.target = '_blank';
+          link.rel = 'noopener noreferrer';
+        }
+      });
+    });
+    </script>
+</head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">Chema Guerra</a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/archive/">Archive</a><a class="page-link" href="/about/">About</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">Procedural Island Generation (V)</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2025-09-25T00:00:00+02:00" itemprop="datePublished">Sep 25, 2025
+      </time>• <span itemprop="author" itemscope itemtype="http://schema.org/Person"><span class="p-author h-card" itemprop="name">Chema Guerra</span></span></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <figure>
+  <img src="/uploads/2025/procedural-island-generation-v/chemaguerra-biome-distribution-full.png" alt="Biome distribution visualization" />
+  <figcaption>Biome distribution visualization</figcaption>
+</figure>
+
+<p>This post is a direct continuation to <a href="/2025/09/16/procedural-island-generation-iv.html">Part IV</a>, where we simulated the hydrological cycle. Now we’ll paint our island with life, using elevation and moisture to generate realistic biome distributions.</p>
+
+<p>Biomes emerge from the interplay of climate factors. Temperature drops with altitude, moisture varies with rainfall and proximity to water, and these gradients create distinct ecological zones. CartoKit distils that idea into two ingredients—elevation and moisture—and uses them to drive both a continuous colour ramp and a handful of coarse biome tags.</p>
+
+<h2 id="biome-buckets">Biome Buckets</h2>
+
+<p>CartoKit takes a deliberately small-step approach to biome classification. The exporter stores a coarse <code class="language-plaintext highlighter-rouge">BiomeType</code> per triangle so downstream tools can switch materials or spawn vegetation without re-running the full generator. The thresholds live inside <code class="language-plaintext highlighter-rouge">Terrain::classify_biome</code> (<code class="language-plaintext highlighter-rouge">src/terrain.rs:683</code>):</p>
+
+<div class="language-rust highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">fn</span> <span class="nf">classify_biome</span><span class="p">(</span><span class="n">elevation</span><span class="p">:</span> <span class="nb">f32</span><span class="p">,</span> <span class="n">moisture</span><span class="p">:</span> <span class="nb">f32</span><span class="p">)</span> <span class="k">-&gt;</span> <span class="n">BiomeType</span> <span class="p">{</span>
+    <span class="k">if</span> <span class="n">elevation</span> <span class="o">&lt;</span> <span class="o">-</span><span class="mf">0.5</span> <span class="p">{</span>
+        <span class="nn">BiomeType</span><span class="p">::</span><span class="n">DeepOcean</span>
+    <span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="n">elevation</span> <span class="o">&lt;</span> <span class="mf">0.0</span> <span class="p">{</span>
+        <span class="nn">BiomeType</span><span class="p">::</span><span class="n">ShallowOcean</span>
+    <span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="n">elevation</span> <span class="o">&lt;</span> <span class="mf">0.01</span> <span class="p">{</span>
+        <span class="nn">BiomeType</span><span class="p">::</span><span class="n">Beach</span>
+    <span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="n">elevation</span> <span class="o">&lt;</span> <span class="mf">0.3</span> <span class="p">{</span>
+        <span class="k">if</span> <span class="n">moisture</span> <span class="o">&lt;</span> <span class="mf">0.3</span> <span class="p">{</span>
+            <span class="nn">BiomeType</span><span class="p">::</span><span class="n">Desert</span>
+        <span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="n">moisture</span> <span class="o">&lt;</span> <span class="mf">0.6</span> <span class="p">{</span>
+            <span class="nn">BiomeType</span><span class="p">::</span><span class="n">Grassland</span>
+        <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+            <span class="nn">BiomeType</span><span class="p">::</span><span class="n">Forest</span>
+        <span class="p">}</span>
+    <span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="n">elevation</span> <span class="o">&lt;</span> <span class="mf">0.6</span> <span class="p">{</span>
+        <span class="k">if</span> <span class="n">moisture</span> <span class="o">&lt;</span> <span class="mf">0.33</span> <span class="p">{</span>
+            <span class="nn">BiomeType</span><span class="p">::</span><span class="n">Tundra</span>
+        <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+            <span class="nn">BiomeType</span><span class="p">::</span><span class="n">Taiga</span>
+        <span class="p">}</span>
+    <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+        <span class="nn">BiomeType</span><span class="p">::</span><span class="n">Snow</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>That yields the following buckets:</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Elevation band</th>
+      <th>Moisture split</th>
+      <th>BiomeType</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">&lt; -0.5</code></td>
+      <td>—</td>
+      <td>Deep Ocean</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">[-0.5, 0)</code></td>
+      <td>—</td>
+      <td>Shallow Ocean</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">[0, 0.01)</code></td>
+      <td>—</td>
+      <td>Beach</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">[0.01, 0.3)</code></td>
+      <td><code class="language-plaintext highlighter-rouge">&lt;0.3</code> Desert / <code class="language-plaintext highlighter-rouge">[0.3,0.6)</code> Grassland / <code class="language-plaintext highlighter-rouge">≥0.6</code> Forest</td>
+      <td> </td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">[0.3, 0.6)</code></td>
+      <td><code class="language-plaintext highlighter-rouge">&lt;0.33</code> Tundra / <code class="language-plaintext highlighter-rouge">≥0.33</code> Taiga</td>
+      <td> </td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">≥0.6</code></td>
+      <td>—</td>
+      <td>Snow</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>It is intentionally conservative: we only need enough variety to drive material swaps and the color ramp; anything more granular is left to future work.</p>
+
+<h2 id="continuous-color-mapping">Continuous Color Mapping</h2>
+
+<p>Visuals are driven by a continuous color function instead of discrete textures. The public API exposes <code class="language-plaintext highlighter-rouge">calculate_biome_color</code> (<code class="language-plaintext highlighter-rouge">src/biome.rs:15</code>), which maps elevation ∈ [-1,1] and moisture ∈ [0,1] to an RGBA value:</p>
+
+<div class="language-rust highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">pub</span> <span class="k">fn</span> <span class="nf">calculate_biome_color</span><span class="p">(</span><span class="n">elevation</span><span class="p">:</span> <span class="nb">f32</span><span class="p">,</span> <span class="n">moisture</span><span class="p">:</span> <span class="nb">f32</span><span class="p">)</span> <span class="k">-&gt;</span> <span class="p">[</span><span class="nb">u8</span><span class="p">;</span> <span class="mi">4</span><span class="p">]</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="k">mut</span> <span class="n">m</span> <span class="o">=</span> <span class="n">moisture</span><span class="nf">.clamp</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">);</span>
+    <span class="k">let</span> <span class="n">e</span> <span class="o">=</span> <span class="n">elevation</span><span class="nf">.clamp</span><span class="p">(</span><span class="o">-</span><span class="mf">1.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">);</span>
+
+    <span class="k">if</span> <span class="n">e</span> <span class="o">&lt;</span> <span class="mf">0.0</span> <span class="p">{</span>
+        <span class="k">let</span> <span class="n">r</span> <span class="o">=</span> <span class="p">(</span><span class="mf">48.0</span> <span class="o">+</span> <span class="mf">48.0</span> <span class="o">*</span> <span class="n">e</span><span class="p">)</span><span class="nf">.max</span><span class="p">(</span><span class="mf">0.0</span><span class="p">)</span> <span class="k">as</span> <span class="nb">u8</span><span class="p">;</span>
+        <span class="k">let</span> <span class="n">g</span> <span class="o">=</span> <span class="p">(</span><span class="mf">64.0</span> <span class="o">+</span> <span class="mf">64.0</span> <span class="o">*</span> <span class="n">e</span><span class="p">)</span><span class="nf">.max</span><span class="p">(</span><span class="mf">0.0</span><span class="p">)</span> <span class="k">as</span> <span class="nb">u8</span><span class="p">;</span>
+        <span class="k">let</span> <span class="n">b</span> <span class="o">=</span> <span class="p">(</span><span class="mf">127.0</span> <span class="o">+</span> <span class="mf">127.0</span> <span class="o">*</span> <span class="n">e</span><span class="p">)</span><span class="nf">.max</span><span class="p">(</span><span class="mf">0.0</span><span class="p">)</span> <span class="k">as</span> <span class="nb">u8</span><span class="p">;</span>
+        <span class="p">[</span><span class="n">r</span><span class="p">,</span> <span class="n">g</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="mi">255</span><span class="p">]</span>
+    <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+        <span class="n">m</span> <span class="o">*=</span> <span class="mf">1.0</span> <span class="o">-</span> <span class="n">e</span><span class="p">;</span>
+        <span class="k">let</span> <span class="n">base_r</span> <span class="o">=</span> <span class="mf">210.0</span> <span class="o">-</span> <span class="mf">100.0</span> <span class="o">*</span> <span class="n">m</span><span class="p">;</span>
+        <span class="k">let</span> <span class="n">base_g</span> <span class="o">=</span> <span class="mf">185.0</span> <span class="o">-</span> <span class="mf">45.0</span> <span class="o">*</span> <span class="n">m</span><span class="p">;</span>
+        <span class="k">let</span> <span class="n">base_b</span> <span class="o">=</span> <span class="mf">139.0</span> <span class="o">-</span> <span class="mf">45.0</span> <span class="o">*</span> <span class="n">m</span><span class="p">;</span>
+
+        <span class="k">let</span> <span class="n">r</span> <span class="o">=</span> <span class="p">(</span><span class="mf">255.0</span> <span class="o">*</span> <span class="n">e</span> <span class="o">+</span> <span class="n">base_r</span> <span class="o">*</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">-</span> <span class="n">e</span><span class="p">))</span><span class="nf">.min</span><span class="p">(</span><span class="mf">255.0</span><span class="p">)</span> <span class="k">as</span> <span class="nb">u8</span><span class="p">;</span>
+        <span class="k">let</span> <span class="n">g</span> <span class="o">=</span> <span class="p">(</span><span class="mf">255.0</span> <span class="o">*</span> <span class="n">e</span> <span class="o">+</span> <span class="n">base_g</span> <span class="o">*</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">-</span> <span class="n">e</span><span class="p">))</span><span class="nf">.min</span><span class="p">(</span><span class="mf">255.0</span><span class="p">)</span> <span class="k">as</span> <span class="nb">u8</span><span class="p">;</span>
+        <span class="k">let</span> <span class="n">b</span> <span class="o">=</span> <span class="p">(</span><span class="mf">255.0</span> <span class="o">*</span> <span class="n">e</span> <span class="o">+</span> <span class="n">base_b</span> <span class="o">*</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">-</span> <span class="n">e</span><span class="p">))</span><span class="nf">.min</span><span class="p">(</span><span class="mf">255.0</span><span class="p">)</span> <span class="k">as</span> <span class="nb">u8</span><span class="p">;</span>
+        <span class="p">[</span><span class="n">r</span><span class="p">,</span> <span class="n">g</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="mi">255</span><span class="p">]</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<ul>
+  <li>Oceans fade from deep blue to turquoise as depth decreases.</li>
+  <li>Land blends tan through green based on moisture, then ramps toward white as elevation climbs.</li>
+</ul>
+
+<p>Because the function is continuous, neighbouring triangles share smooth colour transitions without an explicit blending pass.</p>
+
+<h2 id="2d-colormap-visualisation">2D Colormap Visualisation</h2>
+
+<p>The viewer’s “Biome Colormap” debug mode is powered by <code class="language-plaintext highlighter-rouge">debug::biome_colormap::generate_colormap</code> (<code class="language-plaintext highlighter-rouge">src/debug/biome_colormap.rs:22</code>). It bakes the function above into a 2D texture where the X-axis is elevation and the Y-axis is moisture, letting us inspect the palette or export it for documentation.</p>
+
+<div class="language-rust highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">let</span> <span class="n">params</span> <span class="o">=</span> <span class="nn">ColormapParams</span><span class="p">::</span><span class="nf">default</span><span class="p">();</span>
+<span class="k">let</span> <span class="n">image</span> <span class="o">=</span> <span class="nf">generate_colormap</span><span class="p">(</span><span class="o">&amp;</span><span class="n">params</span><span class="p">);</span>
+</code></pre></div></div>
+
+<figure>
+  <img src="/uploads/2025/procedural-island-generation-v/chemaguerra-biome-colormap-texture.png" alt="2D biome colormap texture" />
+  <figcaption>2D biome colormap texture</figcaption>
+</figure>
+
+<h2 id="viewer-rendering">Viewer Rendering</h2>
+
+<p>In the interactive viewer, the <code class="language-plaintext highlighter-rouge">Biome</code> and <code class="language-plaintext highlighter-rouge">BiomeWithRivers</code> display modes simply evaluate <code class="language-plaintext highlighter-rouge">calculate_biome_color</code> per triangle. The river overlay multiplies river flow onto the colour buffer so wet channels read clearly against the base biome ramp. There is no seasonal tinting, riparian override, or microclimate logic yet—those panels in the UI are placeholders for future experiments.</p>
+
+<figure>
+  <img src="/uploads/2025/procedural-island-generation-v/chemaguerra-biome-transitions.png" alt="Biome display in the viewer" />
+  <figcaption>Biome display in the viewer</figcaption>
+</figure>
+
+<h2 id="exported-attributes">Exported Attributes</h2>
+
+<p>When we bake a <code class="language-plaintext highlighter-rouge">Terrain</code>, every face stores:</p>
+
+<ul>
+  <li>Average elevation and moisture (from vertex attributes).</li>
+  <li><code class="language-plaintext highlighter-rouge">TerrainType</code> (land vs water) and the coarse <code class="language-plaintext highlighter-rouge">BiomeType</code> bucket from <code class="language-plaintext highlighter-rouge">classify_biome</code>.</li>
+</ul>
+
+<p>This information is embedded alongside the final triangulation mesh so external tools can colour-code or spawn assets without re-running CartoKit.</p>
+
+<h2 id="performance-notes">Performance Notes</h2>
+
+<p>Biome work piggybacks on data we already track:</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Operation</th>
+      <th>Time (27K triangles)</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">calculate_biome_color</code> sampling in viewer</td>
+      <td>~1 ms</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">classify_biome</code> during export</td>
+      <td>~1 ms</td>
+    </tr>
+    <tr>
+      <td>Colormap bake (64×64)</td>
+      <td>~1 ms</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>The runtime cost is negligible compared to hydrology—the colour ramp is just a handful of arithmetic ops per triangle.</p>
+
+<h2 id="future-improvements">Future Improvements</h2>
+
+<p>Several ideas from early design notes (temperature lapse rates, seasonal palettes, riparian upgrades, succession) have not been implemented yet. If we revisit biomes in the future, that backlog will drive the next iteration. For now the focus stays on delivering a stable colour ramp and a compact set of biome tags that downstream tools can consume reliably.</p>
+
+<h2 id="next-steps">Next Steps</h2>
+
+<p>Our island now pulses with life, painted in the colors of its ecosystems. Part VI, the final installment, dives into the baked <code class="language-plaintext highlighter-rouge">Terrain</code> output, the egui viewer, and the GLB/PNG/GIF export helpers that ship the result.</p>
+
+<p>From the mathematical foundations to the living landscape, we’ve built a complete procedural island generation system. The conclusion awaits.</p>
+
+<h2 id="valuable-resources">Valuable Resources</h2>
+
+<ul>
+  <li><a href="https://en.wikipedia.org/wiki/Biome#Whittaker_(1975)_biome-types">Whittaker’s Biome Classification</a> - Original biome model</li>
+  <li><a href="https://www.redblobgames.com/maps/terrain-from-noise/#biomes">Vegetation Procedural Generation</a> - Red Blob Games biome techniques</li>
+  <li><a href="https://en.wikipedia.org/wiki/Ecotone">Ecotones and Edge Effects</a> - Transition zone ecology</li>
+</ul>
+
+  </div><a class="u-url" href="/2025/09/25/procedural-island-generation-v.html" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <h2 class="footer-heading">Chema Guerra</h2>
+        <ul class="contact-list">
+          <li class="p-name"><a class="u-email" href="mailto:brashandplucky@gmail.com">brashandplucky@gmail.com</a></li>
+        </ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list">
+  <li>
+    <a href="https://x.com/chemaguerra">
+      <svg class="svg-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" fill="currentColor"/>
+      </svg>
+      <span class="username">@chemaguerra</span>
+    </a>
+  </li>
+  <li>
+    <a href="https://x.com/topotoylabs">
+      <svg class="svg-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" fill="currentColor"/>
+      </svg>
+      <span class="username">@topotoylabs</span>
+    </a>
+  </li>
+</ul></div>
+
+      <div class="footer-col footer-col-3">
+        <p>This is a coding blog where I post about the various projects that I am currently working on, both at work, or as an independent researcher. Most content here revolves around computer graphics and physics simulation.</p>
+      </div>
+    </div>
+
+  </div>
+
+</footer></body>
+
+</html>

@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="http://0.0.0.0:4000/feed.xml" title="Chema Guerra" /><!-- favicon -->
+    <link rel="shortcut icon" type="image/png" href="/favicon.png">
+    <!-- MathJax -->
+    <script type="text/javascript" id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <!-- Open Graph cards -->
+    <meta property="og:url" content="http://0.0.0.0:4000/2025/09/28/procedural-island-generation-vi.html">
+    <meta property="og:title" content="Procedural Island Generation (VI)">
+    <meta property="og:description" content="Wrapping CartoKit with the baked terrain output, the egui viewer, and the GLB/image export helpers.">
+    <meta property="og:image" content="http://0.0.0.0:4000/thumbnails/2025/chemaguerra-procedural-island-generation-v.png">
+    <meta property="og:type" content="article">
+    <!-- Twitter cards -->
+    <meta name="twitter:site" content="@chemaguerra">
+    <meta name="twitter:creator" content="@Chema Guerra">
+    <meta name="twitter:title" content="Procedural Island Generation (VI)">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:description" content="Wrapping CartoKit with the baked terrain output, the egui viewer, and the GLB/image export helpers.">
+    <meta name="twitter:image" content="http://0.0.0.0:4000/thumbnails/2025/chemaguerra-procedural-island-generation-v.png">
+    <meta name="twitter:image:src" content="http://0.0.0.0:4000/thumbnails/2025/chemaguerra-procedural-island-generation-v.png">
+    
+    <!-- Make post images clickable to enlarge -->
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      // Find all images in post content and page content.
+      var images = document.querySelectorAll('.post-content img, .page-content img');
+      
+      images.forEach(function(img) {
+        // Skip if already wrapped in a link.
+        if (img.parentElement.tagName === 'A') return;
+        
+        // Create link wrapper.
+        var link = document.createElement('a');
+        link.href = img.src;
+        link.target = '_blank';
+        link.title = 'Click to enlarge';
+        
+        // Wrap image with link.
+        img.parentNode.insertBefore(link, img);
+        link.appendChild(img);
+        
+        // Add cursor style.
+        img.style.cursor = 'zoom-in';
+      });
+      
+      // Make all external links open in new tab.
+      var links = document.querySelectorAll('.post-content a, .page-content a');
+      links.forEach(function(link) {
+        // Check if link is external (not same domain).
+        if (link.hostname && link.hostname !== window.location.hostname) {
+          link.target = '_blank';
+          link.rel = 'noopener noreferrer';
+        }
+      });
+    });
+    </script>
+</head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">Chema Guerra</a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/archive/">Archive</a><a class="page-link" href="/about/">About</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">Procedural Island Generation (VI)</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2025-09-28T00:00:00+02:00" itemprop="datePublished">Sep 28, 2025
+      </time>• <span itemprop="author" itemscope itemtype="http://schema.org/Person"><span class="p-author h-card" itemprop="name">Chema Guerra</span></span></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <p><img src="/uploads/2025/procedural-island-generation-vi/chemaguerra-island-final-beauty.png" alt="Final rendered island with all systems" /></p>
+
+<p>This is the final installment of our procedural island generation series. After building the mesh foundation (<a href="/2025/09/07/procedural-island-generation-i.html">Part I</a>), painting elevation hints (<a href="/2025/09/10/procedural-island-generation-ii.html">Part II</a>), adding mountain detail (<a href="/2025/09/13/procedural-island-generation-iii.html">Part III</a>), simulating hydrology (<a href="/2025/09/16/procedural-island-generation-iv.html">Part IV</a>), and colouring the terrain with our biome ramp (<a href="/2025/09/19/procedural-island-generation-v.html">Part V</a>), it is time to package the result. CartoKit finishes by baking the terrain into a compact mesh, visualising it through an egui viewer, and exporting artefacts for other tools.</p>
+
+<p>The journey from mathematical representation to visual output ends with three components:</p>
+
+<ol>
+  <li><strong><code class="language-plaintext highlighter-rouge">Terrain::from_terrain</code></strong> – a baked mesh carrying elevation, moisture, biome, and river metadata.</li>
+  <li><strong>The debug renderer &amp; viewer</strong> – CPU rasterisers that turn the data into diagnostic images.</li>
+  <li><strong>Export helpers</strong> – GLB export, PNG captures, and GIF generation built on the same primitives.</li>
+</ol>
+
+<p>Let’s look at each piece.</p>
+
+<h2 id="baked-terrain-output">Baked Terrain Output</h2>
+
+<p><code class="language-plaintext highlighter-rouge">Terrain::from_terrain</code> (<code class="language-plaintext highlighter-rouge">src/terrain.rs:368</code>) distils the incremental <code class="language-plaintext highlighter-rouge">TerrainBuilder</code> state into a reusable asset. The bake step:</p>
+
+<ul>
+  <li>Keeps only faces whose centroids lie inside the unit square, trimming the guard ring used during generation.</li>
+  <li>Copies vertex elevation and moisture into mesh attributes so downstream tools can query them directly.</li>
+  <li>Tags every face with average elevation, a <code class="language-plaintext highlighter-rouge">TerrainType</code> (land vs. ocean), and the coarse <code class="language-plaintext highlighter-rouge">BiomeType</code> classification introduced in Part V.</li>
+  <li>Marks edges as regular, coastline, or river and stores river-flow magnitudes when a <code class="language-plaintext highlighter-rouge">RiverSystem</code> is present.</li>
+</ul>
+
+<p>The baked mesh is still a <code class="language-plaintext highlighter-rouge">TopoMesh</code>, meaning we retain the halfedge connectivity that made the earlier stages convenient. When you call <code class="language-plaintext highlighter-rouge">Terrain::from_terrain(&amp;builder)</code>, you get a self-contained structure that is ready for export or further processing without touching the heavy generation code again.</p>
+
+<h2 id="cpu-debug-renderer">CPU Debug Renderer</h2>
+
+<p>All of CartoKit’s imagery is rendered on the CPU. The <code class="language-plaintext highlighter-rouge">cartokit::debug</code> module contains a suite of rasterisers—triangle fill, watertight line drawing, paint-map sampling, rainfall heatmaps—that output directly into <code class="language-plaintext highlighter-rouge">image::RgbaImage</code> buffers. The viewer’s <code class="language-plaintext highlighter-rouge">DisplayRenderer</code> (<code class="language-plaintext highlighter-rouge">examples/viewer/display_modes.rs</code>) wires those helpers together:</p>
+
+<ul>
+  <li>Mesh modes (<code class="language-plaintext highlighter-rouge">SeedPoints</code>, <code class="language-plaintext highlighter-rouge">Delaunay</code>, <code class="language-plaintext highlighter-rouge">Voronoi</code>, <code class="language-plaintext highlighter-rouge">Quads</code>, <code class="language-plaintext highlighter-rouge">FinalTriangulation</code>) call <code class="language-plaintext highlighter-rouge">draw_topokit_mesh</code> with optional vertex overlays.</li>
+  <li>Scalar fields (<code class="language-plaintext highlighter-rouge">TriangleElevation</code>, <code class="language-plaintext highlighter-rouge">DistanceField</code>, <code class="language-plaintext highlighter-rouge">Rainfall</code>, <code class="language-plaintext highlighter-rouge">Humidity</code>, <code class="language-plaintext highlighter-rouge">RiverFlow</code>, <code class="language-plaintext highlighter-rouge">Biome</code>) delegate to <code class="language-plaintext highlighter-rouge">draw_triangles_opt</code>/<code class="language-plaintext highlighter-rouge">draw_regions_opt</code> with palette swaps.</li>
+  <li>Noise visualisations reuse the same pipeline, just swapping in different <code class="language-plaintext highlighter-rouge">TriangleProperty</code> variants.</li>
+</ul>
+
+<p>Because everything renders to software images, the viewer behaves the same on every platform, and the exported screenshots and GIFs are bit-for-bit identical to what you see on screen.</p>
+
+<h2 id="interactive-viewer">Interactive Viewer</h2>
+
+<p>The <code class="language-plaintext highlighter-rouge">cartokit_viewer</code> example wraps those images in an egui/eframe interface:</p>
+
+<ul>
+  <li>The right-hand parameter panel exposes seeds, Bridson separation, rainfall, and river controls, regenerating the terrain whenever you tweak them.</li>
+  <li>The “Paint Terrain” mode lets you brush elevation hints onto the 128×128 paint map; the next regeneration integrates those hints into the terrain.</li>
+  <li>Display modes cover the full pipeline: seed classification, mesh structure, mountain distance fields, rainfall, humidity, river diagnostics, biome colours, and the final shaded map.</li>
+  <li>Animation tools (<code class="language-plaintext highlighter-rouge">examples/viewer/animation.rs</code>) let you scrub parameters over time and queue frame exports.</li>
+</ul>
+
+<p>Each frame, the viewer renders the active mode into an <code class="language-plaintext highlighter-rouge">RgbaImage</code>, uploads it as an egui texture, and then recycles the same image for exports. There is no separate rendering path—what you export is exactly what you preview.</p>
+
+<h2 id="export-helpers">Export Helpers</h2>
+
+<p>Three helpers in <code class="language-plaintext highlighter-rouge">examples/viewer/export.rs</code> turn the baked data into files:</p>
+
+<div class="language-rust highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// 1. Bake + GLB export via MeshKit</span>
+<span class="nn">display</span><span class="p">::</span><span class="nf">export_mesh</span><span class="p">(</span><span class="o">&amp;</span><span class="n">terrain_builder</span><span class="p">,</span> <span class="n">seed</span><span class="p">);</span>
+
+<span class="c1">// 2. One PNG per display mode</span>
+<span class="nn">display</span><span class="p">::</span><span class="nf">export_all_images</span><span class="p">(</span><span class="n">seed</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">modes</span><span class="p">,</span> <span class="p">|</span><span class="n">mode</span><span class="p">|</span> <span class="n">renderer</span><span class="nf">.render</span><span class="p">(</span><span class="n">mode</span><span class="p">));</span>
+
+<span class="c1">// 3. Thumbnail tiles for quick comparisons</span>
+<span class="nn">display</span><span class="p">::</span><span class="nf">export_all_images_tile</span><span class="p">(</span><span class="n">seed</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">modes</span><span class="p">,</span> <span class="p">|</span><span class="n">mode</span><span class="p">|</span> <span class="n">renderer</span><span class="nf">.render</span><span class="p">(</span><span class="n">mode</span><span class="p">));</span>
+</code></pre></div></div>
+
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">export_mesh</code> clones the baked <code class="language-plaintext highlighter-rouge">Terrain</code>, rescales coordinates for GLTF’s Y‑up convention, and calls <code class="language-plaintext highlighter-rouge">meshkit::io::save_mesh</code> to produce a <code class="language-plaintext highlighter-rouge">.glb</code> file that loads cleanly in Blender or other viewers.</li>
+  <li><code class="language-plaintext highlighter-rouge">export_all_images</code> walks every display mode and drops the rendered PNGs into <code class="language-plaintext highlighter-rouge">exports/images_seed_&lt;seed&gt;/</code>.</li>
+  <li><code class="language-plaintext highlighter-rouge">export_all_images_tile</code> cuts out the top-left 1/8×1/8 tile from each image—handy for diffing or documentation thumbnails.</li>
+</ul>
+
+<p>For animated parameter studies, <code class="language-plaintext highlighter-rouge">examples/viewer/gif_export.rs</code> converts a list of pre-rendered frames into a looping GIF, with options for downsampling, FPS, and output directory naming.</p>
+
+<h2 id="performance-snapshot">Performance Snapshot</h2>
+
+<p>Generation times were covered in the earlier posts (≈80 ms for the default 27 K-site map on a modern desktop). The finishing steps add little overhead:</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Stage</th>
+      <th>Time (2048×2048 render)</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">Terrain::from_terrain</code> bake</td>
+      <td>~6 ms</td>
+    </tr>
+    <tr>
+      <td>CPU render – biome view</td>
+      <td>~8 ms</td>
+    </tr>
+    <tr>
+      <td>GLB export (<code class="language-plaintext highlighter-rouge">meshkit::io::save_mesh</code>)</td>
+      <td>~15 ms</td>
+    </tr>
+    <tr>
+      <td>PNG capture per display mode</td>
+      <td>5–10 ms</td>
+    </tr>
+    <tr>
+      <td>GIF encoding (20 frames @ 1024²)</td>
+      <td>~9 ms</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>Numbers vary with map resolution and active mode (mesh overlays with AA lines take longer than simple heatmaps), but everything remains comfortably interactive.</p>
+
+<h2 id="future-directions">Future Directions</h2>
+
+<p>With a solid foundation in place, the obvious extensions are clear:</p>
+
+<ul>
+  <li><strong>GPU shading</strong> – real-time lighting, water reflections, and atmospheric effects on top of the baked mesh.</li>
+  <li><strong>Mesh decimation</strong> – level-of-detail generation or streaming tiles for massive worlds.</li>
+  <li><strong>Additional exporters</strong> – heightmaps, splatmaps, or direct integrations for Unity/Unreal/Godot.</li>
+  <li><strong>Dynamic overlays</strong> – weather, vegetation instancing, or settlement placement driven by the existing attributes.</li>
+</ul>
+
+<p>These items all build on the baked <code class="language-plaintext highlighter-rouge">Terrain</code> structure and export scaffolding we now have.</p>
+
+<h2 id="conclusion">Conclusion</h2>
+
+<p>Through six posts we moved from random seeds to a fully packaged island:</p>
+
+<ol>
+  <li>Poisson disk sampling and dual meshes establish the geometric scaffold.</li>
+  <li>A paint map and layered noise sculpt elevation.</li>
+  <li>Hydrology adds rivers and erosion cues.</li>
+  <li>A simple elevation/moisture colormap paints believable biomes.</li>
+  <li>The baked <code class="language-plaintext highlighter-rouge">Terrain</code>, debug renderer, and export helpers ship the result.</li>
+</ol>
+
+<p>The complete system generates a richly annotated island in under a tenth of a second and provides everything you need to inspect, tweak, and export it. The modular architecture welcomes experimentation—swap out any component and the rest of the pipeline keeps working.</p>
+
+<p>Thanks for following along. I hope CartoKit inspires your own explorations into procedural worlds.</p>
+
+<h2 id="valuable-resources">Valuable Resources</h2>
+
+<ul>
+  <li><a href="https://github.com/brash-and-plucky/meshkit">MeshKit</a> – Halfedge library used throughout the project</li>
+  <li><a href="https://www.egui.rs/">EGUI</a> – Immediate-mode GUI powering the viewer</li>
+  <li><a href="https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.pdf">glTF 2.0</a> – Asset format we export to</li>
+  <li><a href="https://www.redblobgames.com/maps/mapgen2/">Red Blob Games: Polygonal Map Generation</a> – Foundational reading for the dual-mesh approach</li>
+</ul>
+
+  </div><a class="u-url" href="/2025/09/28/procedural-island-generation-vi.html" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <h2 class="footer-heading">Chema Guerra</h2>
+        <ul class="contact-list">
+          <li class="p-name"><a class="u-email" href="mailto:brashandplucky@gmail.com">brashandplucky@gmail.com</a></li>
+        </ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list">
+  <li>
+    <a href="https://x.com/chemaguerra">
+      <svg class="svg-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" fill="currentColor"/>
+      </svg>
+      <span class="username">@chemaguerra</span>
+    </a>
+  </li>
+  <li>
+    <a href="https://x.com/topotoylabs">
+      <svg class="svg-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" fill="currentColor"/>
+      </svg>
+      <span class="username">@topotoylabs</span>
+    </a>
+  </li>
+</ul></div>
+
+      <div class="footer-col footer-col-3">
+        <p>This is a coding blog where I post about the various projects that I am currently working on, both at work, or as an independent researcher. Most content here revolves around computer graphics and physics simulation.</p>
+      </div>
+    </div>
+
+  </div>
+
+</footer></body>
+
+</html>
