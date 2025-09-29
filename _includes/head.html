@@ -13,6 +13,34 @@
     <link rel="shortcut icon" type="image/png" href="/favicon.png">
     <!-- MathJax -->
     <script type="text/javascript" id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <!-- Mermaid -->
+    {% if page.mermaid %}
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      // Initialize Mermaid
+      mermaid.initialize({ startOnLoad: false });
+
+      // Find all mermaid code blocks
+      document.querySelectorAll('pre code.language-mermaid').forEach(function(element) {
+        // Get the mermaid code
+        var code = element.textContent;
+
+        // Create a div for mermaid to render into
+        var div = document.createElement('div');
+        div.className = 'mermaid';
+        div.textContent = code;
+
+        // Replace the pre element with the mermaid div
+        var pre = element.parentElement;
+        pre.parentElement.replaceChild(div, pre);
+      });
+
+      // Now initialize mermaid rendering
+      mermaid.init();
+    });
+    </script>
+    {% endif %}
     <!-- Open Graph cards -->
     <meta property="og:url" content="{{ site.url }}{{ page.url }}">
     <meta property="og:title" content="{{ page.title }}">
