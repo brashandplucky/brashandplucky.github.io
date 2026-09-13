@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="4.3.2">Jekyll</generator><link href="https://brashandplucky.com/feed.xml" rel="self" type="application/atom+xml" /><link href="https://brashandplucky.com/" rel="alternate" type="text/html" /><updated>2026-09-13T19:57:36+02:00</updated><id>https://brashandplucky.com/feed.xml</id><title type="html">Chema Guerra</title><subtitle>This is a coding blog where I post about the various projects that I am currently working on, both at work, or as an independent researcher. Most content here revolves around computer graphics and physics simulation.</subtitle><author><name>Chema Guerra</name></author><entry><title type="html">Procedural Island Generation (III)</title><link href="https://brashandplucky.com/2025/09/17/procedural-island-generation-iii.html" rel="alternate" type="text/html" title="Procedural Island Generation (III)" /><published>2025-09-17T00:00:00+02:00</published><updated>2025-09-17T00:00:00+02:00</updated><id>https://brashandplucky.com/2025/09/17/procedural-island-generation-iii</id><content type="html" xml:base="https://brashandplucky.com/2025/09/17/procedural-island-generation-iii.html"><![CDATA[<figure>
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="4.3.2">Jekyll</generator><link href="https://brashandplucky.com/feed.xml" rel="self" type="application/atom+xml" /><link href="https://brashandplucky.com/" rel="alternate" type="text/html" /><updated>2026-09-13T20:09:12+02:00</updated><id>https://brashandplucky.com/feed.xml</id><title type="html">Chema Guerra</title><subtitle>This is a coding blog where I post about the various projects that I am currently working on, both at work, or as an independent researcher. Most content here revolves around computer graphics and physics simulation.</subtitle><author><name>Chema Guerra</name></author><entry><title type="html">Procedural Island Generation (III)</title><link href="https://brashandplucky.com/2025/09/17/procedural-island-generation-iii.html" rel="alternate" type="text/html" title="Procedural Island Generation (III)" /><published>2025-09-17T00:00:00+02:00</published><updated>2025-09-17T00:00:00+02:00</updated><id>https://brashandplucky.com/2025/09/17/procedural-island-generation-iii</id><content type="html" xml:base="https://brashandplucky.com/2025/09/17/procedural-island-generation-iii.html"><![CDATA[<figure>
   <img src="/uploads/2025/procedural-island-generation-iii/chemaguerra-terrain-elevation-detailed.png" alt="Terrain elevation with noise layers" />
   <figcaption>Resulting terrain elevation with multi-scale noise layers and mountain peaks</figcaption>
 </figure>
@@ -990,7 +990,7 @@ e_{coast} \cdot (\rho + n_1) &amp; \text{if } e_{coast} \leq 0
 
 <p><em>Principal Component Analysis</em> (<a href="https://en.wikipedia.org/wiki/Principal_component_analysis">PCA</a>) is the subject of <a href="https://brashandplucky.com/2023/09/07/principal-component-analysis.html">a previous post</a> of mine, so I will only summarize it here.</p>
 
-<p>This is accomplished by linearly transforming the data into a new coordinate system where (most of) the variation in the data can be described with fewer dimensions than the initial data.</p>
+<p>Data reduction is accomplished by linearly transforming the data into a new coordinate system where (most of) the variation in the data can be described with fewer dimensions than the initial data.</p>
 
 <p>Without getting into the details, this is done via an eigen-decomposition of the <a href="https://en.wikipedia.org/wiki/Covariance_matrix">covariance matrix</a>.</p>
 
@@ -1170,9 +1170,9 @@ e_{coast} \cdot (\rho + n_1) &amp; \text{if } e_{coast} \leq 0
 
 <h2 id="simple-linear-regression">Simple Linear Regression</h2>
 
-<p>First, let’s detour a little to talk about <a href="https://en.wikipedia.org/wiki/Simple_linear_regression">Simple Linear Regression</a>, which is a basic method one can use to approximate a set of 2D data points with a <em>best fitting line</em>.</p>
+<p>First, let’s detour a little to talk about <a href="https://en.wikipedia.org/wiki/Simple_linear_regression">Simple Linear Regression</a> (SLR), which is a basic method one can use to approximate a set of 2D data points with a <em>best fitting line</em>.</p>
 
-<p>It is common practice to define the best fitting line using <a href="https://en.wikipedia.org/wiki/Ordinary_least_squares">ordinary least squares</a>. <em>i.e.,</em> the line that minimizes the sum of vertical distances between itself and the points in the dataset.</p>
+<p>It is common practice to define the best fitting line using <a href="https://en.wikipedia.org/wiki/Ordinary_least_squares">Ordinary Least Squares</a> (OLS). <em>i.e.,</em> the line that minimizes the sum of vertical distances between itself and the points in the dataset.</p>
 
 <p>I hope that the below video depicts this idea clearly:</p>
 
