@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="4.3.2">Jekyll</generator><link href="https://brashandplucky.com/feed.xml" rel="self" type="application/atom+xml" /><link href="https://brashandplucky.com/" rel="alternate" type="text/html" /><updated>2026-09-13T20:09:12+02:00</updated><id>https://brashandplucky.com/feed.xml</id><title type="html">Chema Guerra</title><subtitle>This is a coding blog where I post about the various projects that I am currently working on, both at work, or as an independent researcher. Most content here revolves around computer graphics and physics simulation.</subtitle><author><name>Chema Guerra</name></author><entry><title type="html">Procedural Island Generation (III)</title><link href="https://brashandplucky.com/2025/09/17/procedural-island-generation-iii.html" rel="alternate" type="text/html" title="Procedural Island Generation (III)" /><published>2025-09-17T00:00:00+02:00</published><updated>2025-09-17T00:00:00+02:00</updated><id>https://brashandplucky.com/2025/09/17/procedural-island-generation-iii</id><content type="html" xml:base="https://brashandplucky.com/2025/09/17/procedural-island-generation-iii.html"><![CDATA[<figure>
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="4.3.2">Jekyll</generator><link href="https://brashandplucky.com/feed.xml" rel="self" type="application/atom+xml" /><link href="https://brashandplucky.com/" rel="alternate" type="text/html" /><updated>2026-09-13T20:24:56+02:00</updated><id>https://brashandplucky.com/feed.xml</id><title type="html">Chema Guerra</title><subtitle>This is a coding blog where I post about the various projects that I am currently working on, both at work, or as an independent researcher. Most content here revolves around computer graphics and physics simulation.</subtitle><author><name>Chema Guerra</name></author><entry><title type="html">Procedural Island Generation (III)</title><link href="https://brashandplucky.com/2025/09/17/procedural-island-generation-iii.html" rel="alternate" type="text/html" title="Procedural Island Generation (III)" /><published>2025-09-17T00:00:00+02:00</published><updated>2025-09-17T00:00:00+02:00</updated><id>https://brashandplucky.com/2025/09/17/procedural-island-generation-iii</id><content type="html" xml:base="https://brashandplucky.com/2025/09/17/procedural-island-generation-iii.html"><![CDATA[<figure>
   <img src="/uploads/2025/procedural-island-generation-iii/chemaguerra-terrain-elevation-detailed.png" alt="Terrain elevation with noise layers" />
   <figcaption>Resulting terrain elevation with multi-scale noise layers and mountain peaks</figcaption>
 </figure>
@@ -990,9 +990,9 @@ e_{coast} \cdot (\rho + n_1) &amp; \text{if } e_{coast} \leq 0
 
 <p><em>Principal Component Analysis</em> (<a href="https://en.wikipedia.org/wiki/Principal_component_analysis">PCA</a>) is the subject of <a href="https://brashandplucky.com/2023/09/07/principal-component-analysis.html">a previous post</a> of mine, so I will only summarize it here.</p>
 
-<p>Data reduction is accomplished by linearly transforming the data into a new coordinate system where (most of) the variation in the data can be described with fewer dimensions than the initial data.</p>
+<p>Data reduction via PCA is accomplished by linearly transforming the data into a new coordinate system where (most of) the variation in the data can be described with fewer dimensions than the initial data.</p>
 
-<p>Without getting into the details, this is done via an eigen-decomposition of the <a href="https://en.wikipedia.org/wiki/Covariance_matrix">covariance matrix</a>.</p>
+<p>Without getting into the details, this involves an eigen-decomposition of the <a href="https://en.wikipedia.org/wiki/Covariance_matrix">covariance matrix</a>.</p>
 
 <p><img src="/uploads/2023/chemaguerra-pca.gif" width="600" height="240" alt="Principal Component Analysis" /></p>
 
@@ -1142,19 +1142,19 @@ e_{coast} \cdot (\rho + n_1) &amp; \text{if } e_{coast} \leq 0
 
 <p>There are interesting practical uses for SVD truncation other than dimensionality reduction in data analysis.</p>
 
-<h2 id="data-compression">Data compression</h2>
+<h3 id="data-compression">Data compression</h3>
 
 <p><a href="https://bartwronski.com/2020/05/21/dimensionality-reduction-for-image-and-texture-set-compression/">Bart Wronski</a> has a very interesting write up on <em>compression of PBR texture sets</em> using this technique.</p>
 
 <p><em>BCn Texture Compression</em> is based on dimensionality reduction as well. Nice write up on the subject by <a href="https://www.reedbeta.com/blog/understanding-bcn-texture-compression-formats/">Nathan Reed</a>.</p>
 
-<h2 id="low-rank-approximation">Low-rank approximation</h2>
+<h3 id="low-rank-approximation">Low-rank approximation</h3>
 
 <p><a href="https://en.wikipedia.org/wiki/Low-rank_approximation">Low-rank approximation</a>.</p>
 
 <p>Another interesting read by <a href="https://bartwronski.com/2020/02/03/separate-your-filters-svd-and-low-rank-approximation-of-image-filters/">Bart Wronski</a>. I wish to do my own write up on <em>low-rank convolution</em> at some point.</p>
 
-<h2 id="implementation-details">Implementation details</h2>
+<h3 id="implementation-details">Implementation details</h3>
 
 <p>I had some old PCA/SVD C++ code in <a href="https://maverickrender.com/">Maverick</a>’s API, which I used for the images/videos in this post. But after reading this post by <a href="https://blog.demofox.org/2022/07/12/calculating-svd-and-pca-in-c/">Atrix256</a> I may bite the bullet and replace the implementation part of my old <code class="language-plaintext highlighter-rouge">xsvd_c</code> class with <a href="https://eigen.tuxfamily.org/">Eigen</a>.</p>]]></content><author><name>Chema Guerra</name></author><summary type="html"><![CDATA[PCA]]></summary><media:thumbnail xmlns:media="http://search.yahoo.com/mrss/" url="https://brashandplucky.com/thumbnails/2023/chemaguerra-truncated-svd.png" /><media:content medium="image" url="https://brashandplucky.com/thumbnails/2023/chemaguerra-truncated-svd.png" xmlns:media="http://search.yahoo.com/mrss/" /></entry><entry><title type="html">Principal Component Analysis</title><link href="https://brashandplucky.com/2023/09/07/principal-component-analysis.html" rel="alternate" type="text/html" title="Principal Component Analysis" /><published>2023-09-07T10:58:40+02:00</published><updated>2023-09-07T10:58:40+02:00</updated><id>https://brashandplucky.com/2023/09/07/principal-component-analysis</id><content type="html" xml:base="https://brashandplucky.com/2023/09/07/principal-component-analysis.html"><![CDATA[<p><a href="https://en.wikipedia.org/wiki/Principal_component_analysis">PCA</a> is a <em>data transformation</em> technique.</p>
 
