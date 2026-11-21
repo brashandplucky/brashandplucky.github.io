@@ -196,7 +196,7 @@
 
 \[\begin{flalign}
 &amp; &amp;&amp; \dot{\mathbf{p}}_{t+\Delta{t}} = \dot{\mathbf{p}}_t + \frac{\mathbf{g}}{m} \Delta{t} &amp; \\
-&amp; &amp;&amp; \mathbf{p}_{t+\Delta{t}} = \dot{\mathbf{p}}_t \Delta{t} &amp;
+&amp; &amp;&amp; \mathbf{p}_{t+\Delta{t}} = \mathbf{p}_t + \dot{\mathbf{p}}_{t+\Delta{t}} \Delta{t} &amp;
 \end{flalign}\]
 
 <p>Here’s a simple implementation for the particle state and the simulation step:</p>
@@ -248,7 +248,7 @@
 
 \[\begin{flalign}
 &amp; &amp;&amp; x=x_0+\dot{x}_0t &amp; \\
-&amp; &amp;&amp; y=y_0+\dot{y}_0t+g_y{t^2} &amp;
+&amp; &amp;&amp; y=y_0+\dot{y}_0t+\frac{1}{2}g_y{t^2} &amp;
 \end{flalign}\]
 
 <p>This type of motion is also called <em>parabolic throw</em>. As can be seen both in the above animation and by looking at the formula, the ballistic trajectory w.r.t. time is horizontally linear, and vertically parabolic.</p>
